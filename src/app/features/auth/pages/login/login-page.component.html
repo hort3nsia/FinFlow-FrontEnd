@@ -127,6 +127,10 @@
           </p>
         }
 
+        <div class="login-form__actions">
+          <a class="login-form__forgot-link" routerLink="/forgot-password">Quên mật khẩu?</a>
+        </div>
+
         @if (errorMessage(); as errorMessage) {
           <p class="login-form__error login-form__error--banner" role="alert">
             {{ errorMessage }}

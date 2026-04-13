@@ -57,6 +57,12 @@ export interface VerifyEmailOtpInput {
   otp: string;
 }
 
+export interface ResetPasswordByOtpInput {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+
 export interface ChallengeDispatchResponse {
   accepted: boolean;
   cooldownSeconds: number;

@@ -12,6 +12,7 @@ import {
   WorkspaceInfo,
   RegistrationPending,
   VerifyEmailOtpInput,
+  ResetPasswordByOtpInput,
   ChallengeDispatchResponse,
 } from './auth.models';
 import { TokenStorageService } from './token-storage.service';
@@ -137,6 +138,38 @@ export class AuthService {
   resendEmailVerification(email: string): Observable<ChallengeDispatchResponse> {
     this._isLoading.set(true);
     return this.authApiService.resendEmailVerification(email).pipe(
+      finalize(() => this._isLoading.set(false)),
+      take(1),
+    );
+  }
+
+  forgotPassword(email: string): Observable<ChallengeDispatchResponse> {
+    this._isLoading.set(true);
+    return this.authApiService.forgotPassword(email).pipe(
+      finalize(() => this._isLoading.set(false)),
+      take(1),
+    );
+  }
+
+  verifyPasswordResetToken(token: string): Observable<boolean> {
+    this._isLoading.set(true);
+    return this.authApiService.verifyPasswordResetToken(token).pipe(
+      finalize(() => this._isLoading.set(false)),
+      take(1),
+    );
+  }
+
+  resetPasswordByToken(token: string, newPassword: string): Observable<boolean> {
+    this._isLoading.set(true);
+    return this.authApiService.resetPasswordByToken(token, newPassword).pipe(
+      finalize(() => this._isLoading.set(false)),
+      take(1),
+    );
+  }
+
+  resetPasswordByOtp(input: ResetPasswordByOtpInput): Observable<boolean> {
+    this._isLoading.set(true);
+    return this.authApiService.resetPasswordByOtp(input).pipe(
       finalize(() => this._isLoading.set(false)),
       take(1),
     );

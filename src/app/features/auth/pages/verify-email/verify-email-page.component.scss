@@ -15,6 +15,11 @@
   text-align: center;
 }
 
+.verify-email-page__frame--handoff {
+  width: min(100%, 26rem);
+  padding-top: 2rem;
+}
+
 .verify-email-page__header,
 .verify-email-page__success,
 .verify-email-form,
@@ -25,6 +30,13 @@
 
 .verify-email-page__header {
   gap: 1rem;
+}
+
+.verify-email-page__handoff-hero,
+.verify-email-page__handoff-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
 }
 
 .verify-email-page__header app-brand-mark {
@@ -114,6 +126,21 @@
   line-height: 1.55;
 }
 
+.verify-email-page__handoff-state p {
+  margin: 0;
+  color: var(--verify-muted);
+  line-height: 1.55;
+}
+
+.verify-email-page__handoff-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid rgba(18, 100, 163, 0.18);
+  border-top-color: var(--verify-accent);
+  border-radius: 999px;
+  animation: verify-email-spin 900ms linear infinite;
+}
+
 .verify-email-form {
   gap: 1.35rem;
 }
@@ -122,71 +149,35 @@
   display: none;
 }
 
+.verify-email-form__field--otp {
+  width: min(100%, 20rem);
+}
+
 .verify-email-form__label {
   font-size: 0.98rem;
   font-weight: 700;
   letter-spacing: 0.01em;
 }
 
-.verify-email-form__otp-shell {
-  position: relative;
-  width: min(100%, 34rem);
-}
-
-.verify-email-form__otp-input {
-  position: absolute;
-  inset: 0;
+.verify-email-form__otp-field {
   width: 100%;
-  opacity: 0;
-  cursor: text;
-}
-
-.verify-email-form__otp-groups {
-  display: inline-flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.verify-email-form__otp-slots {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-}
-
-.verify-email-form__otp-divider {
-  color: var(--verify-muted);
-  font-size: 1.35rem;
-}
-
-.verify-email-form__otp-slot {
-  display: grid;
-  place-items: center;
-  min-width: 4.8rem;
-  min-height: 4.8rem;
-  margin-left: -1px;
+  min-height: 3.45rem;
+  padding: 1rem 1.35rem;
   border: 1px solid var(--verify-line);
+  border-radius: 0.75rem;
   background: #fff;
-  font-size: clamp(1.65rem, 4vw, 2.05rem);
-  font-weight: 400;
-  line-height: 1;
-  transition: border-color 140ms ease;
+  color: var(--verify-ink);
+  text-align: center;
+  letter-spacing: 0.45em;
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.verify-email-form__otp-slots .verify-email-form__otp-slot:first-child {
-  margin-left: 0;
-  border-top-left-radius: 0.7rem;
-  border-bottom-left-radius: 0.7rem;
-}
-
-.verify-email-form__otp-slots .verify-email-form__otp-slot:last-child {
-  border-top-right-radius: 0.7rem;
-  border-bottom-right-radius: 0.7rem;
-}
-
-.verify-email-form__otp-shell:focus-within .verify-email-form__otp-slot {
+.verify-email-form__otp-field:focus {
+  outline: none;
   border-color: var(--verify-accent);
-  position: relative;
-  z-index: 1;
+  box-shadow: 0 0 0 0.22rem rgba(18, 100, 163, 0.12);
 }
 
 .verify-email-page__mail-actions {
@@ -264,6 +255,16 @@
   font-weight: 600;
 }
 
+@keyframes verify-email-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 640px) {
   .verify-email-page {
     padding: 1rem;
@@ -272,16 +273,6 @@
   .verify-email-page__header h1 {
     max-width: none;
     font-size: clamp(2rem, 10vw, 2.7rem);
-  }
-
-  .verify-email-form__otp-groups {
-    gap: 0.55rem;
-  }
-
-  .verify-email-form__otp-slot {
-    min-width: 3.2rem;
-    min-height: 3.45rem;
-    font-size: 1.2rem;
   }
 
   .verify-email-page__mail-actions {

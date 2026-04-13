@@ -235,6 +235,19 @@
   background: rgba(181, 72, 56, 0.08);
 }
 
+.login-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.15rem;
+}
+
+.login-form__forgot-link {
+  color: #173581;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .login-form__submit {
   min-height: 3.35rem;
   border: 0;
