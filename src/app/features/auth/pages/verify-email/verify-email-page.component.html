@@ -1,19 +1,40 @@
 <section class="verify-email-page">
-  <div class="verify-email-page__frame">
+  <div class="verify-email-page__frame" [class.verify-email-page__frame--handoff]="status() === 'handoff'">
     <header class="verify-email-page__header">
-      <app-brand-mark />
-      <h1>Mã xác thực đã được gửi.</h1>
-
-      @if (emailAddress()) {
-        <p class="verify-email-page__copy">
-          Chúng tôi đã gửi email đến <strong>{{ emailAddress() }}</strong>. Hãy nhập mã xác thực tại đây hoặc bấm vào
-          liên kết trong email để tiếp tục. Nếu bạn không thấy email, hãy kiểm tra thư mục spam.
-        </p>
+      @if (status() === 'handoff') {
+        <div class="verify-email-page__handoff-hero">
+          <div class="verify-email-page__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M7 12.5l3.1 3.1L17.5 8.2M12 22a10 10 0 110-20 10 10 0 010 20z"
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.7"
+              />
+            </svg>
+          </div>
+          <h1>Đang quay lại tab trước</h1>
+          <p class="verify-email-page__copy">
+            Liên kết đã được chuyển sang tab xác thực email bạn đang mở.
+          </p>
+        </div>
       } @else {
-        <p class="verify-email-page__copy">
-          Hãy nhập mã xác thực tại đây hoặc bấm vào liên kết trong email để tiếp tục. Nếu bạn không thấy email, hãy
-          kiểm tra thư mục spam.
-        </p>
+        <app-brand-mark />
+        <h1>Mã xác thực đã được gửi.</h1>
+
+        @if (emailAddress()) {
+          <p class="verify-email-page__copy">
+            Chúng tôi đã gửi email đến <strong>{{ emailAddress() }}</strong>. Hãy nhập mã xác thực tại đây hoặc bấm vào
+            liên kết trong email để tiếp tục. Nếu bạn không thấy email, hãy kiểm tra thư mục spam.
+          </p>
+        } @else {
+          <p class="verify-email-page__copy">
+            Hãy nhập mã xác thực tại đây hoặc bấm vào liên kết trong email để tiếp tục. Nếu bạn không thấy email, hãy
+            kiểm tra thư mục spam.
+          </p>
+        }
       }
     </header>
 
@@ -31,6 +52,18 @@
         <button type="button" class="verify-email-page__primary" (click)="goToLogin()">
           Đến trang đăng nhập
         </button>
+      </section>
+    } @else if (status() === 'handoff' && isClosingHandoffTab()) {
+      <section class="verify-email-page__handoff-state">
+        <div class="verify-email-page__handoff-spinner" aria-hidden="true"></div>
+        <p>Đang đóng tab này...</p>
+      </section>
+    } @else if (status() === 'handoff' && handoffCloseFailed()) {
+      <section class="verify-email-page__handoff-state">
+        <button type="button" class="verify-email-page__primary" (click)="continueInThisTab()">
+          Tiếp tục tại tab này
+        </button>
+        <p>Bạn có thể đóng tab này và tiếp tục ở tab trước.</p>
       </section>
     } @else {
       @if (errorMessage(); as errorMessage) {
@@ -55,36 +88,17 @@
           <span class="verify-email-form__label">Nhập mã OTP</span>
         </div>
 
-        <label class="verify-email-form__otp-shell" aria-label="Nhập mã OTP">
+        <label class="verify-email-form__field verify-email-form__field--otp" aria-label="Nhập mã OTP">
           <input
-            class="verify-email-form__otp-input"
+            class="verify-email-form__otp-field"
             type="text"
             formControlName="otp"
             inputmode="numeric"
             autocomplete="one-time-code"
-            placeholder="Nhập mã 6 số"
+            placeholder="123456"
             maxlength="6"
+            (input)="normalizeOtpInput()"
           />
-
-          <div class="verify-email-form__otp-groups" aria-hidden="true">
-            <div class="verify-email-form__otp-slots">
-              @for (slot of otpSlots().slice(0, 3); track $index) {
-                <span class="verify-email-form__otp-slot">
-                  {{ slot || '' }}
-                </span>
-              }
-            </div>
-
-            <span class="verify-email-form__otp-divider">-</span>
-
-            <div class="verify-email-form__otp-slots">
-              @for (slot of otpSlots().slice(3); track $index) {
-                <span class="verify-email-form__otp-slot">
-                  {{ slot || '' }}
-                </span>
-              }
-            </div>
-          </div>
         </label>
 
         <div class="verify-email-page__mail-actions">

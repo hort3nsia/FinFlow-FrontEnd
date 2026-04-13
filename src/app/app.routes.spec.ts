@@ -5,6 +5,8 @@ describe('app routes', () => {
     const landingRoute = routes.find((route) => route.path === '');
     const loginRoute = routes.find((route) => route.path === 'login');
     const registerRoute = routes.find((route) => route.path === 'register');
+    const forgotPasswordRoute = routes.find((route) => route.path === 'forgot-password');
+    const resetPasswordRoute = routes.find((route) => route.path === 'reset-password');
     const verifyEmailRoute = routes.find((route) => route.path === 'auth/verify-email');
     const appRoute = routes.find((route) => route.path === 'app');
     const wildcardRoute = routes.find((route) => route.path === '**');
@@ -18,6 +20,11 @@ describe('app routes', () => {
 
     expect(registerRoute).toBeDefined();
     expect(registerRoute?.canActivate?.length).toBe(1);
+
+    expect(forgotPasswordRoute).toBeDefined();
+    expect(forgotPasswordRoute?.canActivate?.length).toBe(1);
+
+    expect(resetPasswordRoute).toBeDefined();
 
     expect(verifyEmailRoute).toBeDefined();
     expect(verifyEmailRoute?.canActivate).toBeUndefined();

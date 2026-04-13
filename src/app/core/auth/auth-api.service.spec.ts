@@ -162,6 +162,109 @@ describe('AuthApiService', () => {
     httpTesting.verify();
   });
 
+  it('returns forgot password dispatch metadata', () => {
+    const service = TestBed.inject(AuthApiService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    let result: unknown;
+
+    service.forgotPassword('demo@finflow.local').subscribe((value) => {
+      result = value;
+    });
+
+    const request = httpTesting.expectOne('/graphql');
+    expect(request.request.body.variables.email).toBe('demo@finflow.local');
+
+    request.flush({
+      data: {
+        forgotPassword: {
+          accepted: true,
+          cooldownSeconds: 120,
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      accepted: true,
+      cooldownSeconds: 120,
+    });
+    httpTesting.verify();
+  });
+
+  it('verifies a password reset token through the expected mutation', () => {
+    const service = TestBed.inject(AuthApiService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    let result: boolean | undefined;
+
+    service.verifyPasswordResetToken('reset-token-123').subscribe((value) => {
+      result = value;
+    });
+
+    const request = httpTesting.expectOne('/graphql');
+    expect(request.request.body.variables.token).toBe('reset-token-123');
+
+    request.flush({
+      data: {
+        verifyPasswordResetToken: true,
+      },
+    });
+
+    expect(result).toBe(true);
+    httpTesting.verify();
+  });
+
+  it('resets a password by token through the expected mutation', () => {
+    const service = TestBed.inject(AuthApiService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    let result: boolean | undefined;
+
+    service.resetPasswordByToken('reset-token-123', 'Pass@word2').subscribe((value) => {
+      result = value;
+    });
+
+    const request = httpTesting.expectOne('/graphql');
+    expect(request.request.body.variables.token).toBe('reset-token-123');
+    expect(request.request.body.variables.newPassword).toBe('Pass@word2');
+
+    request.flush({
+      data: {
+        resetPasswordByToken: true,
+      },
+    });
+
+    expect(result).toBe(true);
+    httpTesting.verify();
+  });
+
+  it('resets a password by otp through the expected mutation', () => {
+    const service = TestBed.inject(AuthApiService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    let result: boolean | undefined;
+
+    service.resetPasswordByOtp({
+      email: 'demo@finflow.local',
+      otp: '654321',
+      newPassword: 'Pass@word2',
+    }).subscribe((value) => {
+      result = value;
+    });
+
+    const request = httpTesting.expectOne('/graphql');
+    expect(request.request.body.variables.input).toEqual({
+      email: 'demo@finflow.local',
+      otp: '654321',
+      newPassword: 'Pass@word2',
+    });
+
+    request.flush({
+      data: {
+        resetPasswordByOtp: true,
+      },
+    });
+
+    expect(result).toBe(true);
+    httpTesting.verify();
+  });
+
   it('surfaces graphql errors from a normal response body', () => {
     const service = TestBed.inject(AuthApiService);
     const httpTesting = TestBed.inject(HttpTestingController);

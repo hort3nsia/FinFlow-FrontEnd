@@ -13,6 +13,7 @@ import {
   CurrentWorkspace,
   RegistrationPending,
   VerifyEmailOtpInput,
+  ResetPasswordByOtpInput,
   ChallengeDispatchResponse,
 } from './auth.models';
 
@@ -43,6 +44,22 @@ interface VerifyEmailByOtpMutationResponse {
 
 interface ResendEmailVerificationMutationResponse {
   resendEmailVerification: ChallengeDispatchResponse;
+}
+
+interface ForgotPasswordMutationResponse {
+  forgotPassword: ChallengeDispatchResponse;
+}
+
+interface VerifyPasswordResetTokenMutationResponse {
+  verifyPasswordResetToken: boolean;
+}
+
+interface ResetPasswordByTokenMutationResponse {
+  resetPasswordByToken: boolean;
+}
+
+interface ResetPasswordByOtpMutationResponse {
+  resetPasswordByOtp: boolean;
 }
 
 interface RefreshTokenMutationResponse {
@@ -110,6 +127,33 @@ const RESEND_EMAIL_VERIFICATION_MUTATION = `
       accepted
       cooldownSeconds
     }
+  }
+`;
+
+const FORGOT_PASSWORD_MUTATION = `
+  mutation ForgotPassword($email: String!) {
+    forgotPassword(email: $email) {
+      accepted
+      cooldownSeconds
+    }
+  }
+`;
+
+const VERIFY_PASSWORD_RESET_TOKEN_MUTATION = `
+  mutation VerifyPasswordResetToken($token: String!) {
+    verifyPasswordResetToken(token: $token)
+  }
+`;
+
+const RESET_PASSWORD_BY_TOKEN_MUTATION = `
+  mutation ResetPasswordByToken($token: String!, $newPassword: String!) {
+    resetPasswordByToken(token: $token, newPassword: $newPassword)
+  }
+`;
+
+const RESET_PASSWORD_BY_OTP_MUTATION = `
+  mutation ResetPasswordByOtp($input: ResetPasswordByOtpInput!) {
+    resetPasswordByOtp(input: $input)
   }
 `;
 
@@ -318,6 +362,82 @@ export class AuthApiService {
             throw new Error('ResendEmailVerification response did not include dispatch data.');
           }
           return dispatch;
+        }),
+        catchError((error: unknown) => this.mapTransportError(error)),
+      );
+  }
+
+  forgotPassword(email: string): Observable<ChallengeDispatchResponse> {
+    return this.http
+      .post<GraphQlResponse<ForgotPasswordMutationResponse>>(this.endpoint, {
+        query: FORGOT_PASSWORD_MUTATION,
+        variables: { email },
+      })
+      .pipe(
+        map((response) => {
+          const dispatch = this.extractData(response, 'ForgotPassword response did not include dispatch data.')
+            .forgotPassword;
+          if (!dispatch) {
+            throw new Error('ForgotPassword response did not include dispatch data.');
+          }
+          return dispatch;
+        }),
+        catchError((error: unknown) => this.mapTransportError(error)),
+      );
+  }
+
+  verifyPasswordResetToken(token: string): Observable<boolean> {
+    return this.http
+      .post<GraphQlResponse<VerifyPasswordResetTokenMutationResponse>>(this.endpoint, {
+        query: VERIFY_PASSWORD_RESET_TOKEN_MUTATION,
+        variables: { token },
+      })
+      .pipe(
+        map((response) => {
+          const result = this.extractData(response, 'VerifyPasswordResetToken response did not include a result.')
+            .verifyPasswordResetToken;
+          if (typeof result !== 'boolean') {
+            throw new Error('VerifyPasswordResetToken response did not include a result.');
+          }
+          return result;
+        }),
+        catchError((error: unknown) => this.mapTransportError(error)),
+      );
+  }
+
+  resetPasswordByToken(token: string, newPassword: string): Observable<boolean> {
+    return this.http
+      .post<GraphQlResponse<ResetPasswordByTokenMutationResponse>>(this.endpoint, {
+        query: RESET_PASSWORD_BY_TOKEN_MUTATION,
+        variables: { token, newPassword },
+      })
+      .pipe(
+        map((response) => {
+          const result = this.extractData(response, 'ResetPasswordByToken response did not include a result.')
+            .resetPasswordByToken;
+          if (typeof result !== 'boolean') {
+            throw new Error('ResetPasswordByToken response did not include a result.');
+          }
+          return result;
+        }),
+        catchError((error: unknown) => this.mapTransportError(error)),
+      );
+  }
+
+  resetPasswordByOtp(input: ResetPasswordByOtpInput): Observable<boolean> {
+    return this.http
+      .post<GraphQlResponse<ResetPasswordByOtpMutationResponse>>(this.endpoint, {
+        query: RESET_PASSWORD_BY_OTP_MUTATION,
+        variables: { input },
+      })
+      .pipe(
+        map((response) => {
+          const result = this.extractData(response, 'ResetPasswordByOtp response did not include a result.')
+            .resetPasswordByOtp;
+          if (typeof result !== 'boolean') {
+            throw new Error('ResetPasswordByOtp response did not include a result.');
+          }
+          return result;
         }),
         catchError((error: unknown) => this.mapTransportError(error)),
       );

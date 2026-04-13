@@ -38,6 +38,10 @@ describe('AuthService', () => {
     verifyEmailByToken: vi.fn(),
     verifyEmailByOtp: vi.fn(),
     resendEmailVerification: vi.fn(),
+    forgotPassword: vi.fn(),
+    verifyPasswordResetToken: vi.fn(),
+    resetPasswordByToken: vi.fn(),
+    resetPasswordByOtp: vi.fn(),
     refreshToken: vi.fn(),
     logout: vi.fn(),
     createWorkspace: vi.fn(),
@@ -147,6 +151,75 @@ describe('AuthService', () => {
 
     expect(authApiService.resendEmailVerification).toHaveBeenCalledWith('demo@finflow.local');
     expect(result).toEqual({ accepted: true, cooldownSeconds: 90 });
+  });
+
+  it('requests a forgot password challenge with the supplied email', () => {
+    authApiService.forgotPassword.mockReturnValue(
+      of({ accepted: true, cooldownSeconds: 120 }),
+    );
+
+    const service = TestBed.inject(AuthService);
+    let result: unknown;
+
+    service.forgotPassword('demo@finflow.local').subscribe((value) => {
+      result = value;
+    });
+
+    expect(authApiService.forgotPassword).toHaveBeenCalledWith('demo@finflow.local');
+    expect(result).toEqual({ accepted: true, cooldownSeconds: 120 });
+  });
+
+  it('verifies a password reset token without mutating local session state', () => {
+    authApiService.verifyPasswordResetToken.mockReturnValue(of(true));
+
+    const service = TestBed.inject(AuthService);
+    let result: boolean | undefined;
+
+    service.verifyPasswordResetToken('reset-token-123').subscribe((value) => {
+      result = value;
+    });
+
+    expect(authApiService.verifyPasswordResetToken).toHaveBeenCalledWith('reset-token-123');
+    expect(result).toBe(true);
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  it('resets a password by token without creating a session', () => {
+    authApiService.resetPasswordByToken.mockReturnValue(of(true));
+
+    const service = TestBed.inject(AuthService);
+    let result: boolean | undefined;
+
+    service.resetPasswordByToken('reset-token-123', 'Pass@word2').subscribe((value) => {
+      result = value;
+    });
+
+    expect(authApiService.resetPasswordByToken).toHaveBeenCalledWith('reset-token-123', 'Pass@word2');
+    expect(result).toBe(true);
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  it('resets a password by otp without creating a session', () => {
+    authApiService.resetPasswordByOtp.mockReturnValue(of(true));
+
+    const service = TestBed.inject(AuthService);
+    let result: boolean | undefined;
+
+    service.resetPasswordByOtp({
+      email: 'demo@finflow.local',
+      otp: '654321',
+      newPassword: 'Pass@word2',
+    }).subscribe((value) => {
+      result = value;
+    });
+
+    expect(authApiService.resetPasswordByOtp).toHaveBeenCalledWith({
+      email: 'demo@finflow.local',
+      otp: '654321',
+      newPassword: 'Pass@word2',
+    });
+    expect(result).toBe(true);
+    expect(service.isAuthenticated()).toBe(false);
   });
 
   it('revokes the current refresh token and clears both session layers on logout', () => {
