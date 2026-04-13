@@ -1,0 +1,43 @@
+:host {
+  display: inline-flex;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.brand-mark__glyph {
+  display: grid;
+  place-items: center;
+  inline-size: 2.35rem;
+  block-size: 2.35rem;
+  border-radius: 0.8rem;
+  background:
+    linear-gradient(145deg, rgba(23, 95, 114, 0.95), rgba(13, 43, 53, 0.9)),
+    var(--ff-accent);
+  color: white;
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.brand-mark__copy {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.brand-mark__copy strong {
+  font-family: var(--ff-display);
+  font-size: 0.96rem;
+  letter-spacing: 0.02em;
+}
+
+.brand-mark__copy small {
+  color: var(--ff-muted);
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

@@ -1,0 +1,164 @@
+<section class="verify-email-page">
+  <div class="verify-email-page__frame">
+    <header class="verify-email-page__header">
+      <app-brand-mark />
+      <h1>Mã xác thực đã được gửi.</h1>
+
+      @if (emailAddress()) {
+        <p class="verify-email-page__copy">
+          Chúng tôi đã gửi email đến <strong>{{ emailAddress() }}</strong>. Hãy nhập mã xác thực tại đây hoặc bấm vào
+          liên kết trong email để tiếp tục. Nếu bạn không thấy email, hãy kiểm tra thư mục spam.
+        </p>
+      } @else {
+        <p class="verify-email-page__copy">
+          Hãy nhập mã xác thực tại đây hoặc bấm vào liên kết trong email để tiếp tục. Nếu bạn không thấy email, hãy
+          kiểm tra thư mục spam.
+        </p>
+      }
+    </header>
+
+    @if (status() === 'verifying') {
+      <div class="verify-email-page__notice verify-email-page__notice--verifying">
+        Đang xác thực email của bạn...
+      </div>
+    }
+
+    @if (status() === 'success') {
+      <section class="verify-email-page__success">
+        <p class="verify-email-page__success-mark">Xong</p>
+        <h2>Email đã được xác thực</h2>
+        <p>{{ infoMessage() }}</p>
+        <button type="button" class="verify-email-page__primary" (click)="goToLogin()">
+          Đến trang đăng nhập
+        </button>
+      </section>
+    } @else {
+      @if (errorMessage(); as errorMessage) {
+        <div class="verify-email-page__notice verify-email-page__notice--error" role="alert">
+          {{ errorMessage }}
+        </div>
+      }
+
+      @if (infoMessage(); as infoMessage) {
+        <div class="verify-email-page__notice verify-email-page__notice--info">
+          {{ infoMessage }}
+        </div>
+      }
+
+      <form class="verify-email-form" [formGroup]="otpForm" (ngSubmit)="submitOtp()" novalidate>
+        <label class="verify-email-form__field verify-email-form__field--hidden">
+          <span>Email</span>
+          <input type="email" formControlName="email" placeholder="Nhập email đăng ký" />
+        </label>
+
+        <div class="verify-email-form__lead">
+          <span class="verify-email-form__label">Nhập mã OTP</span>
+        </div>
+
+        <label class="verify-email-form__otp-shell" aria-label="Nhập mã OTP">
+          <input
+            class="verify-email-form__otp-input"
+            type="text"
+            formControlName="otp"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            placeholder="Nhập mã 6 số"
+            maxlength="6"
+          />
+
+          <div class="verify-email-form__otp-groups" aria-hidden="true">
+            <div class="verify-email-form__otp-slots">
+              @for (slot of otpSlots().slice(0, 3); track $index) {
+                <span class="verify-email-form__otp-slot">
+                  {{ slot || '' }}
+                </span>
+              }
+            </div>
+
+            <span class="verify-email-form__otp-divider">-</span>
+
+            <div class="verify-email-form__otp-slots">
+              @for (slot of otpSlots().slice(3); track $index) {
+                <span class="verify-email-form__otp-slot">
+                  {{ slot || '' }}
+                </span>
+              }
+            </div>
+          </div>
+        </label>
+
+        <div class="verify-email-page__mail-actions">
+          <button type="button" class="verify-email-page__mail-button" (click)="openInbox('gmail')">
+            <span class="verify-email-page__mail-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path
+                  d="M4 6.5h16A1.5 1.5 0 0 1 21.5 8v8A1.5 1.5 0 0 1 20 17.5H4A1.5 1.5 0 0 1 2.5 16V8A1.5 1.5 0 0 1 4 6.5Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linejoin="round"
+                  stroke-width="1.6"
+                />
+                <path
+                  d="m4 8 8 5 8-5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.6"
+                />
+              </svg>
+            </span>
+            <span>Mở Gmail</span>
+          </button>
+          <button type="button" class="verify-email-page__mail-button" (click)="openInbox('outlook')">
+            <span class="verify-email-page__mail-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path
+                  d="M9 5.5h10a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 18.5H9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linejoin="round"
+                  stroke-width="1.6"
+                />
+                <path
+                  d="M9 7 3.5 8.2v7.6L9 17Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linejoin="round"
+                  stroke-width="1.6"
+                />
+                <path
+                  d="M10.2 12c0 1.8-1.02 3.2-2.4 3.2-1.37 0-2.4-1.4-2.4-3.2 0-1.8 1.03-3.2 2.4-3.2 1.38 0 2.4 1.4 2.4 3.2Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                />
+              </svg>
+            </span>
+            <span>Mở Outlook</span>
+          </button>
+        </div>
+
+        <button type="submit" class="verify-email-page__primary" [disabled]="isOtpSubmitting()">
+          {{ isOtpSubmitting() ? 'Đang xác thực...' : 'Xác thực bằng OTP' }}
+        </button>
+      </form>
+
+      <div class="verify-email-page__meta">
+        <p class="verify-email-page__footer">
+          Không tìm thấy mã?
+          <button type="button" class="verify-email-page__text-button" (click)="resendVerification()">
+            {{ isResending() ? 'Đang gửi lại...' : 'Gửi lại mã mới' }}
+          </button>
+        </p>
+
+        <p class="verify-email-page__footer">
+          Đã xác thực xong?
+          <a routerLink="/login">Đăng nhập ngay</a>
+        </p>
+
+        <a class="verify-email-page__back-link" routerLink="/">Quay lại trang chủ</a>
+      </div>
+    }
+  </div>
+</section>

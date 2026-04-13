@@ -1,0 +1,71 @@
+<section class="create-workspace-page">
+  <div class="create-workspace-page__panel">
+    <header class="create-workspace-page__header">
+      <app-brand-mark />
+      <div class="create-workspace-page__headline">
+        <p class="create-workspace-page__eyebrow">New workspace</p>
+        <h1>Create the workspace your team will land in.</h1>
+        <p class="create-workspace-page__copy">
+          This becomes the first active workspace for your account. You can add
+          more later for other teams, clients, or business units.
+        </p>
+      </div>
+    </header>
+
+    @if (errorMessage()) {
+      <div class="create-workspace-page__error" role="alert">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <form class="create-workspace-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label class="create-workspace-form__field">
+        <span>Workspace name</span>
+        <input
+          type="text"
+          formControlName="name"
+          placeholder="e.g. FinFlow Operations"
+        />
+      </label>
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <p class="create-workspace-form__error">
+          Workspace name must be at least 2 characters.
+        </p>
+      }
+
+      <label class="create-workspace-form__field">
+        <span>Workspace URL</span>
+        <div class="create-workspace-form__slug">
+          <span>finflow.app/</span>
+          <input
+            type="text"
+            formControlName="tenantCode"
+            placeholder="finflow-ops"
+          />
+        </div>
+      </label>
+      @if (form.controls.tenantCode.invalid && form.controls.tenantCode.touched) {
+        <p class="create-workspace-form__error">
+          Use lowercase letters, numbers, and dashes only.
+        </p>
+      }
+
+      <label class="create-workspace-form__field">
+        <span>Currency</span>
+        <select formControlName="currency">
+          <option value="VND">VND - Vietnamese Dong</option>
+          <option value="USD">USD - US Dollar</option>
+          <option value="EUR">EUR - Euro</option>
+        </select>
+      </label>
+
+      <button
+        type="submit"
+        class="create-workspace-form__submit"
+        [disabled]="isSubmitting()"
+      >
+        {{ isSubmitting() ? 'Creating workspace...' : 'Create workspace' }}
+      </button>
+    </form>
+  </div>
+</section>

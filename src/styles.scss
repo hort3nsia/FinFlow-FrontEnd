@@ -1,0 +1,89 @@
+@use "./app/features/marketing/pages/landing-page.component";
+
+:root {
+  color-scheme: light;
+  --ff-display: "Segoe UI", "Avenir Next", "Helvetica Neue", sans-serif;
+  --ff-body: "Segoe UI", "Avenir", sans-serif;
+  --ff-background: #f5f8ff;
+  --ff-surface: rgba(255, 255, 255, 0.8);
+  --ff-surface-strong: #ffffff;
+  --ff-border: rgba(31, 54, 120, 0.1);
+  --ff-border-strong: rgba(31, 54, 120, 0.18);
+  --ff-text: #14213f;
+  --ff-muted: #66718f;
+  --ff-accent: #2f51b4;
+  --ff-accent-strong: #15338f;
+  --ff-danger: #d15a53;
+  --ff-shadow: 0 24px 60px rgba(31, 54, 120, 0.12);
+  --ff-radius-lg: 1.6rem;
+  --ff-radius-md: 1.1rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--ff-body);
+  color: var(--ff-text);
+  background:
+    radial-gradient(circle at top left, rgba(120, 175, 255, 0.16), transparent 28rem),
+    radial-gradient(circle at bottom right, rgba(47, 81, 180, 0.12), transparent 24rem),
+    linear-gradient(180deg, #fbfdff 0%, #f2f6ff 50%, #ecf2ff 100%);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--ff-display);
+  line-height: 1.05;
+}
+
+p {
+  color: var(--ff-muted);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--ff-accent-strong);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(47, 81, 180, 0.32);
+  outline-offset: 3px;
+}
+
+code {
+  font-family: "Cascadia Code", "Consolas", monospace;
+}

@@ -1,0 +1,299 @@
+<section class="landing-page">
+  <div class="site-banner">
+    <span>Dành cho đội ngũ tài chính cần xử lý chứng từ, phê duyệt và vận hành rõ ràng hơn.</span>
+    <a routerLink="/register">Dùng thử miễn phí</a>
+  </div>
+
+  <header class="site-header">
+    <a class="site-header__brand" routerLink="/" aria-label="FinFlow home">
+      <app-brand-mark />
+    </a>
+
+    <nav class="site-header__nav" aria-label="Primary">
+      <a href="#features">Tính năng</a>
+      <a href="#solutions">Quy trình</a>
+      <a href="#pricing">Bảng giá</a>
+      <a href="#resources">Tài liệu</a>
+    </nav>
+
+    <div class="site-header__actions">
+      <a routerLink="/login" class="site-header__link">Đăng nhập</a>
+      <a routerLink="/login" class="site-header__button site-header__button--ghost">Liên hệ</a>
+      <a routerLink="/register" class="site-header__button">Dùng thử miễn phí</a>
+      <button
+        type="button"
+        class="site-header__menu-toggle"
+        [attr.aria-expanded]="isMenuOpen()"
+        aria-controls="marketing-mobile-nav"
+        data-testid="landing-menu-toggle"
+        (click)="toggleMenu()"
+      >
+        Menu
+      </button>
+    </div>
+  </header>
+
+  @if (isMenuOpen()) {
+    <div
+      id="marketing-mobile-nav"
+      class="mobile-nav"
+      data-testid="landing-mobile-nav"
+    >
+      <a href="#features" (click)="closeMenu()">Tính năng</a>
+      <a href="#solutions" (click)="closeMenu()">Quy trình</a>
+      <a href="#pricing" (click)="closeMenu()">Bảng giá</a>
+      <a href="#resources" (click)="closeMenu()">Tài liệu</a>
+      <a routerLink="/login" (click)="closeMenu()">Đăng nhập</a>
+      <a routerLink="/login" (click)="closeMenu()">Liên hệ</a>
+      <a routerLink="/register" class="mobile-nav__primary" (click)="closeMenu()">Dùng thử miễn phí</a>
+    </div>
+  }
+
+  <main>
+    <section class="hero">
+      <div class="hero__copy">
+        <p class="hero__eyebrow">Vận hành tài chính hiện đại</p>
+        <h1>Một nền tảng rõ ràng hơn cho đội ngũ tài chính</h1>
+        <p class="hero__lede">
+          Số hóa chứng từ, kiểm soát phê duyệt và làm việc đúng workspace trên một nền tảng dành cho doanh nghiệp đang tăng trưởng.
+        </p>
+
+        <div class="hero__actions">
+          <a routerLink="/register" class="hero__button hero__button--primary">Dùng thử miễn phí</a>
+          <a routerLink="/login" class="hero__button hero__button--secondary">Đăng nhập</a>
+        </div>
+
+        <div class="hero__trust" aria-label="Trusted by">
+          <span>Dành cho đội ngũ tài chính cần xử lý nhanh và kiểm soát rõ</span>
+          <div class="hero__logos">
+            <span>Bộ phận tài chính</span>
+            <span>Kế toán nội bộ</span>
+            <span>Quản lý chi phí</span>
+            <span>Phê duyệt đa cấp</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero__stage" aria-hidden="true">
+        <div class="workflow-stage">
+          <div class="workflow-stage__header">
+            <div>
+              <p class="stage-label">Workflow vận hành</p>
+              <h2 data-testid="active-scenario-title">
+                Từ đăng nhập đến xử lý tài chính trong đúng workspace
+              </h2>
+            </div>
+            <div class="stage-badge">Đúng vai trò</div>
+          </div>
+
+          <div class="workflow-stage__flow">
+            <article class="workflow-step">
+              <span class="workflow-step__number">01</span>
+              <p class="workflow-step__eyebrow">Tài khoản</p>
+              <h3>Đăng nhập một lần</h3>
+              <p>Vào đúng workspace theo quyền đã được cấp.</p>
+            </article>
+
+            <article class="workflow-step">
+              <span class="workflow-step__number">02</span>
+              <p class="workflow-step__eyebrow">Workspace</p>
+              <h3>Vào đúng workspace</h3>
+              <p>Mỗi đội ngũ có một không gian làm việc riêng.</p>
+            </article>
+
+            <article class="workflow-step">
+              <span class="workflow-step__number">03</span>
+              <p class="workflow-step__eyebrow">Xử lý chứng từ</p>
+              <h3>Xử lý chứng từ nhanh hơn</h3>
+              <p>Giảm nhập tay và chuẩn bị sẵn dữ liệu cho phê duyệt.</p>
+            </article>
+
+            <article class="workflow-step workflow-step--featured">
+              <span class="workflow-step__number">04</span>
+              <p class="workflow-step__eyebrow">Phê duyệt</p>
+              <h3>Phê duyệt đúng vai trò</h3>
+              <p>Quyền hạn và quyết định luôn gắn với đúng workspace.</p>
+            </article>
+          </div>
+
+          <div class="workflow-stage__support">
+            <article class="workflow-support-card">
+              <div class="workflow-support-card__icon" aria-hidden="true">01</div>
+              <div class="workflow-support-card__body">
+                <p class="stage-label">AI OCR</p>
+                <strong>Bóc tách dữ liệu chứng từ</strong>
+                <span>Tự động nhận diện trường quan trọng để kiểm tra và chuyển bước nhanh hơn.</span>
+              </div>
+            </article>
+            <article class="workflow-support-card workflow-support-card--accent">
+              <div class="workflow-support-card__icon" aria-hidden="true">02</div>
+              <div class="workflow-support-card__body">
+                <p class="stage-label">Trợ lý AI</p>
+                <strong>Tra cứu nhanh trên dữ liệu đang làm việc</strong>
+                <span>Đặt câu hỏi và tìm thông tin mà không phải rời khỏi màn hình hiện tại.</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="proof-section">
+      <div class="section-heading section-heading--centered">
+        <p>Giải pháp cốt lõi</p>
+        <h2>Những gì đội ngũ tài chính cần để vận hành gọn hơn</h2>
+        <div class="solution-tabs" aria-hidden="true">
+          <span class="solution-tabs__item solution-tabs__item--active">Chi phí</span>
+          <span class="solution-tabs__item">Phê duyệt</span>
+          <span class="solution-tabs__item">Trợ lý AI</span>
+          <span class="solution-tabs__item">Workspace</span>
+        </div>
+      </div>
+
+      <div class="proof-grid">
+        <article>
+          <span>01</span>
+          <h3>Tự động xử lý chứng từ đầu vào</h3>
+          <p>AI OCR giúp giảm nhập tay và tăng tốc xử lý.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Phê duyệt rõ ràng theo chính sách</h3>
+          <p>Thiết lập luồng phê duyệt theo từng khoản chi và bộ phận.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Trợ lý AI trong ngữ cảnh tài chính</h3>
+          <p>Đặt câu hỏi và tra cứu mà không cần rời khỏi workspace.</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>Vận hành trong đúng workspace</h3>
+          <p>Mỗi đội ngũ làm việc riêng nhưng vẫn giữ kiểm soát thống nhất.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="solutions" class="collaboration-section">
+      <div class="section-heading section-heading--centered collaboration-section__heading">
+        <p>Kết quả rõ ràng</p>
+        <h2>Phối hợp nhanh hơn trên cùng một workflow</h2>
+        <p class="collaboration-section__lede">
+          Chứng từ, phê duyệt và dữ liệu làm việc được đặt trong cùng một luồng xử lý để đội ngũ phối hợp nhanh và kiểm soát rõ hơn.
+        </p>
+      </div>
+
+      <div class="collaboration-rail">
+        <article class="collaboration-rail__item collaboration-rail__item--featured">
+          <p class="stage-label">Workspace rõ ràng</p>
+          <h3>Mỗi bộ phận có một workspace riêng để phối hợp.</h3>
+          <p>Chứng từ và phê duyệt được đặt trong cùng một workflow làm việc.</p>
+          <span class="collaboration-rail__meta">Vai trò rõ ràng. Quyền hạn rõ ràng.</span>
+        </article>
+
+        <article class="collaboration-rail__item">
+          <p class="stage-label">Tăng năng suất</p>
+          <h3>Giảm thời gian xử lý các tác vụ lặp lại.</h3>
+          <p>Nhập liệu, kiểm tra và chuyển tiếp được gom về một luồng xử lý.</p>
+          <span class="collaboration-rail__meta">Ít thao tác hơn. Bàn giao nhanh hơn.</span>
+        </article>
+
+        <article class="collaboration-rail__item">
+          <p class="stage-label">Kiểm soát tốt hơn</p>
+          <h3>Dữ liệu, phê duyệt và phân quyền luôn đi cùng nhau.</h3>
+          <p>Mỗi thao tác đều gắn với đúng vai trò và đúng phạm vi làm việc.</p>
+          <span class="collaboration-rail__meta">Dễ mở rộng khi đội ngũ vận hành tăng lên.</span>
+        </article>
+      </div>
+    </section>
+
+    <section id="pricing" class="pricing-section">
+      <div class="section-heading section-heading--centered">
+        <p>Bảng giá linh hoạt</p>
+        <h2>Bảng giá cho từng giai đoạn phát triển</h2>
+        <p class="pricing-section__lede">
+          Chọn gói phù hợp với quy mô hiện tại và nâng cấp khi nhu cầu vận hành tăng lên.
+        </p>
+      </div>
+
+      <div class="pricing-grid">
+        <article class="pricing-card pricing-card--starter">
+          <p class="pricing-card__tier">Miễn phí</p>
+          <h3>0đ<span>/tháng</span></h3>
+          <p class="pricing-card__subcopy">Dành cho nhóm nhỏ bắt đầu số hóa.</p>
+          <ul>
+            <li>Tối đa 3 người dùng</li>
+            <li>Xử lý chứng từ cơ bản</li>
+            <li>Workspace mặc định</li>
+            <li>Báo cáo tổng quan</li>
+          </ul>
+          <a routerLink="/register" class="pricing-card__action">Dùng thử miễn phí</a>
+        </article>
+
+        <article class="pricing-card pricing-card--featured">
+          <p class="pricing-card__tier">Chuyên nghiệp</p>
+          <h3>249.000đ<span>/tháng</span></h3>
+          <p class="pricing-card__subcopy">Dành cho đội ngũ cần kiểm soát và tự động hóa tốt hơn.</p>
+          <ul>
+            <li>Tối đa 20 người dùng</li>
+            <li>AI OCR và trợ lý AI</li>
+            <li>Phê duyệt theo workflow</li>
+            <li>Kiểm soát theo workspace</li>
+            <li>Ưu tiên hỗ trợ</li>
+          </ul>
+          <a routerLink="/register" class="pricing-card__action">Bắt đầu ngay</a>
+        </article>
+
+        <article class="pricing-card pricing-card--enterprise">
+          <p class="pricing-card__tier">Doanh nghiệp</p>
+          <h3>Liên hệ</h3>
+          <p class="pricing-card__subcopy">Dành cho tổ chức cần hạ tầng và hỗ trợ chuyên sâu.</p>
+          <ul>
+            <li>Không giới hạn người dùng</li>
+            <li>Hạ tầng riêng theo nhu cầu</li>
+            <li>Nhật ký và kiểm soát nâng cao</li>
+            <li>Hỗ trợ triển khai chuyên biệt</li>
+          </ul>
+          <a routerLink="/login" class="pricing-card__action">Liên hệ tư vấn</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing-cta">
+      <div>
+        <p class="stage-label">Sẵn sàng bắt đầu?</p>
+        <h2>Đưa chứng từ, phê duyệt và vận hành tài chính về cùng một nền tảng.</h2>
+      </div>
+      <div class="closing-cta__actions">
+        <a routerLink="/register" class="hero__button hero__button--primary">Dùng thử miễn phí</a>
+        <a routerLink="/login" class="hero__button hero__button--secondary">Đăng nhập</a>
+      </div>
+    </section>
+  </main>
+
+  <footer id="resources" class="site-footer">
+    <div>
+      <strong>FinFlow</strong>
+      <p>Nền tảng vận hành tài chính hiện đại cho doanh nghiệp đang tăng trưởng.</p>
+    </div>
+    <div>
+      <strong>Sản phẩm</strong>
+      <a href="#features">Tính năng</a>
+      <a href="#pricing">Bảng giá</a>
+      <a href="#solutions">Quy trình</a>
+      <a routerLink="/register">Dùng thử miễn phí</a>
+    </div>
+    <div>
+      <strong>Doanh nghiệp</strong>
+      <a routerLink="/login">Đăng nhập</a>
+      <a routerLink="/login">Liên hệ</a>
+      <a href="#resources">Tài liệu</a>
+    </div>
+    <div>
+      <strong>Tài nguyên</strong>
+      <a href="#resources">Blog</a>
+      <a href="#resources">Tài liệu</a>
+      <a href="#resources">Hỗ trợ</a>
+    </div>
+  </footer>
+</section>

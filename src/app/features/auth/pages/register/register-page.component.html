@@ -1,0 +1,262 @@
+<section class="register-page">
+  <div class="register-page__shell">
+    <aside class="register-page__rail" aria-labelledby="register-rail-heading">
+      <a class="register-page__back-link" routerLink="/">Quay lại trang chủ</a>
+
+      <div class="register-page__brand">
+        <app-brand-mark />
+      </div>
+
+      <div class="register-page__rail-copy">
+        <h1 id="register-rail-heading">
+          Tạo tài khoản để bắt đầu làm việc trên FinFlow.
+        </h1>
+        <p class="register-page__copy">
+          Đăng ký một lần để truy cập workspace, xác thực email và tiếp tục với quy trình tài chính của bạn.
+        </p>
+      </div>
+
+      <ul class="register-page__points" aria-label="Lợi ích chính">
+        <li>Xác thực email an toàn ngay sau khi đăng ký</li>
+        <li>Quản lý phê duyệt và chứng từ trong cùng một luồng</li>
+        <li>Sẵn sàng kết nối đúng workspace của doanh nghiệp</li>
+      </ul>
+    </aside>
+
+    <div class="register-page__panel">
+      <div class="register-page__panel-copy">
+        <p class="register-page__eyebrow">Đăng ký</p>
+        <h2>Tạo tài khoản</h2>
+        <p class="register-page__copy">
+          Điền thông tin của bạn để bắt đầu. Chúng tôi sẽ gửi email xác thực ngay sau bước này.
+        </p>
+      </div>
+
+      <form class="register-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <label class="register-form__field">
+          <span>Họ và tên</span>
+          <input
+            type="text"
+            formControlName="name"
+            autocomplete="name"
+            placeholder="Nhập họ và tên"
+            [attr.aria-invalid]="
+              form.controls.name.invalid && form.controls.name.touched ? 'true' : 'false'
+            "
+            [attr.aria-describedby]="
+              form.controls.name.invalid && form.controls.name.touched
+                ? 'register-name-error'
+                : null
+            "
+          />
+        </label>
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <p class="register-form__error" id="register-name-error">
+            {{
+              form.controls.name.hasError('required')
+                ? 'Họ và tên là bắt buộc.'
+                : 'Họ và tên phải có ít nhất 2 ký tự.'
+            }}
+          </p>
+        }
+
+        <label class="register-form__field">
+          <span>Email</span>
+          <input
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="Nhập địa chỉ email"
+            [attr.aria-invalid]="
+              form.controls.email.invalid && form.controls.email.touched ? 'true' : 'false'
+            "
+            [attr.aria-describedby]="
+              form.controls.email.invalid && form.controls.email.touched
+                ? 'register-email-error'
+                : null
+            "
+          />
+        </label>
+        @if (form.controls.email.invalid && form.controls.email.touched) {
+          <p class="register-form__error" id="register-email-error">
+            {{
+              form.controls.email.hasError('required')
+                ? 'Email là bắt buộc.'
+                : 'Vui lòng nhập đúng định dạng email.'
+            }}
+          </p>
+        }
+
+        <label class="register-form__field">
+          <span>Mật khẩu</span>
+          <div class="register-form__password-field">
+            <input
+              [type]="isPasswordVisible() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="new-password"
+              placeholder="Tạo mật khẩu"
+              [attr.aria-invalid]="
+                form.controls.password.invalid && form.controls.password.touched ? 'true' : 'false'
+              "
+              [attr.aria-describedby]="
+                form.controls.password.invalid && form.controls.password.touched
+                  ? 'register-password-error'
+                  : null
+              "
+            />
+            <button
+              type="button"
+              class="register-form__password-toggle"
+              [attr.aria-label]="isPasswordVisible() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
+              [attr.aria-pressed]="isPasswordVisible()"
+              (click)="togglePasswordVisibility()"
+            >
+              @if (isPasswordVisible()) {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M3 3l18 18M10.6 10.6a2 2 0 102.8 2.8M9.9 5.2A10.9 10.9 0 0112 5c5 0 8.3 3.4 9.5 5-1 1.4-3.6 4.2-7.4 4.8M6.7 6.7C4.8 7.8 3.5 9.3 2.5 10 3.7 11.6 7 15 12 15c1 0 2-.1 2.8-.4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.8"
+                  />
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M2.5 12S5.8 7 12 7s9.5 5 9.5 5-3.3 5-9.5 5S2.5 12 2.5 12z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.8"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="2.7"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  />
+                </svg>
+              }
+            </button>
+          </div>
+        </label>
+        @if (form.controls.password.invalid && form.controls.password.touched) {
+          <p class="register-form__error" id="register-password-error">
+            {{
+              form.controls.password.hasError('required')
+                ? 'Mật khẩu là bắt buộc.'
+                : 'Mật khẩu phải có ít nhất 8 ký tự.'
+            }}
+          </p>
+        }
+
+        <label class="register-form__field">
+          <span>Xác nhận mật khẩu</span>
+          <div class="register-form__password-field">
+            <input
+              [type]="isConfirmPasswordVisible() ? 'text' : 'password'"
+              formControlName="confirmPassword"
+              autocomplete="new-password"
+              placeholder="Nhập lại mật khẩu"
+              [attr.aria-invalid]="
+                (
+                  form.controls.confirmPassword.invalid && form.controls.confirmPassword.touched
+                ) || (
+                  form.hasError('passwordMismatch') &&
+                  form.controls.confirmPassword.touched
+                )
+                  ? 'true'
+                  : 'false'
+              "
+              [attr.aria-describedby]="
+                (
+                  form.controls.confirmPassword.invalid && form.controls.confirmPassword.touched
+                ) || (
+                  form.hasError('passwordMismatch') &&
+                  form.controls.confirmPassword.touched
+                )
+                  ? 'register-confirm-password-error'
+                  : null
+              "
+            />
+            <button
+              type="button"
+              class="register-form__password-toggle"
+              [attr.aria-label]="isConfirmPasswordVisible() ? 'Ẩn xác nhận mật khẩu' : 'Hiện xác nhận mật khẩu'"
+              [attr.aria-pressed]="isConfirmPasswordVisible()"
+              (click)="toggleConfirmPasswordVisibility()"
+            >
+              @if (isConfirmPasswordVisible()) {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M3 3l18 18M10.6 10.6a2 2 0 102.8 2.8M9.9 5.2A10.9 10.9 0 0112 5c5 0 8.3 3.4 9.5 5-1 1.4-3.6 4.2-7.4 4.8M6.7 6.7C4.8 7.8 3.5 9.3 2.5 10 3.7 11.6 7 15 12 15c1 0 2-.1 2.8-.4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.8"
+                  />
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M2.5 12S5.8 7 12 7s9.5 5 9.5 5-3.3 5-9.5 5S2.5 12 2.5 12z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.8"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="2.7"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  />
+                </svg>
+              }
+            </button>
+          </div>
+        </label>
+        @if (
+          (form.controls.confirmPassword.invalid && form.controls.confirmPassword.touched) ||
+          (form.hasError('passwordMismatch') && form.controls.confirmPassword.touched)
+        ) {
+          <p class="register-form__error" id="register-confirm-password-error">
+            {{
+              form.controls.confirmPassword.hasError('required')
+                ? 'Vui lòng xác nhận lại mật khẩu.'
+                : 'Mật khẩu xác nhận không khớp.'
+            }}
+          </p>
+        }
+
+        <p class="register-form__hint">
+          Sau khi tạo tài khoản, bạn sẽ được chuyển sang bước xác thực email.
+        </p>
+
+        @if (errorMessage(); as errorMessage) {
+          <p class="register-form__error register-form__error--banner" role="alert">
+            {{ errorMessage }}
+          </p>
+        }
+
+        <button type="submit" class="register-form__submit" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Đang tạo tài khoản...' : 'Tạo tài khoản' }}
+        </button>
+      </form>
+
+      <p class="register-page__footer">
+        Đã có tài khoản?
+        <a routerLink="/login">Đăng nhập</a>
+      </p>
+    </div>
+  </div>
+</section>

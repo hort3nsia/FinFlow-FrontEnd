@@ -1,0 +1,36 @@
+.not-found-page {
+  min-height: 100dvh;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.not-found-page__eyebrow {
+  margin: 0;
+  color: var(--ff-accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.not-found-page p:last-of-type {
+  max-width: 34rem;
+}
+
+.not-found-page__actions {
+  display: flex;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.not-found-page__actions a {
+  border-radius: 999px;
+  background: var(--ff-surface-strong);
+  padding: 0.85rem 1.1rem;
+  text-decoration: none;
+}

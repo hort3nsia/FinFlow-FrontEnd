@@ -1,0 +1,108 @@
+<section class="workspace-hub">
+  <div class="workspace-hub__panel">
+    <header class="workspace-hub__header">
+      <app-brand-mark />
+      <div class="workspace-hub__headline">
+        <p class="workspace-hub__eyebrow">Workspace access</p>
+        <h1>Choose where you want to work today.</h1>
+        <p class="workspace-hub__copy">
+          Your account is ready. Pick a workspace to continue, or create a new one
+          to start fresh.
+        </p>
+      </div>
+    </header>
+
+    @if (errorMessage(); as errorMessage) {
+      <div class="workspace-hub__banner" role="alert">
+        <div>
+          <strong>We couldn't finish that action.</strong>
+          <p>{{ errorMessage }}</p>
+        </div>
+
+        @if (!isSwitching()) {
+          <button
+            type="button"
+            class="workspace-hub__banner-action"
+            data-testid="retry-load-workspaces"
+            (click)="retryLoadWorkspaces()"
+          >
+            Retry
+          </button>
+        }
+      </div>
+    }
+
+    @if (isLoading()) {
+      <div class="workspace-hub__loading">
+        <div class="workspace-hub__pulse"></div>
+        <p>Loading your workspaces...</p>
+      </div>
+    } @else if (workspaces().length === 0) {
+      <section class="workspace-hub__empty">
+        <div class="workspace-hub__empty-mark">+</div>
+        <h2>Create your first workspace</h2>
+        <p>
+          You have an account, but no active workspace yet. Create one to invite
+          teammates and start working.
+        </p>
+        <button
+          type="button"
+          class="workspace-hub__primary"
+          data-testid="create-workspace-cta"
+          (click)="createNewWorkspace()"
+        >
+          Create workspace
+        </button>
+      </section>
+    } @else {
+      <section class="workspace-hub__list-shell">
+        <div class="workspace-hub__list-head">
+          <h2>Your workspaces</h2>
+          <p>Select one workspace to enter the app.</p>
+        </div>
+
+        <div class="workspace-hub__list">
+          @for (workspace of workspaces(); track workspace.membershipId) {
+            <button
+              type="button"
+              class="workspace-hub__row"
+              [attr.data-testid]="'workspace-row-' + workspace.membershipId"
+              [disabled]="isSwitching() === workspace.membershipId"
+              (click)="selectWorkspace(workspace.membershipId)"
+            >
+              <span class="workspace-hub__avatar">
+                {{ workspace.tenantName.charAt(0).toUpperCase() }}
+              </span>
+
+              <span class="workspace-hub__identity">
+                <strong>{{ workspace.tenantName }}</strong>
+                <span>#{{ workspace.tenantCode }}</span>
+              </span>
+
+              <span class="workspace-hub__meta">
+                <span class="workspace-hub__role">{{ workspace.role }}</span>
+                @if (isSwitching() === workspace.membershipId) {
+                  <span class="workspace-hub__status">Switching...</span>
+                } @else {
+                  <span class="workspace-hub__status">Open workspace</span>
+                }
+              </span>
+            </button>
+          }
+        </div>
+      </section>
+
+      <footer class="workspace-hub__footer">
+        <p>Need a separate environment for another team or client?</p>
+        <button
+          type="button"
+          class="workspace-hub__secondary"
+          data-testid="create-workspace-cta"
+          (click)="createNewWorkspace()"
+        >
+          Create workspace
+        </button>
+      </footer>
+    }
+  </div>
+</section>
