@@ -71,7 +71,11 @@ interface LogoutMutationResponse {
 }
 
 interface CreateSharedTenantMutationResponse {
-  createSharedTenant: WorkspaceSession;
+  createWorkspace: WorkspaceGraphQlSession;
+}
+
+interface SelectWorkspaceMutationResponse {
+  selectWorkspace: WorkspaceGraphQlSession;
 }
 
 interface SwitchWorkspaceMutationResponse {
@@ -84,6 +88,17 @@ interface MyWorkspacesQueryResponse {
 
 interface CurrentWorkspaceQueryResponse {
   currentWorkspace: CurrentWorkspace;
+}
+
+interface WorkspaceGraphQlSession {
+  accessToken: string;
+  refreshToken: string;
+  accountId: string;
+  membershipId: string;
+  email: string;
+  role: string;
+  tenantId: string;
+  sessionKind: 'workspace';
 }
 
 const LOGIN_MUTATION = `
@@ -178,16 +193,16 @@ const LOGOUT_MUTATION = `
   }
 `;
 
-const CREATE_SHARED_TENANT_MUTATION = `
-  mutation CreateSharedTenant($input: CreateSharedTenantInput!) {
-    createSharedTenant(input: $input) {
+const CREATE_WORKSPACE_MUTATION = `
+  mutation CreateWorkspace($input: CreateSharedTenantInput!) {
+    createWorkspace(input: $input) {
       accessToken
       refreshToken
-      id
+      accountId
       membershipId
       email
       role
-      idTenant
+      tenantId
       sessionKind
     }
   }
@@ -203,6 +218,21 @@ const SWITCH_WORKSPACE_MUTATION = `
       email
       role
       idTenant
+      sessionKind
+    }
+  }
+`;
+
+const SELECT_WORKSPACE_MUTATION = `
+  mutation SelectWorkspace($input: SelectWorkspaceInput!) {
+    selectWorkspace(input: $input) {
+      accessToken
+      refreshToken
+      accountId
+      membershipId
+      email
+      role
+      tenantId
       sessionKind
     }
   }
@@ -236,6 +266,17 @@ const CURRENT_WORKSPACE_QUERY = `
 `;
 
 const extractGraphQlMessage = (errors?: GraphQlError[]): string | null => errors?.[0]?.message ?? null;
+
+const mapWorkspaceGraphQlSession = (session: WorkspaceGraphQlSession): WorkspaceSession => ({
+  accessToken: session.accessToken,
+  refreshToken: session.refreshToken,
+  id: session.accountId,
+  membershipId: session.membershipId,
+  email: session.email,
+  role: session.role,
+  idTenant: session.tenantId,
+  sessionKind: session.sessionKind,
+});
 
 @Injectable({
   providedIn: 'root',
@@ -484,17 +525,17 @@ export class AuthApiService {
   createWorkspace(input: CreateWorkspaceInput): Observable<WorkspaceSession> {
     return this.http
       .post<GraphQlResponse<CreateSharedTenantMutationResponse>>(this.endpoint, {
-        query: CREATE_SHARED_TENANT_MUTATION,
+        query: CREATE_WORKSPACE_MUTATION,
         variables: { input },
       })
       .pipe(
         map((response) => {
           const session = this.extractData(response, 'CreateWorkspace response did not include session data.')
-            .createSharedTenant;
+            .createWorkspace;
           if (!session) {
             throw new Error('CreateWorkspace response did not include session data.');
           }
-          return session;
+          return mapWorkspaceGraphQlSession(session);
         }),
         catchError((error: unknown) => this.mapTransportError(error)),
       );
@@ -514,6 +555,25 @@ export class AuthApiService {
             throw new Error('SwitchWorkspace response did not include session data.');
           }
           return session;
+        }),
+        catchError((error: unknown) => this.mapTransportError(error)),
+      );
+  }
+
+  selectWorkspace(membershipId: string): Observable<WorkspaceSession> {
+    return this.http
+      .post<GraphQlResponse<SelectWorkspaceMutationResponse>>(this.endpoint, {
+        query: SELECT_WORKSPACE_MUTATION,
+        variables: { input: { membershipId } },
+      })
+      .pipe(
+        map((response) => {
+          const session = this.extractData(response, 'SelectWorkspace response did not include session data.')
+            .selectWorkspace;
+          if (!session) {
+            throw new Error('SelectWorkspace response did not include session data.');
+          }
+          return mapWorkspaceGraphQlSession(session);
         }),
         catchError((error: unknown) => this.mapTransportError(error)),
       );

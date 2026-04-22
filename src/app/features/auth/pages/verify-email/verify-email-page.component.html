@@ -79,17 +79,19 @@
       }
 
       <form class="verify-email-form" [formGroup]="otpForm" (ngSubmit)="submitOtp()" novalidate>
-        <label class="verify-email-form__field verify-email-form__field--hidden">
-          <span>Email</span>
-          <input type="email" formControlName="email" placeholder="Nhập email đăng ký" />
-        </label>
+        <div class="verify-email-form__field verify-email-form__field--hidden">
+          <label for="verify-email-email"><span>Email</span></label>
+          <input id="verify-email-email" type="email" formControlName="email" placeholder="Nhập email đăng ký" />
+        </div>
 
         <div class="verify-email-form__lead">
           <span class="verify-email-form__label">Nhập mã OTP</span>
         </div>
 
-        <label class="verify-email-form__field verify-email-form__field--otp" aria-label="Nhập mã OTP">
+        <div class="verify-email-form__field verify-email-form__field--otp">
+          <label class="visually-hidden" for="verify-email-otp">Nhập mã OTP</label>
           <input
+            id="verify-email-otp"
             class="verify-email-form__otp-field"
             type="text"
             formControlName="otp"
@@ -99,7 +101,7 @@
             maxlength="6"
             (input)="normalizeOtpInput()"
           />
-        </label>
+        </div>
 
         <div class="verify-email-page__mail-actions">
           <button type="button" class="verify-email-page__mail-button" (click)="openInbox('gmail')">

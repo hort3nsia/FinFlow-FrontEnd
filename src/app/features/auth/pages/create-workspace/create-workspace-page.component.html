@@ -19,45 +19,47 @@
     }
 
     <form class="create-workspace-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <label class="create-workspace-form__field">
-        <span>Workspace name</span>
+      <div class="create-workspace-form__field">
+        <label for="create-workspace-name"><span>Workspace name</span></label>
         <input
+          id="create-workspace-name"
           type="text"
           formControlName="name"
           placeholder="e.g. FinFlow Operations"
         />
-      </label>
+      </div>
       @if (form.controls.name.invalid && form.controls.name.touched) {
         <p class="create-workspace-form__error">
           Workspace name must be at least 2 characters.
         </p>
       }
 
-      <label class="create-workspace-form__field">
-        <span>Workspace URL</span>
+      <div class="create-workspace-form__field">
+        <label for="create-workspace-tenant-code"><span>Workspace URL</span></label>
         <div class="create-workspace-form__slug">
           <span>finflow.app/</span>
           <input
+            id="create-workspace-tenant-code"
             type="text"
             formControlName="tenantCode"
             placeholder="finflow-ops"
           />
         </div>
-      </label>
+      </div>
       @if (form.controls.tenantCode.invalid && form.controls.tenantCode.touched) {
         <p class="create-workspace-form__error">
           Use lowercase letters, numbers, and dashes only.
         </p>
       }
 
-      <label class="create-workspace-form__field">
-        <span>Currency</span>
-        <select formControlName="currency">
+      <div class="create-workspace-form__field">
+        <label for="create-workspace-currency"><span>Currency</span></label>
+        <select id="create-workspace-currency" formControlName="currency">
           <option value="VND">VND - Vietnamese Dong</option>
           <option value="USD">USD - US Dollar</option>
           <option value="EUR">EUR - Euro</option>
         </select>
-      </label>
+      </div>
 
       <button
         type="submit"

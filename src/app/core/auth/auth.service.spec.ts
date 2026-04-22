@@ -4,6 +4,7 @@ import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthApiService } from './auth-api.service';
 import { AuthService } from './auth.service';
+import { WorkspaceInfo, WorkspaceSession } from './auth.models';
 
 const createAccountSession = () => ({
   accessToken: 'account-token-123',
@@ -13,7 +14,12 @@ const createAccountSession = () => ({
   sessionKind: 'account' as const,
 });
 
-const createWorkspaceSession = () => ({
+const createWorkspaceSession = (overrides: Partial<ReturnType<typeof createWorkspaceSessionBase>> = {}) => ({
+  ...createWorkspaceSessionBase(),
+  ...overrides,
+});
+
+const createWorkspaceSessionBase = () => ({
   accessToken: 'workspace-token-123',
   refreshToken: 'workspace-refresh-123',
   id: 'account-1',
@@ -31,6 +37,16 @@ const createRegistrationPending = () => ({
   cooldownSeconds: 90,
 });
 
+const createWorkspaceInfo = (overrides: Partial<WorkspaceInfo> = {}): WorkspaceInfo => ({
+  workspaceId: 'workspace-1',
+  tenantId: 'tenant-1',
+  tenantCode: 'alpha',
+  tenantName: 'Alpha Finance',
+  membershipId: 'membership-1',
+  role: 'Owner',
+  ...overrides,
+});
+
 describe('AuthService', () => {
   const authApiService = {
     login: vi.fn(),
@@ -45,6 +61,7 @@ describe('AuthService', () => {
     refreshToken: vi.fn(),
     logout: vi.fn(),
     createWorkspace: vi.fn(),
+    selectWorkspace: vi.fn(),
     switchWorkspace: vi.fn(),
     getMyWorkspaces: vi.fn(),
   };
@@ -222,6 +239,118 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
+  it('tracks workspace counts and the primary workspace after loading workspaces', () => {
+    const loadedWorkspaces = [
+      createWorkspaceInfo(),
+      createWorkspaceInfo({
+        workspaceId: 'workspace-2',
+        tenantId: 'tenant-2',
+        tenantCode: 'beta',
+        tenantName: 'Beta Operations',
+        membershipId: 'membership-2',
+        role: 'Staff',
+      }),
+    ];
+    authApiService.getMyWorkspaces.mockReturnValue(of(loadedWorkspaces));
+
+    const service = TestBed.inject(AuthService);
+    let result: WorkspaceInfo[] | undefined;
+
+    service.loadWorkspaces().subscribe((value) => {
+      result = value;
+    });
+
+    expect(result).toEqual(loadedWorkspaces);
+    expect(service.workspaceCount()).toBe(2);
+    expect(service.hasSingleWorkspace()).toBe(false);
+    expect(service.hasMultipleWorkspaces()).toBe(true);
+    expect(service.hasNoWorkspaces()).toBe(false);
+    expect(service.primaryWorkspace()).toEqual(loadedWorkspaces[0]);
+  });
+
+  it('navigates to workspace selection and create workspace entry points', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const service = TestBed.inject(AuthService);
+
+    service.goToWorkspaceSelection();
+    service.goToCreateWorkspace();
+
+    expect(navigateSpy).toHaveBeenNthCalledWith(1, '/workspaces');
+    expect(navigateSpy).toHaveBeenNthCalledWith(2, '/create-workspace');
+  });
+
+  it('selects a workspace from an account session and upgrades into a workspace session', () => {
+    localStorage.setItem(
+      'finflow_account_session',
+      JSON.stringify(createAccountSession()),
+    );
+    authApiService.selectWorkspace.mockReturnValue(of(createWorkspaceSession()));
+
+    const service = TestBed.inject(AuthService);
+    let result: WorkspaceSession | undefined;
+
+    service.selectWorkspace('membership-1').subscribe((value: WorkspaceSession) => {
+      result = value;
+    });
+
+    expect(authApiService.selectWorkspace).toHaveBeenCalledWith('membership-1');
+    expect(authApiService.switchWorkspace).not.toHaveBeenCalled();
+    expect(result).toEqual(createWorkspaceSession());
+    expect(service.currentSessionKind()).toBe('workspace');
+    expect(service.getAccessToken()).toBe('workspace-token-123');
+  });
+
+  it('clears any stale workspace session when logging into an account session', () => {
+    localStorage.setItem(
+      'finflow_workspace_session',
+      JSON.stringify(createWorkspaceSession({
+        accessToken: 'stale-workspace-token',
+        refreshToken: 'stale-workspace-refresh',
+      })),
+    );
+    authApiService.login.mockReturnValue(of(createAccountSession()));
+
+    const service = TestBed.inject(AuthService);
+    let result: unknown;
+
+    service.login({
+      email: 'demo@finflow.local',
+      password: 'Pass@word1',
+    }).subscribe((value) => {
+      result = value;
+    });
+
+    expect(result).toEqual(createAccountSession());
+    expect(service.currentSessionKind()).toBe('account');
+    expect(service.hasWorkspace()).toBe(false);
+    expect(service.getAccessToken()).toBe('account-token-123');
+    expect(localStorage.getItem('finflow_workspace_session')).toBeNull();
+  });
+
+  it('switches workspace with refresh-token rotation when a workspace session is already active', () => {
+    localStorage.setItem(
+      'finflow_workspace_session',
+      JSON.stringify(createWorkspaceSession()),
+    );
+    authApiService.switchWorkspace.mockReturnValue(
+      of(
+        createWorkspaceSession({
+          membershipId: 'membership-2',
+          role: 'Staff',
+          idTenant: 'tenant-2',
+        }),
+      ),
+    );
+
+    const service = TestBed.inject(AuthService);
+
+    service.selectWorkspace('membership-2').subscribe();
+
+    expect(authApiService.selectWorkspace).not.toHaveBeenCalled();
+    expect(authApiService.switchWorkspace).toHaveBeenCalledWith('membership-2', 'workspace-refresh-123');
+  });
+
   it('revokes the current refresh token and clears both session layers on logout', () => {
     localStorage.setItem(
       'finflow_account_session',
@@ -269,5 +398,32 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
     expect(service.userEmail()).toBeNull();
     expect(service.getAccessToken()).toBeNull();
+  });
+
+  it('clears only the workspace session and returns to workspace selection when resetting workspace context', () => {
+    localStorage.setItem(
+      'finflow_account_session',
+      JSON.stringify(createAccountSession()),
+    );
+    localStorage.setItem(
+      'finflow_workspace_session',
+      JSON.stringify(createWorkspaceSession()),
+    );
+
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const service = TestBed.inject(AuthService);
+
+    service.resetWorkspaceContext({ redirectToSelection: true });
+
+    expect(service.isAuthenticated()).toBe(true);
+    expect(service.currentSessionKind()).toBe('account');
+    expect(service.hasWorkspace()).toBe(false);
+    expect(service.getAccessToken()).toBe('account-token-123');
+    expect(localStorage.getItem('finflow_account_session')).not.toBeNull();
+    expect(localStorage.getItem('finflow_workspace_session')).toBeNull();
+    expect(navigateSpy).toHaveBeenCalledWith(['/workspaces'], {
+      queryParams: { mode: 'manage' },
+    });
   });
 });

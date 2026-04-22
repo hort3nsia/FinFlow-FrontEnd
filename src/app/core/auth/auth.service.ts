@@ -34,6 +34,11 @@ export class AuthService {
   readonly workspaceSession = this._workspaceSession.asReadonly();
   readonly workspaces = this._workspaces.asReadonly();
   readonly isLoading = this._isLoading.asReadonly();
+  readonly workspaceCount = computed(() => this._workspaces().length);
+  readonly hasSingleWorkspace = computed(() => this._workspaces().length === 1);
+  readonly hasMultipleWorkspaces = computed(() => this._workspaces().length > 1);
+  readonly hasNoWorkspaces = computed(() => this._workspaces().length === 0);
+  readonly primaryWorkspace = computed(() => this._workspaces()[0] ?? null);
 
   readonly isAuthenticated = computed(() => 
     this._accountSession() !== null || this._workspaceSession() !== null
@@ -85,6 +90,10 @@ export class AuthService {
     localStorage.setItem('finflow_workspace_session', JSON.stringify(session));
   }
 
+  private clearWorkspaceSession(): void {
+    localStorage.removeItem('finflow_workspace_session');
+  }
+
   private clearSessions(): void {
     localStorage.removeItem('finflow_account_session');
     localStorage.removeItem('finflow_workspace_session');
@@ -94,6 +103,9 @@ export class AuthService {
     this._isLoading.set(true);
     return this.authApiService.login(credentials).pipe(
       tap((session) => {
+        this._workspaceSession.set(null);
+        this.clearWorkspaceSession();
+        this._workspaces.set([]);
         this._accountSession.set(session);
         this.saveAccountSession(session);
         this.tokenStorage.setAccessToken(session.accessToken);
@@ -242,6 +254,23 @@ export class AuthService {
       .subscribe();
   }
 
+  resetWorkspaceContext(options?: { redirectToSelection?: boolean }): void {
+    this._workspaceSession.set(null);
+    this.clearWorkspaceSession();
+    this._workspaces.set([]);
+
+    const accountToken = this._accountSession()?.accessToken ?? null;
+    if (accountToken) {
+      this.tokenStorage.setAccessToken(accountToken);
+    } else {
+      this.tokenStorage.clear();
+    }
+
+    if (options?.redirectToSelection) {
+      this.goToWorkspaceSelection({ forceSelection: true });
+    }
+  }
+
   createWorkspace(input: CreateWorkspaceInput): Observable<WorkspaceSession> {
     this._isLoading.set(true);
     return this.authApiService.createWorkspace(input).pipe(
@@ -252,6 +281,31 @@ export class AuthService {
       }),
       catchError((error) => {
         console.error('CreateWorkspace failed:', error);
+        throw error;
+      }),
+      finalize(() => this._isLoading.set(false)),
+      take(1),
+    );
+  }
+
+  selectWorkspace(membershipId: string): Observable<WorkspaceSession> {
+    this._isLoading.set(true);
+
+    const request$ = this._workspaceSession()
+      ? this.authApiService.switchWorkspace(
+          membershipId,
+          this._workspaceSession()!.refreshToken,
+        )
+      : this.authApiService.selectWorkspace(membershipId);
+
+    return request$.pipe(
+      tap((session) => {
+        this._workspaceSession.set(session);
+        this.saveWorkspaceSession(session);
+        this.tokenStorage.setAccessToken(session.accessToken);
+      }),
+      catchError((error) => {
+        console.error('SelectWorkspace failed:', error);
         throw error;
       }),
       finalize(() => this._isLoading.set(false)),
@@ -281,8 +335,10 @@ export class AuthService {
   }
 
   loadWorkspaces(): Observable<WorkspaceInfo[]> {
+    this._isLoading.set(true);
     return this.authApiService.getMyWorkspaces().pipe(
       tap((workspaces) => this._workspaces.set(workspaces)),
+      finalize(() => this._isLoading.set(false)),
       take(1),
     );
   }
@@ -297,7 +353,14 @@ export class AuthService {
     void this.router.navigateByUrl('/app/dashboard');
   }
 
-  goToWorkspaceSelection(): void {
+  goToWorkspaceSelection(options?: { forceSelection?: boolean }): void {
+    if (options?.forceSelection) {
+      void this.router.navigate(['/workspaces'], {
+        queryParams: { mode: 'manage' },
+      });
+      return;
+    }
+
     void this.router.navigateByUrl('/workspaces');
   }
 

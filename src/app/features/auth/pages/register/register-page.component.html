@@ -33,9 +33,10 @@
       </div>
 
       <form class="register-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-        <label class="register-form__field">
-          <span>Họ và tên</span>
+        <div class="register-form__field">
+          <label for="register-name"><span>Họ và tên</span></label>
           <input
+            id="register-name"
             type="text"
             formControlName="name"
             autocomplete="name"
@@ -49,7 +50,7 @@
                 : null
             "
           />
-        </label>
+        </div>
         @if (form.controls.name.invalid && form.controls.name.touched) {
           <p class="register-form__error" id="register-name-error">
             {{
@@ -60,9 +61,10 @@
           </p>
         }
 
-        <label class="register-form__field">
-          <span>Email</span>
+        <div class="register-form__field">
+          <label for="register-email"><span>Email</span></label>
           <input
+            id="register-email"
             type="email"
             formControlName="email"
             autocomplete="email"
@@ -76,7 +78,7 @@
                 : null
             "
           />
-        </label>
+        </div>
         @if (form.controls.email.invalid && form.controls.email.touched) {
           <p class="register-form__error" id="register-email-error">
             {{
@@ -87,10 +89,11 @@
           </p>
         }
 
-        <label class="register-form__field">
-          <span>Mật khẩu</span>
+        <div class="register-form__field">
+          <label for="register-password"><span>Mật khẩu</span></label>
           <div class="register-form__password-field">
             <input
+              id="register-password"
               [type]="isPasswordVisible() ? 'text' : 'password'"
               formControlName="password"
               autocomplete="new-password"
@@ -144,7 +147,7 @@
               }
             </button>
           </div>
-        </label>
+        </div>
         @if (form.controls.password.invalid && form.controls.password.touched) {
           <p class="register-form__error" id="register-password-error">
             {{
@@ -155,10 +158,11 @@
           </p>
         }
 
-        <label class="register-form__field">
-          <span>Xác nhận mật khẩu</span>
+        <div class="register-form__field">
+          <label for="register-confirm-password"><span>Xác nhận mật khẩu</span></label>
           <div class="register-form__password-field">
             <input
+              id="register-confirm-password"
               [type]="isConfirmPasswordVisible() ? 'text' : 'password'"
               formControlName="confirmPassword"
               autocomplete="new-password"
@@ -224,7 +228,7 @@
               }
             </button>
           </div>
-        </label>
+        </div>
         @if (
           (form.controls.confirmPassword.invalid && form.controls.confirmPassword.touched) ||
           (form.hasError('passwordMismatch') && form.controls.confirmPassword.touched)

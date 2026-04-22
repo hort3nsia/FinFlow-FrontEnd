@@ -48,10 +48,9 @@ export class RegisterPageComponent {
       })
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: (pending) => {
-          void this.router.navigate(['/auth/verify-email'], {
-            queryParams: { email: pending.email },
-          });
+        next: () => {
+          // After register, go to create workspace
+          this.authService.goToCreateWorkspace();
         },
         error: (error: Error) => {
           this.errorMessage.set(error.message);

@@ -423,4 +423,98 @@ describe('AuthApiService', () => {
     expect(invalidResultMessage).toBe('Logout response did not include a result.');
     httpTesting.verify();
   });
+
+  it('creates a workspace through the workspace-session mutation and normalizes the response', () => {
+    const service = TestBed.inject(AuthApiService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    let result: unknown;
+
+    service
+      .createWorkspace({
+        name: 'Main Corp',
+        tenantCode: 'main-corp',
+        currency: 'VND',
+      })
+      .subscribe((value: unknown) => {
+        result = value;
+      });
+
+    const request = httpTesting.expectOne('/graphql');
+    expect(request.request.body.query).toContain('mutation CreateWorkspace');
+    expect(request.request.body.variables.input).toEqual({
+      name: 'Main Corp',
+      tenantCode: 'main-corp',
+      currency: 'VND',
+    });
+
+    request.flush({
+      data: {
+        createWorkspace: {
+          accessToken: 'workspace-access',
+          refreshToken: 'workspace-refresh',
+          accountId: 'account-1',
+          membershipId: 'membership-1',
+          email: 'demo@finflow.local',
+          role: 'Owner',
+          tenantId: 'tenant-1',
+          sessionKind: 'workspace',
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      accessToken: 'workspace-access',
+      refreshToken: 'workspace-refresh',
+      id: 'account-1',
+      membershipId: 'membership-1',
+      email: 'demo@finflow.local',
+      role: 'Owner',
+      idTenant: 'tenant-1',
+      sessionKind: 'workspace',
+    });
+    httpTesting.verify();
+  });
+
+  it('selects a workspace through the dedicated mutation', () => {
+    const service = TestBed.inject(AuthApiService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    let result: unknown;
+
+    service.selectWorkspace('membership-1').subscribe((value: unknown) => {
+      result = value;
+    });
+
+    const request = httpTesting.expectOne('/graphql');
+    expect(request.request.body.query).toContain('mutation SelectWorkspace');
+    expect(request.request.body.variables.input).toEqual({
+      membershipId: 'membership-1',
+    });
+
+    request.flush({
+      data: {
+        selectWorkspace: {
+          accessToken: 'workspace-access',
+          refreshToken: 'workspace-refresh',
+          accountId: 'account-1',
+          membershipId: 'membership-1',
+          email: 'demo@finflow.local',
+          role: 'Owner',
+          tenantId: 'tenant-1',
+          sessionKind: 'workspace',
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      accessToken: 'workspace-access',
+      refreshToken: 'workspace-refresh',
+      id: 'account-1',
+      membershipId: 'membership-1',
+      email: 'demo@finflow.local',
+      role: 'Owner',
+      idTenant: 'tenant-1',
+      sessionKind: 'workspace',
+    });
+    httpTesting.verify();
+  });
 });

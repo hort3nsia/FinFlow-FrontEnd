@@ -1,6 +1,6 @@
 import { By } from '@angular/platform-browser';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../../../../core/auth/auth.service';
@@ -8,15 +8,20 @@ import { WorkspaceSelectionPageComponent } from './workspace-selection-page.comp
 
 describe('WorkspaceSelectionPageComponent', () => {
   const authService = {
+    userEmail: () => 'demo@finflow.local',
     loadWorkspaces: vi.fn(),
-    switchWorkspace: vi.fn(),
+    selectWorkspace: vi.fn(),
     goToDashboard: vi.fn(),
+    goToCreateWorkspace: vi.fn(),
+    logout: vi.fn(),
   };
 
   beforeEach(() => {
     authService.loadWorkspaces.mockReset();
-    authService.switchWorkspace.mockReset();
+    authService.selectWorkspace.mockReset();
     authService.goToDashboard.mockReset();
+    authService.goToCreateWorkspace.mockReset();
+    authService.logout.mockReset();
 
     TestBed.configureTestingModule({
       imports: [WorkspaceSelectionPageComponent],
@@ -41,6 +46,14 @@ describe('WorkspaceSelectionPageComponent', () => {
           membershipId: 'membership-1',
           role: 'Owner',
         },
+        {
+          workspaceId: 'workspace-2',
+          tenantId: 'tenant-2',
+          tenantCode: 'beta',
+          tenantName: 'Beta Ops',
+          membershipId: 'membership-2',
+          role: 'Member',
+        },
       ]),
     );
 
@@ -48,18 +61,17 @@ describe('WorkspaceSelectionPageComponent', () => {
     fixture.detectChanges();
 
     expect(authService.loadWorkspaces).toHaveBeenCalledTimes(1);
-    expect(fixture.nativeElement.textContent).toContain('Alpha Finance');
-    expect(fixture.nativeElement.textContent).toContain('alpha');
+    expect(fixture.nativeElement.textContent).toContain('Chọn workspace để tiếp tục');
+    expect(fixture.debugElement.queryAll(By.css('[data-testid="workspace-row"]')).length).toBe(2);
   });
 
-  it('shows the empty state when the account has no workspaces yet', () => {
+  it('redirects the account to create workspace when no workspace exists', () => {
     authService.loadWorkspaces.mockReturnValue(of([]));
 
     const fixture = TestBed.createComponent(WorkspaceSelectionPageComponent);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Create your first workspace');
-    expect(fixture.nativeElement.textContent).toContain('Create workspace');
+    expect(authService.goToCreateWorkspace).toHaveBeenCalledTimes(1);
   });
 
   it('retries loading after a failed workspace query', () => {
@@ -80,9 +92,56 @@ describe('WorkspaceSelectionPageComponent', () => {
     expect(authService.loadWorkspaces).toHaveBeenCalledTimes(2);
   });
 
-  it('switches the selected workspace then enters the dashboard', () => {
-    const switch$ = new Subject<unknown>();
+  it('selects the chosen workspace then enters the dashboard', () => {
+    const select$ = new Subject<unknown>();
 
+    authService.loadWorkspaces.mockReturnValue(
+      of([
+        {
+          workspaceId: 'workspace-1',
+          tenantId: 'tenant-1',
+          tenantCode: 'alpha',
+          tenantName: 'Alpha Finance',
+          membershipId: 'membership-1',
+          role: 'Owner',
+        },
+        {
+          workspaceId: 'workspace-2',
+          tenantId: 'tenant-2',
+          tenantCode: 'beta',
+          tenantName: 'Beta Ops',
+          membershipId: 'membership-2',
+          role: 'Member',
+        },
+      ]),
+    );
+    authService.selectWorkspace.mockReturnValue(select$.asObservable());
+
+    const fixture = TestBed.createComponent(WorkspaceSelectionPageComponent);
+    fixture.detectChanges();
+
+    fixture.debugElement
+      .queryAll(By.css('[data-testid="workspace-row"]'))[0]
+      .triggerEventHandler('click', {});
+
+    expect(authService.selectWorkspace).toHaveBeenCalledWith('membership-1');
+
+    select$.next({
+      accessToken: 'workspace-access',
+      refreshToken: 'workspace-refresh',
+      id: 'account-1',
+      membershipId: 'membership-1',
+      email: 'demo@finflow.local',
+      role: 'Owner',
+      idTenant: 'tenant-1',
+      sessionKind: 'workspace',
+    });
+    select$.complete();
+
+    expect(authService.goToDashboard).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a single workspace visible so the user can still choose it explicitly', () => {
     authService.loadWorkspaces.mockReturnValue(
       of([
         {
@@ -95,30 +154,14 @@ describe('WorkspaceSelectionPageComponent', () => {
         },
       ]),
     );
-    authService.switchWorkspace.mockReturnValue(switch$.asObservable());
 
     const fixture = TestBed.createComponent(WorkspaceSelectionPageComponent);
     fixture.detectChanges();
 
-    fixture.debugElement
-      .query(By.css('[data-testid="workspace-row-membership-1"]'))
-      .triggerEventHandler('click', {});
-
-    expect(authService.switchWorkspace).toHaveBeenCalledWith('membership-1');
-
-    switch$.next({
-      accessToken: 'workspace-access',
-      refreshToken: 'workspace-refresh',
-      id: 'account-1',
-      membershipId: 'membership-1',
-      email: 'demo@finflow.local',
-      role: 'Owner',
-      idTenant: 'tenant-1',
-      sessionKind: 'workspace',
-    });
-    switch$.complete();
-
-    expect(authService.goToDashboard).toHaveBeenCalledTimes(1);
+    expect(authService.selectWorkspace).not.toHaveBeenCalled();
+    expect(authService.goToDashboard).not.toHaveBeenCalled();
+    expect(fixture.debugElement.queryAll(By.css('[data-testid="workspace-row"]')).length).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Alpha Finance');
   });
 
   it('keeps the user on the hub and shows an error if switching fails', () => {
@@ -132,9 +175,17 @@ describe('WorkspaceSelectionPageComponent', () => {
           membershipId: 'membership-1',
           role: 'Owner',
         },
+        {
+          workspaceId: 'workspace-2',
+          tenantId: 'tenant-2',
+          tenantCode: 'beta',
+          tenantName: 'Beta Ops',
+          membershipId: 'membership-2',
+          role: 'Member',
+        },
       ]),
     );
-    authService.switchWorkspace.mockReturnValue(
+    authService.selectWorkspace.mockReturnValue(
       throwError(() => new Error('Workspace switch failed')),
     );
 
@@ -142,7 +193,7 @@ describe('WorkspaceSelectionPageComponent', () => {
     fixture.detectChanges();
 
     fixture.debugElement
-      .query(By.css('[data-testid="workspace-row-membership-1"]'))
+      .queryAll(By.css('[data-testid="workspace-row"]'))[0]
       .triggerEventHandler('click', {});
 
     fixture.detectChanges();
@@ -152,9 +203,26 @@ describe('WorkspaceSelectionPageComponent', () => {
   });
 
   it('opens the create workspace flow from the hub CTA', async () => {
-    authService.loadWorkspaces.mockReturnValue(of([]));
-    const router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    authService.loadWorkspaces.mockReturnValue(
+      of([
+        {
+          workspaceId: 'workspace-1',
+          tenantId: 'tenant-1',
+          tenantCode: 'alpha',
+          tenantName: 'Alpha Finance',
+          membershipId: 'membership-1',
+          role: 'Owner',
+        },
+        {
+          workspaceId: 'workspace-2',
+          tenantId: 'tenant-2',
+          tenantCode: 'beta',
+          tenantName: 'Beta Ops',
+          membershipId: 'membership-2',
+          role: 'Member',
+        },
+      ]),
+    );
 
     const fixture = TestBed.createComponent(WorkspaceSelectionPageComponent);
     fixture.detectChanges();
@@ -163,6 +231,6 @@ describe('WorkspaceSelectionPageComponent', () => {
       .query(By.css('[data-testid="create-workspace-cta"]'))
       .triggerEventHandler('click', {});
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/create-workspace');
+    expect(authService.goToCreateWorkspace).toHaveBeenCalledTimes(1);
   });
 });
