@@ -1,0 +1,469 @@
+<section class="documents-page">
+  <header class="documents-page__hero">
+    <div class="documents-page__hero-copy">
+      <div class="documents-page__eyebrow-row">
+        <span class="documents-page__eyebrow">Personal OCR workspace</span>
+        <span class="documents-page__eyebrow documents-page__eyebrow--subtle">Only your drafts live here</span>
+      </div>
+
+      <div class="documents-page__hero-main">
+        <div class="documents-page__title-block">
+          <h1 data-testid="documents-title">Documents</h1>
+          <p class="documents-page__copy" data-testid="documents-copy">
+            {{ pageCopy }}
+          </p>
+        </div>
+
+        <div class="documents-page__hero-actions">
+          <button
+            class="documents-page__cta documents-page__cta--primary"
+            type="button"
+            data-testid="documents-cta-upload"
+            [disabled]="isUploading()"
+            (click)="triggerUploadPicker()"
+          >
+            {{ isUploading() ? 'Uploading…' : 'Upload document' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <input
+      #fileInput
+      class="documents-page__file-input"
+      type="file"
+      accept=".pdf,image/png,image/jpeg,image/webp,image/jpg"
+      data-testid="documents-file-input"
+      (change)="handleFileSelection($event)"
+    />
+  </header>
+
+  @if (lastSubmittedReference()) {
+    <article class="documents-page__submit-banner" data-testid="documents-submit-banner">
+      <strong>{{ lastSubmittedReference() }}</strong> moved from your drafts into submitted history.
+    </article>
+  }
+
+  @if (workspaceError() || (reviewError() && !isReviewOpen())) {
+    <article class="documents-page__submit-banner documents-page__submit-banner--error" data-testid="documents-error-banner">
+      {{ workspaceError() ?? reviewError() }}
+    </article>
+  }
+
+  <section class="documents-page__kpi-grid" aria-label="Personal documents overview">
+    @for (kpi of kpis(); track kpi.label) {
+      <article class="documents-page__kpi-card">
+        @if (kpi.accent) {
+          <p class="documents-page__kpi-accent">{{ kpi.accent }}</p>
+        }
+        <p class="documents-page__kpi-label">{{ kpi.label }}</p>
+        <p class="documents-page__kpi-value">{{ kpi.value }}</p>
+      </article>
+    }
+  </section>
+
+  <section class="documents-page__workspace">
+    <article class="documents-page__panel">
+      <div class="documents-page__panel-header">
+        <div>
+          <h2 data-testid="documents-drafts-title">My Drafts</h2>
+          <p class="documents-page__panel-copy">Server-backed OCR drafts waiting for you to finish the current review flow.</p>
+        </div>
+      </div>
+
+      @if (isDraftsLoading()) {
+        <div class="documents-page__empty-state">
+          <strong>Loading your drafts…</strong>
+          <p>We are syncing your personal workspace from the server.</p>
+        </div>
+      } @else if (draftsLoadError()) {
+        <div class="documents-page__empty-state documents-page__empty-state--error" data-testid="documents-drafts-error">
+          <strong>Drafts unavailable</strong>
+          <p>{{ draftsLoadError() }}</p>
+        </div>
+      } @else if (myDrafts().length === 0) {
+        <div class="documents-page__empty-state" data-testid="documents-empty-drafts">
+          <strong>No drafts in progress</strong>
+          <p>Upload a document to start OCR review in your personal workspace.</p>
+        </div>
+      } @else {
+        <div class="documents-page__list">
+          @for (draft of myDrafts(); track trackByDocumentId($index, draft)) {
+            <article class="documents-page__card">
+              <div class="documents-page__card-topline">
+                <div>
+                  <h3>{{ draft.reference }}</h3>
+                  <p>{{ draft.vendorName }}</p>
+                </div>
+                <span class="documents-page__status-pill">{{ draft.confidenceLabel }}</span>
+              </div>
+
+              <dl class="documents-page__meta-grid">
+                <div>
+                  <dt>File</dt>
+                  <dd>{{ draft.originalFileName }}</dd>
+                </div>
+                <div>
+                  <dt>Total</dt>
+                  <dd>{{ formatCurrency(draft.totalAmount) }}</dd>
+                </div>
+                <div>
+                  <dt>Owner</dt>
+                  <dd>{{ draft.ownerEmail }}</dd>
+                </div>
+                <div>
+                  <dt>Uploaded</dt>
+                  <dd>{{ formatDateTime(draft.uploadedAt) }}</dd>
+                </div>
+              </dl>
+
+              <p class="documents-page__card-copy">Server-backed draft in your personal workspace. Reopen it to continue OCR review and submit when ready.</p>
+              <button
+                type="button"
+                class="documents-page__cta documents-page__cta--secondary documents-page__card-action"
+                data-testid="documents-continue-draft"
+                [disabled]="openingDraftId() === draft.documentId"
+                (click)="resumeDraft(draft.documentId)"
+              >
+                {{ openingDraftId() === draft.documentId ? 'Opening…' : 'Continue editing' }}
+              </button>
+            </article>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="documents-page__panel">
+      <div class="documents-page__panel-header">
+        <div>
+          <h2 data-testid="documents-submitted-title">My Submitted</h2>
+          <p class="documents-page__panel-copy">Track manager decisions after you hand work off. This history is read-only status tracking.</p>
+        </div>
+      </div>
+
+      @if (isSubmittedLoading()) {
+        <div class="documents-page__empty-state">
+          <strong>Loading your history…</strong>
+          <p>Submitted items will appear here as soon as the workspace sync completes.</p>
+        </div>
+      } @else if (submittedLoadError()) {
+        <div class="documents-page__empty-state documents-page__empty-state--error" data-testid="documents-submitted-error">
+          <strong>Submitted history unavailable</strong>
+          <p>{{ submittedLoadError() }}</p>
+        </div>
+      } @else if (mySubmitted().length === 0) {
+        <div class="documents-page__empty-state" data-testid="documents-empty-submitted">
+          <strong>No submitted history yet</strong>
+          <p>Once you submit a reviewed document, it will appear here with its approval status.</p>
+        </div>
+      } @else {
+        <div class="documents-page__list">
+          @for (item of mySubmitted(); track trackByDocumentId($index, item)) {
+            <article class="documents-page__card documents-page__card--submitted">
+              <div class="documents-page__card-topline">
+                <div>
+                  <h3>{{ item.reference }}</h3>
+                  <p>{{ item.vendorName }}</p>
+                </div>
+                <span class="documents-page__status-pill documents-page__status-pill--submitted">{{ item.status }}</span>
+              </div>
+
+              <dl class="documents-page__meta-grid">
+                <div>
+                  <dt>Total</dt>
+                  <dd>{{ formatCurrency(item.totalAmount) }}</dd>
+                </div>
+                <div>
+                  <dt>Submitted by</dt>
+                  <dd>{{ item.submittedByEmail }}</dd>
+                </div>
+                <div>
+                  <dt>Submitted</dt>
+                  <dd>{{ formatDateTime(item.submittedAt) }}</dd>
+                </div>
+                <div>
+                  <dt>Last updated</dt>
+                  <dd>{{ formatDateTime(item.lastUpdatedAt) }}</dd>
+                </div>
+              </dl>
+
+              <p class="documents-page__card-copy">Read-only status tracking for your submitted document.</p>
+
+              @if (item.rejectionReason) {
+                <div class="documents-page__rejection-note">
+                  <strong>Rejection reason</strong>
+                  <p>{{ item.rejectionReason }}</p>
+                </div>
+              }
+            </article>
+          }
+        </div>
+      }
+    </article>
+  </section>
+
+  @if (reviewDraft(); as draft) {
+    @if (isReviewOpen()) {
+      <div class="documents-page__overlay" role="dialog" aria-modal="true" data-testid="documents-review-surface">
+        <article class="documents-page__modal">
+          <div class="documents-page__review-header">
+            <div class="documents-page__review-title">
+              <div class="documents-page__review-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                  <path d="M8 8h8"></path>
+                  <path d="M8 12h8"></path>
+                  <path d="M8 16h4"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 data-testid="documents-review-title">Invoice Intelligence</h2>
+                <p>{{ reviewPresentation()?.helper }}</p>
+                <span class="documents-page__review-note">Staff can correct any OCR suggestion before submission.</span>
+              </div>
+            </div>
+
+            <div class="documents-page__review-header-actions">
+              <div class="documents-page__precision-badge">{{ reviewPresentation()?.precision }}</div>
+              <button type="button" class="documents-page__close" aria-label="Close review surface" (click)="closeReview()">×</button>
+            </div>
+          </div>
+
+          @if (reviewError()) {
+            <article class="documents-page__submit-banner documents-page__submit-banner--error" data-testid="documents-review-error">
+              {{ reviewError() }}
+            </article>
+          }
+
+          <div class="documents-page__review-workspace">
+            <div class="documents-page__preview">
+              <div class="documents-page__preview-canvas">
+                @if (uploadedFileName()) {
+                  @switch (uploadedPreviewKind()) {
+                    @case ('image') {
+                      <div class="documents-page__uploaded-preview documents-page__uploaded-preview--media" data-testid="documents-uploaded-preview">
+                        <div class="documents-page__uploaded-file-meta">
+                          <div class="documents-page__uploaded-file-type">Image</div>
+                          <strong>{{ uploadedFileName() }}</strong>
+                        </div>
+                        <img
+                          class="documents-page__uploaded-media documents-page__uploaded-media--image"
+                          [src]="uploadedPreviewUrl()"
+                          [alt]="uploadedFileName() ?? 'Uploaded document preview'"
+                        />
+                      </div>
+                    }
+                    @case ('pdf') {
+                      <div class="documents-page__uploaded-preview documents-page__uploaded-preview--media" data-testid="documents-uploaded-preview">
+                        <div class="documents-page__uploaded-file-meta">
+                          <div class="documents-page__uploaded-file-type">PDF</div>
+                          <strong>{{ uploadedFileName() }}</strong>
+                        </div>
+                        <iframe
+                          class="documents-page__uploaded-media documents-page__uploaded-media--pdf"
+                          [src]="uploadedPreviewUrl()"
+                          title="Uploaded PDF preview"
+                        ></iframe>
+                      </div>
+                    }
+                    @default {
+                      <div class="documents-page__uploaded-preview" data-testid="documents-uploaded-preview">
+                        <div class="documents-page__uploaded-file-type">
+                          {{ uploadedFileType()?.includes('pdf') ? 'PDF' : 'FILE' }}
+                        </div>
+                        <strong>{{ uploadedFileName() }}</strong>
+                        <p>OCR result returned from the uploaded source file.</p>
+                      </div>
+                    }
+                  }
+                } @else {
+                  <div class="documents-page__paper">
+                    <div class="documents-page__paper-header"></div>
+                    <div class="documents-page__paper-row documents-page__paper-row--long"></div>
+                    <div class="documents-page__paper-row"></div>
+                    <div class="documents-page__paper-row documents-page__paper-row--short"></div>
+                    <div class="documents-page__paper-table">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                    <div class="documents-page__paper-line"></div>
+                    <div class="documents-page__paper-line documents-page__paper-line--faint"></div>
+                    <div class="documents-page__paper-line"></div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="documents-page__extracted">
+              <div class="documents-page__field-group">
+                <label for="review-vendor">Vendor name</label>
+                <input
+                  id="review-vendor"
+                  data-testid="review-vendor-input"
+                  class="documents-page__field documents-page__field--input"
+                  [value]="draft.vendor"
+                  (input)="updateDraft('vendor', $any($event.target).value)"
+                />
+              </div>
+
+              <div class="documents-page__field-row">
+                <div class="documents-page__field-group">
+                  <label for="review-reference">Invoice number</label>
+                  <input
+                    id="review-reference"
+                    class="documents-page__field documents-page__field--input"
+                    [value]="draft.reference"
+                    (input)="updateDraft('reference', $any($event.target).value)"
+                  />
+                </div>
+
+                <div class="documents-page__field-group">
+                  <label for="review-document-date">Document date</label>
+                  <input
+                    id="review-document-date"
+                    class="documents-page__field documents-page__field--input"
+                    [value]="draft.documentDate"
+                    (input)="updateDraft('documentDate', $any($event.target).value)"
+                  />
+                </div>
+
+                <div class="documents-page__field-group">
+                  <label for="review-due-date">Due date</label>
+                  <input
+                    id="review-due-date"
+                    class="documents-page__field documents-page__field--input"
+                    [value]="draft.dueDate"
+                    (input)="updateDraft('dueDate', $any($event.target).value)"
+                  />
+                </div>
+              </div>
+
+              <div class="documents-page__field-row">
+                <div class="documents-page__field-group">
+                  <label for="review-category">Expense category</label>
+                  <input
+                    id="review-category"
+                    class="documents-page__field documents-page__field--input"
+                    [value]="draft.category"
+                    (input)="updateDraft('category', $any($event.target).value)"
+                  />
+                </div>
+
+                <div class="documents-page__field-group">
+                  <label for="review-vendor-tax-id">Vendor tax ID</label>
+                  <input
+                    id="review-vendor-tax-id"
+                    class="documents-page__field documents-page__field--input"
+                    [value]="draft.vendorTaxId"
+                    (input)="updateDraft('vendorTaxId', $any($event.target).value)"
+                  />
+                </div>
+              </div>
+
+              <div class="documents-page__amount-card">
+                <div class="documents-page__field-row">
+                  <div class="documents-page__field-group">
+                    <label for="review-subtotal">Subtotal</label>
+                    <input
+                      id="review-subtotal"
+                      class="documents-page__field documents-page__field--input documents-page__field--compact"
+                      [value]="draft.subtotal"
+                      (input)="updateDraft('subtotal', $any($event.target).value)"
+                    />
+                  </div>
+
+                  <div class="documents-page__field-group">
+                    <label for="review-vat">Tax (VAT)</label>
+                    <input
+                      id="review-vat"
+                      class="documents-page__field documents-page__field--input documents-page__field--compact"
+                      [value]="draft.vat"
+                      (input)="updateDraft('vat', $any($event.target).value)"
+                    />
+                  </div>
+                </div>
+
+                <div class="documents-page__field-group">
+                  <label for="review-total-amount">Total amount (USD)</label>
+                  <input
+                    id="review-total-amount"
+                    class="documents-page__field documents-page__field--input documents-page__field--total"
+                    [value]="draft.totalAmount"
+                    (input)="updateDraft('totalAmount', $any($event.target).value)"
+                  />
+                </div>
+              </div>
+
+              <div class="documents-page__line-items">
+                <div class="documents-page__line-items-header">
+                  <h3>Line items</h3>
+                  <span>{{ reviewPresentation()?.source }}</span>
+                </div>
+
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Item name</th>
+                      <th>Qty</th>
+                      <th>Unit price</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of draft.lineItems; track $index; let i = $index) {
+                      <tr>
+                        <td>
+                          <input
+                            class="documents-page__line-item-input"
+                            [value]="item.name"
+                            (input)="updateDraftLineItem(i, 'name', $any($event.target).value)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            class="documents-page__line-item-input"
+                            [value]="item.qty"
+                            (input)="updateDraftLineItem(i, 'qty', $any($event.target).value)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            class="documents-page__line-item-input"
+                            [value]="item.unitPrice"
+                            (input)="updateDraftLineItem(i, 'unitPrice', $any($event.target).value)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            class="documents-page__line-item-input"
+                            [value]="item.total"
+                            (input)="updateDraftLineItem(i, 'total', $any($event.target).value)"
+                          />
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="documents-page__review-actions">
+            <button type="button" class="documents-page__cta documents-page__cta--secondary" (click)="closeReview()">Discard</button>
+            <button
+              type="button"
+              class="documents-page__cta documents-page__cta--primary"
+              data-testid="documents-submit-review"
+              [disabled]="isSubmitting()"
+              (click)="submitReview()"
+            >
+              {{ isSubmitting() ? 'Saving…' : 'Submit to manager decision workspace' }}
+            </button>
+          </div>
+        </article>
+      </div>
+    }
+  }
+</section>

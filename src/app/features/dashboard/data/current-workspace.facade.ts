@@ -8,10 +8,13 @@ export interface CurrentWorkspaceState {
   workspace: CurrentWorkspace | null;
   loading: boolean;
   error: string | null;
-  statusLabel: string;
 }
-
-const STATUS_LABEL = 'Backend-backed workspace snapshot';
+const AUTH_INVALID_PATTERNS = [
+  'not authenticated',
+  'token is invalid',
+  'unauthorized',
+  'refresh token is invalid',
+];
 
 @Injectable({
   providedIn: 'root',
@@ -24,10 +27,14 @@ export class CurrentWorkspaceFacade {
     workspace: null,
     loading: false,
     error: null,
-    statusLabel: STATUS_LABEL,
   });
 
   readonly state = this.stateSignal.asReadonly();
+
+  private isAuthInvalidError(message: string): boolean {
+    const normalizedMessage = message.toLowerCase();
+    return AUTH_INVALID_PATTERNS.some((pattern) => normalizedMessage.includes(pattern));
+  }
 
   refresh(): void {
     this.workspaceRequestSubscription?.unsubscribe();
@@ -37,7 +44,6 @@ export class CurrentWorkspaceFacade {
         workspace: null,
         loading: false,
         error: null,
-        statusLabel: STATUS_LABEL,
       });
       return;
     }
@@ -46,7 +52,6 @@ export class CurrentWorkspaceFacade {
       workspace: null,
       loading: true,
       error: null,
-      statusLabel: STATUS_LABEL,
     });
 
     this.workspaceRequestSubscription = this.currentWorkspaceApiService.getCurrentWorkspace().subscribe({
@@ -55,15 +60,23 @@ export class CurrentWorkspaceFacade {
             workspace,
             loading: false,
             error: null,
-            statusLabel: STATUS_LABEL,
           });
         },
         error: (error: Error) => {
+          if (this.isAuthInvalidError(error.message)) {
+            this.stateSignal.set({
+              workspace: null,
+              loading: false,
+              error: 'Workspace session expired. Please choose a workspace again.',
+            });
+            this.authService.resetWorkspaceContext({ redirectToSelection: true });
+            return;
+          }
+
           this.stateSignal.set({
             workspace: null,
             loading: false,
             error: error.message,
-            statusLabel: STATUS_LABEL,
           });
         },
       });

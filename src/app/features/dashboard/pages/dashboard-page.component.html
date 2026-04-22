@@ -1,69 +1,243 @@
 <section class="dashboard-page">
   <header class="dashboard-page__hero">
-    <p class="dashboard-page__eyebrow">Workspace</p>
-    <div class="dashboard-page__title-row">
-      <div>
-        <h1>Current workspace</h1>
-        <p class="dashboard-page__copy">
-          A lightweight readout of the backend-backed workspace context that drives the dashboard.
+    <div class="dashboard-page__hero-aura" aria-hidden="true"></div>
+    <div class="dashboard-page__hero-copy dashboard-page__hero-row">
+      <div class="dashboard-page__title-block">
+        <div class="dashboard-page__eyebrow-row">
+          <span class="dashboard-page__eyebrow">Finance Workspace</span>
+          @if (state().workspace; as workspace) {
+            <span class="dashboard-page__eyebrow dashboard-page__eyebrow--subtle">
+              {{ workspace.tenantCode }}
+            </span>
+          }
+        </div>
+        <h1 data-testid="overview-title">Workspace Overview</h1>
+        <p class="dashboard-page__copy" data-testid="overview-copy">
+          {{ overviewCopy }}
         </p>
       </div>
-      <span class="dashboard-page__status" data-testid="workspace-status">
-        {{ state().statusLabel }}
-      </span>
+      <div class="dashboard-page__hero-actions">
+        <button class="dashboard-page__cta dashboard-page__cta--primary" type="button" data-testid="overview-cta-upload">
+          Upload Docs
+        </button>
+        <button class="dashboard-page__cta dashboard-page__cta--secondary" type="button" data-testid="overview-cta-expense">
+          New Expense
+        </button>
+      </div>
+    </div>
+    <div class="dashboard-page__status-row">
+      @if (state().workspace; as workspace) {
+        <span class="dashboard-page__workspace-context">Operating in {{ workspace.tenantName }}</span>
+      }
     </div>
   </header>
 
-  <article class="dashboard-page__card">
-    @if (state().loading) {
-      <p class="dashboard-page__state" data-testid="workspace-loading">Loading current workspace...</p>
-    } @else if (state().error) {
+  @if (state().loading) {
+    <article class="dashboard-page__feedback">
+      <p class="dashboard-page__state" data-testid="workspace-loading">Loading workspace overview...</p>
+    </article>
+  }
+
+  @if (state().error) {
+    <article class="dashboard-page__feedback dashboard-page__feedback--error">
       <p class="dashboard-page__state dashboard-page__state--error" data-testid="workspace-error">
         {{ state().error }}
       </p>
-    } @else if (state().workspace; as workspace) {
-      <div class="dashboard-page__grid">
-        <div class="dashboard-page__field" data-testid="workspace-field-account">
-          <p class="dashboard-page__label">Account ID</p>
-          <p class="dashboard-page__value dashboard-page__value--mono">
-            {{ workspace.accountId }}
-          </p>
+    </article>
+  }
+
+  @if (!state().loading) {
+    <section class="dashboard-page__kpi-grid">
+      @for (kpi of kpis; track kpi.testId) {
+        <article
+          class="dashboard-page__kpi-card"
+          [class.dashboard-page__kpi-card--critical]="kpi.tone === 'critical'"
+          [attr.data-testid]="kpi.testId"
+        >
+          <div class="dashboard-page__kpi-icon" aria-hidden="true">
+            @switch (kpi.icon) {
+              @case ('documents') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
+                  <path d="M14 3v6h6"></path>
+                  <path d="M9 13h6"></path>
+                  <path d="M9 17h6"></path>
+                </svg>
+              }
+              @case ('approvals') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+                  <path d="M8 7h8"></path>
+                  <path d="M8 11h4"></path>
+                  <path d="m8 16 2 2 5-5"></path>
+                </svg>
+              }
+              @case ('expenses') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m12 3 8 14H4L12 3z"></path>
+                  <path d="M12 9v4"></path>
+                  <path d="M12 17h.01"></path>
+                </svg>
+              }
+              @default {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 13a8 8 0 0 1 16 0"></path>
+                  <path d="M4 13h4"></path>
+                  <path d="M16 13h4"></path>
+                  <path d="M12 13v5"></path>
+                  <circle cx="12" cy="6" r="1.5"></circle>
+                </svg>
+              }
+            }
+          </div>
+          <div class="dashboard-page__kpi-header">
+            <p class="dashboard-page__kpi-label">{{ kpi.label }}</p>
+            @if (kpi.accent) {
+              <span class="dashboard-page__kpi-accent">{{ kpi.accent }}</span>
+            }
+          </div>
+          <p class="dashboard-page__kpi-value">{{ kpi.value }}</p>
+        </article>
+      }
+    </section>
+
+    <section class="dashboard-page__overview-grid">
+      <article class="dashboard-page__panel dashboard-page__panel--activity dashboard-page__overview-main">
+        <div class="dashboard-page__panel-header">
+          <h2 data-testid="activity-title">Recent Workspace Activity</h2>
+          <button class="dashboard-page__text-action" type="button">Filters</button>
         </div>
 
-        <div class="dashboard-page__field" data-testid="workspace-field-email">
-          <p class="dashboard-page__label">Email</p>
-          <p class="dashboard-page__value">{{ workspace.email }}</p>
+        <div class="dashboard-page__activity-list">
+          @for (item of activityItems; track item.title; let first = $first) {
+            <article class="dashboard-page__activity-item" [class.dashboard-page__activity-item--lead]="first">
+              <div
+                class="dashboard-page__activity-icon"
+                [class.dashboard-page__activity-icon--success]="item.iconTone === 'success'"
+                [class.dashboard-page__activity-icon--alert]="item.iconTone === 'alert'"
+                [class.dashboard-page__activity-icon--entry]="item.iconTone === 'entry'"
+                aria-hidden="true"
+              >
+                @switch (item.iconTone) {
+                  @case ('document') {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
+                      <path d="M14 3v6h6"></path>
+                      <path d="m9 15 2 2 4-4"></path>
+                    </svg>
+                  }
+                  @case ('success') {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="8"></circle>
+                      <path d="m8.5 12.5 2.5 2.5 4.5-5"></path>
+                    </svg>
+                  }
+                  @case ('alert') {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m12 3 8 14H4L12 3z"></path>
+                      <path d="M12 9v4"></path>
+                      <path d="M12 17h.01"></path>
+                    </svg>
+                  }
+                  @default {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M8 4h10a2 2 0 0 1 2 2v10"></path>
+                      <path d="M6 8h10a2 2 0 0 1 2 2v10H8a2 2 0 0 1-2-2V8z"></path>
+                      <path d="M10 12h4"></path>
+                    </svg>
+                  }
+                }
+              </div>
+              <div class="dashboard-page__activity-content">
+                <div class="dashboard-page__activity-topline">
+                  <h3>{{ item.title }}</h3>
+                  <span class="dashboard-page__activity-meta">{{ item.meta }}</span>
+                </div>
+                <p class="dashboard-page__activity-detail">{{ item.detail }}</p>
+                <div class="dashboard-page__activity-tags">
+                  @if (item.statusLabel) {
+                    <span class="dashboard-page__activity-badge" [class.dashboard-page__activity-badge--success]="item.statusTone === 'success'">
+                      {{ item.statusLabel }}
+                    </span>
+                  }
+                  @if (item.cta) {
+                    <button class="dashboard-page__inline-cta" type="button">{{ item.cta }}</button>
+                  }
+                </div>
+              </div>
+            </article>
+          }
         </div>
+      </article>
 
-        <div class="dashboard-page__field" data-testid="workspace-field-role">
-          <p class="dashboard-page__label">Role</p>
-          <p class="dashboard-page__value">{{ workspace.role }}</p>
-        </div>
+      <div class="dashboard-page__aside dashboard-page__overview-rail">
+        <article class="dashboard-page__panel dashboard-page__panel--actions">
+          <div class="dashboard-page__panel-header dashboard-page__panel-header--stacked">
+            <div>
+              <h2 data-testid="priority-actions-title">Priority Actions</h2>
+              <p class="dashboard-page__panel-copy">Move the workspace forward with the next best actions.</p>
+            </div>
+          </div>
+          <div class="dashboard-page__action-list">
+            @for (action of priorityActions; track action) {
+              <button class="dashboard-page__action-item" type="button">{{ action }}</button>
+            }
+          </div>
+        </article>
 
-        <div class="dashboard-page__field" data-testid="workspace-field-membership">
-          <p class="dashboard-page__label">Membership ID</p>
-          <p class="dashboard-page__value dashboard-page__value--mono">
-            {{ workspace.membershipId }}
-          </p>
-        </div>
-
-        <div class="dashboard-page__field" data-testid="workspace-field-tenant-id">
-          <p class="dashboard-page__label">Tenant ID</p>
-          <p class="dashboard-page__value dashboard-page__value--mono">
-            {{ workspace.tenantId }}
-          </p>
-        </div>
-
-        <div class="dashboard-page__field" data-testid="workspace-field-tenant-code">
-          <p class="dashboard-page__label">Tenant Code</p>
-          <p class="dashboard-page__value">{{ workspace.tenantCode }}</p>
-        </div>
-
-        <div class="dashboard-page__field dashboard-page__field--wide" data-testid="workspace-field-tenant-name">
-          <p class="dashboard-page__label">Tenant Name</p>
-          <p class="dashboard-page__value">{{ workspace.tenantName }}</p>
-        </div>
+        <article class="dashboard-page__panel dashboard-page__panel--trend">
+          <div class="dashboard-page__panel-header dashboard-page__panel-header--stacked">
+            <div>
+              <h2 data-testid="spend-trend-title">7-Day Spend Trend</h2>
+              <p class="dashboard-page__panel-copy">Actual vs planned budget</p>
+            </div>
+            <span class="dashboard-page__trend-badge">Act. / Plan</span>
+          </div>
+          <div class="dashboard-page__mini-chart" aria-hidden="true">
+            <span class="dashboard-page__mini-chart-bar dashboard-page__mini-chart-bar--soft" style="--bar-height: 3.8rem"></span>
+            <span class="dashboard-page__mini-chart-bar dashboard-page__mini-chart-bar--soft" style="--bar-height: 4.2rem"></span>
+            <span class="dashboard-page__mini-chart-bar dashboard-page__mini-chart-bar--strong" style="--bar-height: 4.8rem"></span>
+            <span class="dashboard-page__mini-chart-bar dashboard-page__mini-chart-bar--soft" style="--bar-height: 3.5rem"></span>
+            <span class="dashboard-page__mini-chart-bar dashboard-page__mini-chart-bar--soft" style="--bar-height: 4rem"></span>
+            <span class="dashboard-page__mini-chart-bar dashboard-page__mini-chart-bar--strong" style="--bar-height: 4.1rem"></span>
+            <span class="dashboard-page__mini-chart-bar" style="--bar-height: 2.6rem"></span>
+          </div>
+        </article>
       </div>
-    }
-  </article>
+    </section>
+
+    <section class="dashboard-page__summary-grid dashboard-page__summary-row">
+      <article class="dashboard-page__panel dashboard-page__panel--health">
+        <h2 data-testid="workspace-health-title">Workspace Health</h2>
+        <ul class="dashboard-page__health-list">
+          @for (item of statusItems; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </article>
+
+      <article class="dashboard-page__panel dashboard-page__panel--expenses">
+        <div class="dashboard-page__panel-header">
+          <h2 data-testid="recent-expenses-title">Recent Expenses Summary</h2>
+          <button class="dashboard-page__text-action" type="button">View All</button>
+        </div>
+        <div class="dashboard-page__expense-list">
+          @for (expense of recentExpenses; track expense.vendor) {
+            <article class="dashboard-page__expense-item">
+              <div class="dashboard-page__expense-copy">
+                <h3>{{ expense.vendor }}</h3>
+                <p>{{ expense.date }}</p>
+              </div>
+              <div class="dashboard-page__expense-meta">
+                <strong>{{ expense.amount }}</strong>
+                <span [class.dashboard-page__expense-status--pending]="expense.statusTone === 'pending'">
+                  {{ expense.status }}
+                </span>
+              </div>
+            </article>
+          }
+        </div>
+      </article>
+    </section>
+  }
 </section>

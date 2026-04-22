@@ -1,0 +1,99 @@
+<section class="approvals-page">
+  <header class="approvals-page__hero">
+    <div>
+      <div class="approvals-page__eyebrow-row">
+        <span class="approvals-page__eyebrow">Decision workspace</span>
+      </div>
+      <h1 data-testid="approvals-title">Approvals</h1>
+      <p data-testid="approvals-copy">{{ pageCopy }}</p>
+    </div>
+
+    <div class="approvals-page__hero-actions">
+      <button class="approvals-page__cta approvals-page__cta--secondary" type="button">Approval policies</button>
+      <button class="approvals-page__cta approvals-page__cta--primary" type="button">Open review queue</button>
+    </div>
+  </header>
+
+  @if (!loadError() && kpis().length > 0) {
+    <section class="approvals-page__kpi-grid" data-testid="approvals-kpi-grid">
+      @for (kpi of kpis(); track kpi.label) {
+        <article class="approvals-page__kpi-card">
+          @if (kpi.accent) {
+            <p class="approvals-page__kpi-accent">{{ kpi.accent }}</p>
+          }
+          <p class="approvals-page__kpi-label">{{ kpi.label }}</p>
+          <p class="approvals-page__kpi-value">{{ kpi.value }}</p>
+        </article>
+      }
+    </section>
+  }
+
+  <section class="approvals-page__grid">
+    <article class="approvals-page__panel">
+      <div class="approvals-page__panel-header">
+        <div>
+          <h2 data-testid="approvals-queue-title">Approval Queue</h2>
+          <p>Submitted requests awaiting manager review.</p>
+        </div>
+        <button type="button">Filters</button>
+      </div>
+
+      @if (isLoading()) {
+        <div class="approvals-page__empty-state">
+          <strong>Loading the manager decision workspace…</strong>
+          <p>We are pulling the latest approval queue from the API.</p>
+        </div>
+      } @else if (loadError()) {
+        <div class="approvals-page__empty-state approvals-page__empty-state--error" data-testid="approvals-load-error">
+          <strong>Approval queue unavailable</strong>
+          <p>{{ loadError() }}</p>
+        </div>
+      } @else if (approvals().length === 0) {
+        <div class="approvals-page__empty-state">
+          <strong>No pending approvals right now</strong>
+          <p>The manager decision workspace will populate as submitted requests arrive.</p>
+        </div>
+      } @else {
+        <div class="approvals-page__list">
+          @for (item of approvals(); track item.id) {
+            <article class="approvals-page__item">
+              <div>
+                <div class="approvals-page__item-topline">
+                  <h3>{{ item.title }}</h3>
+                  <span class="approvals-page__priority" [class.approvals-page__priority--high]="item.priority === 'High'">{{ item.priority }}</span>
+                </div>
+                <p>{{ item.requester }} · {{ item.department }}</p>
+              </div>
+
+              <div class="approvals-page__item-meta">
+                <strong>{{ item.amount }}</strong>
+                <span>Due {{ item.due }}</span>
+              </div>
+
+              <div class="approvals-page__item-actions">
+                <button type="button" class="approvals-page__inline approvals-page__inline--ghost">Reject</button>
+                <button type="button" class="approvals-page__inline approvals-page__inline--primary">Approve</button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </article>
+
+    <aside class="approvals-page__rail">
+      <article class="approvals-page__panel approvals-page__panel--summary">
+        <h2>Review guidance</h2>
+        <p>Use request details, due dates, and policy context to make fast, consistent approval decisions.</p>
+      </article>
+
+      <article class="approvals-page__panel approvals-page__panel--summary">
+        <h2>Up next</h2>
+        <ul>
+          <li>Wire approval details drawer</li>
+          <li>Connect approve/reject mutations</li>
+          <li>Link back to source document</li>
+        </ul>
+      </article>
+    </aside>
+  </section>
+</section>
