@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import {
   CurrentWorkspaceFacade,
@@ -10,7 +11,6 @@ import { DashboardPageComponent } from './dashboard-page.component';
 const createWorkspaceState = (): CurrentWorkspaceState => ({
   loading: false,
   error: null,
-  statusLabel: 'Backend-backed workspace snapshot',
   workspace: {
     accountId: 'acc-123',
     email: 'demo@finflow.local',
@@ -29,21 +29,8 @@ describe('DashboardPageComponent', () => {
     refresh: vi.fn(),
   };
 
-  const getField = (fixture: { nativeElement: HTMLElement }, testId: string) =>
-    fixture.nativeElement.querySelector(`[data-testid="${testId}"]`) as HTMLElement | null;
-
-  const expectField = (
-    fixture: { nativeElement: HTMLElement },
-    testId: string,
-    label: string,
-    value: string,
-  ) => {
-    const field = getField(fixture, testId);
-
-    expect(field).not.toBeNull();
-    expect(field?.querySelector('.dashboard-page__label')?.textContent?.trim()).toBe(label);
-    expect(field?.querySelector('.dashboard-page__value')?.textContent?.trim()).toBe(value);
-  };
+  const queryText = (fixture: { nativeElement: HTMLElement }, selector: string) =>
+    fixture.nativeElement.querySelector(selector)?.textContent?.trim();
 
   beforeEach(async () => {
     state.set(createWorkspaceState());
@@ -52,6 +39,7 @@ describe('DashboardPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DashboardPageComponent],
       providers: [
+        provideRouter([]),
         {
           provide: CurrentWorkspaceFacade,
           useValue: currentWorkspaceFacade,
@@ -60,20 +48,74 @@ describe('DashboardPageComponent', () => {
     }).compileComponents();
   });
 
-  it('renders the current workspace summary', () => {
+  it('renders the workspace overview surface', () => {
     const fixture = TestBed.createComponent(DashboardPageComponent);
     fixture.detectChanges();
 
-    expect(getField(fixture, 'workspace-status')?.textContent?.trim()).toBe(
-      'Backend-backed workspace snapshot',
+    expect(queryText(fixture, '[data-testid="overview-title"]')).toBe('Workspace Overview');
+    expect(queryText(fixture, '[data-testid="overview-copy"]')).toContain(
+      'Operational task management and document processing',
     );
-    expectField(fixture, 'workspace-field-account', 'Account ID', 'acc-123');
-    expectField(fixture, 'workspace-field-email', 'Email', 'demo@finflow.local');
-    expectField(fixture, 'workspace-field-role', 'Role', 'TENANT_ADMIN');
-    expectField(fixture, 'workspace-field-membership', 'Membership ID', 'membership-123');
-    expectField(fixture, 'workspace-field-tenant-id', 'Tenant ID', 'tenant-123');
-    expectField(fixture, 'workspace-field-tenant-code', 'Tenant Code', 'finflow');
-    expectField(fixture, 'workspace-field-tenant-name', 'Tenant Name', 'FinFlow Demo Tenant');
+    expect(queryText(fixture, '[data-testid="overview-cta-upload"]')).toBe('Upload Docs');
+    expect(queryText(fixture, '[data-testid="overview-cta-expense"]')).toBe('New Expense');
+    expect(fixture.nativeElement.textContent).not.toContain('Backend-backed workspace snapshot');
+    expect(fixture.nativeElement.textContent).toContain('Finance Workspace');
+    expect(fixture.nativeElement.textContent).toContain('Operating in FinFlow Demo Tenant');
+  });
+
+  it('renders explicit layout zones for responsive overview composition', () => {
+    const fixture = TestBed.createComponent(DashboardPageComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.dashboard-page__hero-row')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.dashboard-page__overview-main')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.dashboard-page__overview-rail')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.dashboard-page__summary-row')).toBeTruthy();
+  });
+
+  it('renders finance operations KPI cards', () => {
+    const fixture = TestBed.createComponent(DashboardPageComponent);
+    fixture.detectChanges();
+
+    expect(queryText(fixture, '[data-testid="kpi-documents"] .dashboard-page__kpi-label')).toBe(
+      'Documents Pending Review',
+    );
+    expect(queryText(fixture, '[data-testid="kpi-approvals"] .dashboard-page__kpi-label')).toBe(
+      'Approvals Waiting',
+    );
+    expect(queryText(fixture, '[data-testid="kpi-expenses"] .dashboard-page__kpi-label')).toBe(
+      'Flagged Expenses',
+    );
+    expect(queryText(fixture, '[data-testid="kpi-ocr"] .dashboard-page__kpi-label')).toBe(
+      'OCR Extraction Accuracy',
+    );
+  });
+
+  it('renders recent activity, priority actions, spend trend, and workspace health', () => {
+    const fixture = TestBed.createComponent(DashboardPageComponent);
+    fixture.detectChanges();
+
+    expect(queryText(fixture, '[data-testid="activity-title"]')).toBe('Recent Workspace Activity');
+    expect(queryText(fixture, '[data-testid="priority-actions-title"]')).toBe('Priority Actions');
+    expect(queryText(fixture, '[data-testid="spend-trend-title"]')).toBe('7-Day Spend Trend');
+    expect(queryText(fixture, '[data-testid="workspace-health-title"]')).toBe('Workspace Health');
+
+    expect(fixture.nativeElement.textContent).toContain('Review incoming documents');
+    expect(fixture.nativeElement.textContent).toContain('Process pending approvals');
+    expect(fixture.nativeElement.textContent).toContain('Review flagged expenses');
+    expect(fixture.nativeElement.textContent).toContain('Reconcile OCR exceptions');
+  });
+
+  it('renders a lightweight recent expenses summary', () => {
+    const fixture = TestBed.createComponent(DashboardPageComponent);
+    fixture.detectChanges();
+
+    expect(queryText(fixture, '[data-testid="recent-expenses-title"]')).toBe(
+      'Recent Expenses Summary',
+    );
+    expect(fixture.nativeElement.textContent).toContain('AWS Infrastructure');
+    expect(fixture.nativeElement.textContent).toContain('United Airlines');
+    expect(fixture.nativeElement.textContent).toContain('Blue Ginger Bistro');
   });
 
   it('renders the loading state', () => {
@@ -81,15 +123,13 @@ describe('DashboardPageComponent', () => {
     state.set({
       loading: true,
       error: null,
-      statusLabel: 'Backend-backed workspace snapshot',
       workspace: null,
     });
     fixture.detectChanges();
 
-    expect(getField(fixture, 'workspace-status')?.textContent?.trim()).toBe(
-      'Backend-backed workspace snapshot',
+    expect(queryText(fixture, '[data-testid="workspace-loading"]')).toBe(
+      'Loading workspace overview...',
     );
-    expect(getField(fixture, 'workspace-loading')?.textContent?.trim()).toBe('Loading current workspace...');
   });
 
   it('renders the error state', () => {
@@ -97,15 +137,15 @@ describe('DashboardPageComponent', () => {
     state.set({
       loading: false,
       error: 'Workspace context unavailable.',
-      statusLabel: 'Backend-backed workspace snapshot',
       workspace: null,
     });
     fixture.detectChanges();
 
-    expect(getField(fixture, 'workspace-status')?.textContent?.trim()).toBe(
-      'Backend-backed workspace snapshot',
+    expect(queryText(fixture, '[data-testid="overview-title"]')).toBe('Workspace Overview');
+    expect(queryText(fixture, '[data-testid="workspace-error"]')).toBe(
+      'Workspace context unavailable.',
     );
-    expect(getField(fixture, 'workspace-error')?.textContent?.trim()).toBe('Workspace context unavailable.');
+    expect(queryText(fixture, '[data-testid="priority-actions-title"]')).toBe('Priority Actions');
   });
 
   it('refreshes the workspace when the dashboard is entered', () => {

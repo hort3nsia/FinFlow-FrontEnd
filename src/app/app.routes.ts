@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { homeRouteGuard } from './core/guards/home-route.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { noWorkspaceGuard, workspaceGuard } from './core/guards/workspace.guard';
 import { LoginPageComponent } from './features/auth/pages/login/login-page.component';
@@ -9,7 +10,9 @@ import { ResetPasswordPageComponent } from './features/auth/pages/reset-password
 import { VerifyEmailPageComponent } from './features/auth/pages/verify-email/verify-email-page.component';
 import { CreateWorkspacePageComponent } from './features/auth/pages/create-workspace/create-workspace-page.component';
 import { WorkspaceSelectionPageComponent } from './features/auth/pages/workspace-selection/workspace-selection-page.component';
+import { ApprovalsPageComponent } from './features/approvals/pages/approvals-page.component';
 import { DashboardPageComponent } from './features/dashboard/pages/dashboard-page.component';
+import { DocumentsPageComponent } from './features/documents/pages/documents-page.component';
 import { LandingPageComponent } from './features/marketing/pages/landing-page.component';
 import { NotFoundPageComponent } from './features/not-found/pages/not-found-page.component';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
@@ -17,7 +20,13 @@ import { AppShellComponent } from './layout/app-shell/app-shell.component';
 export const routes: Routes = [
   {
     path: '',
+    canActivate: [homeRouteGuard],
     component: LandingPageComponent,
+  },
+  {
+    path: 'home',
+    pathMatch: 'full',
+    redirectTo: 'workspaces',
   },
   {
     path: 'login',
@@ -65,6 +74,14 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         component: DashboardPageComponent,
+      },
+      {
+        path: 'documents',
+        component: DocumentsPageComponent,
+      },
+      {
+        path: 'approvals',
+        component: ApprovalsPageComponent,
       },
     ],
   },

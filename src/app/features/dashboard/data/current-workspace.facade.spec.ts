@@ -9,6 +9,7 @@ describe('CurrentWorkspaceFacade', () => {
   let request$: Subject<unknown>;
   let authService: {
     workspaceSession: () => unknown;
+    resetWorkspaceContext: (options?: { redirectToSelection?: boolean }) => void;
   };
   let currentWorkspaceApiService: {
     getCurrentWorkspace: () => Observable<unknown>;
@@ -27,6 +28,7 @@ describe('CurrentWorkspaceFacade', () => {
         idTenant: 'tenant-123',
         sessionKind: 'workspace',
       }),
+      resetWorkspaceContext: vi.fn(),
     };
     currentWorkspaceApiService = {
       getCurrentWorkspace: () => request$.asObservable(),
@@ -72,7 +74,6 @@ describe('CurrentWorkspaceFacade', () => {
     expect(facade.state()).toEqual({
       loading: false,
       error: null,
-      statusLabel: 'Backend-backed workspace snapshot',
       workspace: {
         accountId: 'acc-123',
         email: 'demo@finflow.local',
@@ -96,6 +97,22 @@ describe('CurrentWorkspaceFacade', () => {
     expect(facade.state().error).toBe('Workspace context unavailable.');
   });
 
+  it('resets only the workspace context when the workspace request fails with an auth error', () => {
+    const facade = TestBed.inject(CurrentWorkspaceFacade);
+
+    facade.refresh();
+    request$.error(new Error('User is not authenticated or token is invalid'));
+
+    expect(authService.resetWorkspaceContext).toHaveBeenCalledWith({
+      redirectToSelection: true,
+    });
+    expect(facade.state()).toEqual({
+      loading: false,
+      error: 'Workspace session expired. Please choose a workspace again.',
+      workspace: null,
+    });
+  });
+
   it('stays idle when there is no active workspace session', () => {
     authService.workspaceSession = () => null;
     const getCurrentWorkspaceSpy = vi.spyOn(currentWorkspaceApiService, 'getCurrentWorkspace');
@@ -107,7 +124,6 @@ describe('CurrentWorkspaceFacade', () => {
     expect(facade.state()).toEqual({
       loading: false,
       error: null,
-      statusLabel: 'Backend-backed workspace snapshot',
       workspace: null,
     });
   });
