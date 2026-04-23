@@ -1,0 +1,216 @@
+<section class="authenticated-home">
+  <header class="authenticated-home__header">
+    <a routerLink="/" class="authenticated-home__brand" aria-label="FinFlow home">
+      <app-brand-mark />
+    </a>
+
+    <div class="authenticated-home__header-actions">
+      <button
+        type="button"
+        class="authenticated-home__header-button"
+        data-testid="authenticated-home-header-choose-workspace"
+        (click)="goToWorkspaceSelection()"
+      >
+        Chọn workspace
+      </button>
+      <button
+        type="button"
+        class="authenticated-home__header-button authenticated-home__header-button--primary"
+        data-testid="authenticated-home-header-create-workspace"
+        (click)="goToCreateWorkspace()"
+      >
+        Tạo workspace
+      </button>
+    </div>
+  </header>
+
+  <main class="authenticated-home__shell">
+    <section class="authenticated-home__hero">
+      <div class="authenticated-home__hero-copy">
+        <p class="authenticated-home__eyebrow">App home</p>
+        <h1>Tiếp tục trong đúng workspace.</h1>
+        <p class="authenticated-home__lede">
+          Bạn đã ở trong FinFlow. Từ đây có thể tiếp tục công việc, đổi workspace hoặc tạo workspace mới mà không phải quay lại landing marketing.
+        </p>
+      </div>
+
+      <aside class="authenticated-home__hero-note" data-testid="authenticated-home-hero-note">
+        <p class="authenticated-home__hero-note-label">Luôn sẵn trong shell</p>
+        <ul class="authenticated-home__hero-note-list">
+          <li>Chọn workspace</li>
+          <li>Tạo workspace</li>
+        </ul>
+      </aside>
+    </section>
+
+    @if (isLoading()) {
+      <article class="authenticated-home__surface authenticated-home__surface--loading" data-testid="authenticated-home-loading">
+        <p class="authenticated-home__state">Đang tải workspace...</p>
+      </article>
+    } @else if (errorMessage()) {
+      <article class="authenticated-home__surface authenticated-home__surface--error" data-testid="authenticated-home-error">
+        <div>
+          <p class="authenticated-home__state-title">Không thể tải workspace</p>
+          <p class="authenticated-home__state-copy">{{ errorMessage() }}</p>
+        </div>
+        <button type="button" class="authenticated-home__retry" (click)="retryLoadWorkspaces()">
+          Thử lại
+        </button>
+      </article>
+    } @else if (hasSingleWorkspace() && primaryWorkspace(); as workspace) {
+      <article class="authenticated-home__surface authenticated-home__surface--single" data-testid="authenticated-home-single-state">
+        <div class="authenticated-home__surface-layout">
+          <section class="authenticated-home__workspace-card">
+            <div class="authenticated-home__workspace">
+              <div class="authenticated-home__workspace-avatar" aria-hidden="true">
+                {{ workspaceInitial(workspace) }}
+              </div>
+
+              <div class="authenticated-home__workspace-copy">
+                <p class="authenticated-home__state-kicker">Workspace hiện tại</p>
+                <h2>{{ workspace.tenantName }}</h2>
+                <p>{{ workspaceSummary(workspace) }}</p>
+              </div>
+
+              <span class="authenticated-home__workspace-badge">1 workspace</span>
+            </div>
+
+            <div class="authenticated-home__workspace-summary">
+              <div>
+                <p class="authenticated-home__summary-label">Trạng thái</p>
+                <p class="authenticated-home__summary-value">Sẵn sàng vào app</p>
+              </div>
+              <div>
+                <p class="authenticated-home__summary-label">Lựa chọn thêm</p>
+                <p class="authenticated-home__summary-value">Bạn vẫn có thể đổi hoặc tạo workspace mới</p>
+              </div>
+            </div>
+          </section>
+
+          <aside class="authenticated-home__action-panel">
+            <p class="authenticated-home__state-kicker">Bước tiếp theo</p>
+            <h3>Đi vào công việc chính</h3>
+            <p class="authenticated-home__state-copy">
+              Vào workspace hiện tại ngay hoặc mở rộng cấu trúc làm việc của bạn với workspace mới.
+            </p>
+
+            <div class="authenticated-home__actions authenticated-home__actions--stack">
+              <button
+                type="button"
+                class="authenticated-home__action authenticated-home__action--primary"
+                data-testid="authenticated-home-enter-workspace"
+                [disabled]="isLoading() || switchingWorkspaceId() === workspace.membershipId"
+                (click)="continueToPrimaryWorkspace()"
+              >
+                {{ switchingWorkspaceId() === workspace.membershipId ? 'Đang mở workspace...' : 'Vào workspace' }}
+              </button>
+              <button
+                type="button"
+                class="authenticated-home__action"
+                data-testid="authenticated-home-choose-workspace"
+                (click)="goToWorkspaceSelection()"
+              >
+                Chọn workspace
+              </button>
+              <button
+                type="button"
+                class="authenticated-home__action"
+                data-testid="authenticated-home-create-workspace"
+                (click)="goToCreateWorkspace()"
+              >
+                Tạo workspace
+              </button>
+            </div>
+          </aside>
+        </div>
+      </article>
+    } @else if (hasMultipleWorkspaces()) {
+      <article class="authenticated-home__surface" data-testid="authenticated-home-multiple-state">
+        <div class="authenticated-home__surface-layout">
+          <section class="authenticated-home__workspace-list-block">
+            <div class="authenticated-home__surface-header">
+              <div>
+                <p class="authenticated-home__state-kicker">Nhiều workspace</p>
+                <h2>Bạn có {{ workspaceCount() }} workspace khả dụng</h2>
+                <p class="authenticated-home__state-copy">
+                  FinFlow sẽ không tự chọn context thay bạn. Hãy xác nhận đúng workspace trước khi vào app.
+                </p>
+              </div>
+            </div>
+
+            <div class="authenticated-home__workspace-grid">
+              @for (workspace of workspaces(); track workspace.membershipId) {
+                <article class="authenticated-home__workspace-tile">
+                  <div class="authenticated-home__workspace-avatar" aria-hidden="true">
+                    {{ workspaceInitial(workspace) }}
+                  </div>
+                  <div class="authenticated-home__workspace-copy">
+                    <h3>{{ workspace.tenantName }}</h3>
+                    <p>{{ workspaceSummary(workspace) }}</p>
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+
+          <aside class="authenticated-home__action-panel">
+            <p class="authenticated-home__state-kicker">Bước tiếp theo</p>
+            <h3>Chọn nơi bạn muốn làm việc</h3>
+            <p class="authenticated-home__state-copy">
+              Đi tới màn chọn workspace để vào đúng ngữ cảnh. Nếu cần, bạn vẫn có thể tạo workspace mới ngay từ đây.
+            </p>
+
+            <div class="authenticated-home__actions authenticated-home__actions--stack">
+              <button
+                type="button"
+                class="authenticated-home__action authenticated-home__action--primary"
+                data-testid="authenticated-home-multiple-choose-workspace"
+                (click)="goToWorkspaceSelection()"
+              >
+                Chọn workspace
+              </button>
+              <button
+                type="button"
+                class="authenticated-home__action"
+                data-testid="authenticated-home-multiple-create-workspace"
+                (click)="goToCreateWorkspace()"
+              >
+                Tạo workspace
+              </button>
+            </div>
+          </aside>
+        </div>
+      </article>
+    } @else {
+      <article class="authenticated-home__surface authenticated-home__surface--empty" data-testid="authenticated-home-empty-state">
+        <div class="authenticated-home__empty-mark" aria-hidden="true">+</div>
+        <div class="authenticated-home__empty-copy">
+          <p class="authenticated-home__state-kicker">Chưa có workspace</p>
+          <h2>Tạo workspace đầu tiên để bắt đầu</h2>
+          <p class="authenticated-home__state-copy">
+            Workspace đầu tiên sẽ là nơi bạn mời cộng sự, tách biệt dữ liệu và bắt đầu vận hành FinFlow một cách rõ ràng.
+          </p>
+        </div>
+
+        <div class="authenticated-home__actions authenticated-home__actions--centered">
+          <button
+            type="button"
+            class="authenticated-home__action authenticated-home__action--primary"
+            data-testid="authenticated-home-empty-create-workspace"
+            (click)="goToCreateWorkspace()"
+          >
+            Tạo workspace đầu tiên
+          </button>
+          <button
+            type="button"
+            class="authenticated-home__action"
+            data-testid="authenticated-home-empty-choose-workspace"
+            (click)="goToWorkspaceSelection()"
+          >
+            Chọn workspace
+          </button>
+        </div>
+      </article>
+    }
+  </main>
+</section>

@@ -12,7 +12,7 @@ import { CreateWorkspacePageComponent } from './features/auth/pages/create-works
 import { WorkspaceSelectionPageComponent } from './features/auth/pages/workspace-selection/workspace-selection-page.component';
 import { ApprovalsPageComponent } from './features/approvals/pages/approvals-page.component';
 import { DashboardPageComponent } from './features/dashboard/pages/dashboard-page.component';
-import { DocumentsPageComponent } from './features/documents/pages/documents-page.component';
+import { documentsRoutes } from './features/documents/documents.routes';
 import { LandingPageComponent } from './features/marketing/pages/landing-page.component';
 import { NotFoundPageComponent } from './features/not-found/pages/not-found-page.component';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
@@ -77,7 +77,7 @@ export const routes: Routes = [
       },
       {
         path: 'documents',
-        component: DocumentsPageComponent,
+        children: documentsRoutes,
       },
       {
         path: 'approvals',
