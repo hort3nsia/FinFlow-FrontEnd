@@ -48,7 +48,6 @@ src/environments/*.local.ts
 testem.log
 /typings
 __screenshots__/
-.internal/
 *.tmp
 *.temp
 *.log
@@ -56,3 +55,4 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+.worktrees/

@@ -7,12 +7,11 @@ import { workspaceGuard } from './core/guards/workspace.guard';
 import { AuthService } from './core/auth/auth.service';
 import { ApprovalsPageComponent } from './features/approvals/pages/approvals-page.component';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
-import { DocumentsPageComponent } from './features/documents/pages/documents-page.component';
 import { LandingPageComponent } from './features/marketing/pages/landing-page.component';
 import { vi } from 'vitest';
 
 describe('app routes', () => {
-  it('defines guest landing and workspace-first post-login routing alongside the protected shell routes', () => {
+  it('defines guest landing, protected shell routes, approvals, and documents children', () => {
     const landingRoute = routes.find((route) => route.path === '');
     const homeRoute = routes.find((route) => route.path === 'home');
     const workspacesRoute = routes.find((route) => route.path === 'workspaces');
@@ -24,8 +23,14 @@ describe('app routes', () => {
     const appRoute = routes.find((route) => route.path === 'app');
     const wildcardRoute = routes.find((route) => route.path === '**');
     const dashboardChild = appRoute?.children?.find((route) => route.path === 'dashboard');
-    const documentsChild = appRoute?.children?.find((route) => route.path === 'documents');
+    const documentsRoute = appRoute?.children?.find((route) => route.path === 'documents');
     const approvalsChild = appRoute?.children?.find((route) => route.path === 'approvals');
+    const documentsChildren = documentsRoute?.children ?? [];
+    const documentsRedirect = documentsChildren.find((route) => route.path === '');
+    const documentsList = documentsChildren.find((route) => route.path === 'list');
+    const documentsUpload = documentsChildren.find((route) => route.path === 'upload');
+    const documentsManual = documentsChildren.find((route) => route.path === 'manual');
+    const documentDetail = documentsChildren.find((route) => route.path === ':id');
 
     expect(landingRoute).toBeDefined();
     expect(landingRoute?.component).toBe(LandingPageComponent);
@@ -57,8 +62,13 @@ describe('app routes', () => {
     expect(appRoute?.canActivate?.[0]).toBe(authGuard);
     expect(appRoute?.canActivate?.[1]).toBe(workspaceGuard);
     expect(dashboardChild).toBeDefined();
-    expect(documentsChild).toBeDefined();
-    expect(documentsChild?.component).toBe(DocumentsPageComponent);
+    expect(documentsRoute).toBeDefined();
+    expect(documentsRedirect?.redirectTo).toBe('list');
+    expect(documentsRedirect?.pathMatch).toBe('full');
+    expect(documentsList).toBeDefined();
+    expect(documentsUpload).toBeDefined();
+    expect(documentsManual).toBeDefined();
+    expect(documentDetail).toBeDefined();
     expect(approvalsChild).toBeDefined();
     expect(approvalsChild?.component).toBe(ApprovalsPageComponent);
 
