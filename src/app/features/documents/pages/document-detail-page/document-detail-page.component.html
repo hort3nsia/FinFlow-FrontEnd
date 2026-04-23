@@ -1,0 +1,182 @@
+<section class="document-detail-page">
+  <header class="document-detail-page__hero">
+    <div>
+      <p class="document-detail-page__eyebrow">Document Detail</p>
+      <h1>Review draft before submission</h1>
+      <p class="document-detail-page__intro">
+        Confirm the extracted fields, totals, and line items before sending this draft into the
+        submitted queue.
+      </p>
+    </div>
+
+    <a class="document-detail-page__back-link" routerLink="/app/documents/list">Back to documents</a>
+  </header>
+
+  @if (state().isLoading) {
+    <section class="document-detail-page__panel">
+      <p>Loading document...</p>
+    </section>
+  } @else if (state().error && !state().draft) {
+    <section class="document-detail-page__panel document-detail-page__panel--error">
+      <h2>Unable to load document</h2>
+      <p>{{ state().error }}</p>
+    </section>
+  } @else if (state().draft; as draft) {
+    @if (state().error; as actionError) {
+      <section class="document-detail-page__inline-warning" aria-label="Document action warning">
+        <strong>We could not complete that action.</strong>
+        <span>{{ actionError }}</span>
+      </section>
+    }
+
+    <section class="document-detail-page__summary">
+      <div>
+        <span class="document-detail-page__summary-label">Vendor</span>
+        <strong>{{ draft.vendorName }}</strong>
+      </div>
+      <div>
+        <span class="document-detail-page__summary-label">Total</span>
+        <strong>{{ draft.totalAmount | currency: 'USD':'symbol':'1.2-2' }}</strong>
+      </div>
+      <div>
+        <span class="document-detail-page__summary-label">Confidence</span>
+        <strong>{{ draft.confidenceLabel }}</strong>
+      </div>
+      <div>
+        <span class="document-detail-page__summary-label">Source</span>
+        <strong>{{ draft.source }}</strong>
+      </div>
+    </section>
+
+    <div class="document-detail-page__grid">
+      <section class="document-detail-page__panel">
+        <div class="document-detail-page__section-header">
+          <div>
+            <h2>Document metadata</h2>
+            <p>Backend-aligned draft fields loaded from the review queue.</p>
+          </div>
+
+          <div class="document-detail-page__actions">
+            <button
+              class="document-detail-page__button document-detail-page__button--secondary"
+              type="button"
+              [disabled]="state().pendingAction !== null"
+              (click)="deleteDraft()"
+            >
+              Delete
+            </button>
+            <button
+              class="document-detail-page__button document-detail-page__button--primary"
+              type="button"
+              [disabled]="state().pendingAction !== null"
+              (click)="submit()"
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+
+        <dl class="document-detail-page__metadata">
+          <div>
+            <dt>File name</dt>
+            <dd>{{ draft.originalFileName }}</dd>
+          </div>
+          <div>
+            <dt>Reference</dt>
+            <dd>{{ draft.reference }}</dd>
+          </div>
+          <div>
+            <dt>Document date</dt>
+            <dd>{{ draft.documentDate | date: 'mediumDate' }}</dd>
+          </div>
+          <div>
+            <dt>Due date</dt>
+            <dd>{{ draft.dueDate | date: 'mediumDate' }}</dd>
+          </div>
+          <div>
+            <dt>Category</dt>
+            <dd>{{ draft.category }}</dd>
+          </div>
+          <div>
+            <dt>Reviewed by</dt>
+            <dd>{{ draft.reviewedByStaff }}</dd>
+          </div>
+          <div>
+            <dt>Vendor tax id</dt>
+            <dd>{{ draft.vendorTaxId || 'Not provided' }}</dd>
+          </div>
+          <div>
+            <dt>Content type</dt>
+            <dd>{{ draft.contentType }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="document-detail-page__panel">
+        <h2>Attachment state</h2>
+        @if (draft.hasImage) {
+          <p>
+            Attachment preview is not available in this screen. This draft indicates an uploaded
+            image exists, but no backend image endpoint is available here yet.
+          </p>
+        } @else {
+          <p>No attachment preview is available for this draft.</p>
+        }
+      </section>
+
+      <section class="document-detail-page__panel">
+        <h2>Totals</h2>
+        <dl class="document-detail-page__totals">
+          <div>
+            <dt>Subtotal</dt>
+            <dd>{{ draft.subtotal | currency: 'USD':'symbol':'1.2-2' }}</dd>
+          </div>
+          <div>
+            <dt>VAT</dt>
+            <dd>{{ draft.vat | currency: 'USD':'symbol':'1.2-2' }}</dd>
+          </div>
+          <div>
+            <dt>Total</dt>
+            <dd>{{ draft.totalAmount | currency: 'USD':'symbol':'1.2-2' }}</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+
+    <section class="document-detail-page__panel">
+      <div class="document-detail-page__section-header">
+        <div>
+          <h2>Line items</h2>
+          <p>Review the extracted rows that will be submitted with this draft.</p>
+        </div>
+      </div>
+
+      @if (draft.lineItems.length > 0) {
+        <div class="document-detail-page__table-wrap">
+          <table class="document-detail-page__table">
+            <thead>
+              <tr>
+                <th scope="col">Item</th>
+                <th scope="col">Quantity</th>
+                <th scope="col">Unit price</th>
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (lineItem of draft.lineItems; track trackLineItem($index, lineItem)) {
+                <tr>
+                  <td>{{ lineItem.itemName }}</td>
+                  <td>{{ lineItem.quantity }}</td>
+                  <td>{{ lineItem.unitPrice | currency: 'USD':'symbol':'1.2-2' }}</td>
+                  <td>{{ lineItem.total | currency: 'USD':'symbol':'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p>No extracted line items are available for this draft.</p>
+      }
+    </section>
+  }
+</section>
