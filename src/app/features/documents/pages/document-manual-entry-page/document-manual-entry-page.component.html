@@ -1,0 +1,168 @@
+<section class="manual-entry-page">
+  <header class="manual-entry-page__hero">
+    <div>
+      <p class="manual-entry-page__eyebrow">Documents</p>
+      <h1>Manual document entry</h1>
+      <p class="manual-entry-page__intro">
+        Capture a document draft by hand, attach an optional image, and submit it when the review
+        values are ready.
+      </p>
+    </div>
+
+    <div class="manual-entry-page__actions">
+      <button type="button" class="manual-entry-page__secondary" [disabled]="isBusy()" (click)="saveDraft()">
+        {{ isSaving() ? 'Saving Draft...' : 'Save Draft' }}
+      </button>
+      <button type="button" class="manual-entry-page__primary" [disabled]="isBusy()" (click)="submit()">
+        {{ isSubmitting() ? 'Submitting...' : 'Submit' }}
+      </button>
+    </div>
+  </header>
+
+  @if (saveSuccess(); as message) {
+    <p class="manual-entry-page__status manual-entry-page__status--success">{{ message }}</p>
+  }
+
+  @if (submitSuccess(); as message) {
+    <p class="manual-entry-page__status manual-entry-page__status--success">{{ message }}</p>
+  }
+
+  @if (saveError(); as message) {
+    <p class="manual-entry-page__status manual-entry-page__status--error">{{ message }}</p>
+  }
+
+  @if (submitError(); as message) {
+    <p class="manual-entry-page__status manual-entry-page__status--error">{{ message }}</p>
+  }
+
+  @if (draftLifecycleMessage(); as message) {
+    <p class="manual-entry-page__status manual-entry-page__status--info">{{ message }}</p>
+  }
+
+  @if (cleanupWarning(); as message) {
+    <p class="manual-entry-page__status manual-entry-page__status--warning">{{ message }}</p>
+  }
+
+  <form id="manual-entry-form" class="manual-entry-page__form" [formGroup]="form" (ngSubmit)="submit()">
+    <section class="manual-entry-page__card">
+      <div class="manual-entry-page__card-header">
+        <div>
+          <h2>Document details</h2>
+          <p>Enter the same values that will be saved to the manual draft.</p>
+        </div>
+      </div>
+
+      <div class="manual-entry-page__grid">
+        <label [class.manual-entry-page__field--invalid]="hasInvalidField('vendorName')">
+          <span>Vendor</span>
+          <input type="text" formControlName="vendorName" />
+          @if (getFieldError('vendorName'); as errorMessage) {
+            <small>{{ errorMessage }}</small>
+          }
+        </label>
+
+        <label [class.manual-entry-page__field--invalid]="hasInvalidField('reference')">
+          <span>Reference</span>
+          <input type="text" formControlName="reference" />
+          @if (getFieldError('reference'); as errorMessage) {
+            <small>{{ errorMessage }}</small>
+          }
+        </label>
+
+        <label [class.manual-entry-page__field--invalid]="hasInvalidField('documentDate')">
+          <span>Document date</span>
+          <input type="date" formControlName="documentDate" />
+          @if (getFieldError('documentDate'); as errorMessage) {
+            <small>{{ errorMessage }}</small>
+          }
+        </label>
+
+        <label [class.manual-entry-page__field--invalid]="hasInvalidField('dueDate')">
+          <span>Due date</span>
+          <input type="date" formControlName="dueDate" />
+          @if (getFieldError('dueDate'); as errorMessage) {
+            <small>{{ errorMessage }}</small>
+          }
+        </label>
+
+        <label [class.manual-entry-page__field--invalid]="hasInvalidField('category')">
+          <span>Category</span>
+          <input type="text" formControlName="category" />
+          @if (getFieldError('category'); as errorMessage) {
+            <small>{{ errorMessage }}</small>
+          }
+        </label>
+
+        <label>
+          <span>Tax ID</span>
+          <input type="text" formControlName="vendorTaxId" />
+        </label>
+
+        <label [class.manual-entry-page__field--invalid]="hasInvalidField('subtotal')">
+          <span>Subtotal</span>
+          <input type="number" formControlName="subtotal" min="0" step="0.01" />
+          @if (getFieldError('subtotal'); as errorMessage) {
+            <small>{{ errorMessage }}</small>
+          }
+        </label>
+
+        <label [class.manual-entry-page__field--invalid]="hasInvalidField('vat')">
+          <span>VAT</span>
+          <input type="number" formControlName="vat" min="0" step="0.01" />
+          @if (getFieldError('vat'); as errorMessage) {
+            <small>{{ errorMessage }}</small>
+          }
+        </label>
+
+        <label [class.manual-entry-page__field--invalid]="hasInvalidField('totalAmount')">
+          <span>Total amount</span>
+          <input type="number" formControlName="totalAmount" min="0" step="0.01" />
+          @if (getFieldError('totalAmount'); as errorMessage) {
+            <small>{{ errorMessage }}</small>
+          }
+        </label>
+      </div>
+    </section>
+
+    <section class="manual-entry-page__card">
+      <div class="manual-entry-page__card-header">
+        <div>
+          <h2>Optional image</h2>
+          <p>Attach a receipt or invoice image to store alongside the manual draft.</p>
+        </div>
+      </div>
+
+      <label class="manual-entry-page__file-picker">
+        <span>Upload image</span>
+        <input type="file" accept="image/*" [disabled]="isBusy()" (change)="onImageSelected($event)" />
+      </label>
+
+      @if (selectedImageName(); as fileName) {
+        <p class="manual-entry-page__hint">Selected image: {{ fileName }}</p>
+      } @else {
+        <p class="manual-entry-page__hint">No image selected.</p>
+      }
+
+      @if (hasSavedDraft()) {
+        <p class="manual-entry-page__hint">
+          {{ isDraftDirty() ? 'Saved draft is out of date. The next save or submit will create a fresh draft.' : 'Saved draft is up to date and can be reused.' }}
+        </p>
+      }
+
+      @if (imagePreviewUrl(); as previewUrl) {
+        <figure class="manual-entry-page__preview">
+          <img [src]="previewUrl" [alt]="selectedImageName() || 'Selected attachment preview'" />
+          <figcaption>Local preview of the selected image.</figcaption>
+        </figure>
+      }
+
+      @if (imageError(); as message) {
+        <p class="manual-entry-page__status manual-entry-page__status--error">{{ message }}</p>
+      }
+    </section>
+
+    <section class="manual-entry-page__card">
+      <app-document-line-items-editor [lineItems]="lineItems" [disabled]="isBusy()"></app-document-line-items-editor>
+    </section>
+  </form>
+</section>

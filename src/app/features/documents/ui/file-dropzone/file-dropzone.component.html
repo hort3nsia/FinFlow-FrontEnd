@@ -1,0 +1,34 @@
+<div
+  class="file-dropzone"
+  [class.file-dropzone--active]="isDragActive()"
+  [class.file-dropzone--disabled]="disabled()"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave($event)"
+  (drop)="onDrop($event)"
+>
+  <input
+    #fileInput
+    class="file-dropzone__input"
+    type="file"
+    [accept]="acceptedTypes()"
+    [disabled]="disabled()"
+    (change)="onInputChange($event)"
+  />
+
+  <div class="file-dropzone__body">
+    <p class="file-dropzone__title">Drop a document here or browse</p>
+    <p class="file-dropzone__hint">Supported: PDF, PNG, JPG/JPEG, WebP up to 10 MB</p>
+
+    <button type="button" class="file-dropzone__button" [disabled]="disabled()" (click)="fileInput.click()">
+      Select file
+    </button>
+
+    @if (selectedFileName(); as fileName) {
+      <p class="file-dropzone__file">Selected: {{ fileName }}</p>
+    }
+
+    @if (errorMessage(); as errorMessage) {
+      <p class="file-dropzone__error">{{ errorMessage }}</p>
+    }
+  </div>
+</div>

@@ -1,0 +1,30 @@
+<div class="documents-table">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">File Name</th>
+        <th scope="col">Vendor</th>
+        <th scope="col">Amount</th>
+        <th scope="col">Status</th>
+        <th scope="col">Date</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.id) {
+        <tr>
+          <td class="documents-table__file">{{ row.fileName }}</td>
+          <td>{{ row.vendor }}</td>
+          <td>{{ row.amount | currency: 'USD':'symbol':'1.2-2' }}</td>
+          <td>
+            <app-document-status-badge [status]="row.status" />
+          </td>
+          <td>{{ row.date | date: 'mediumDate' }}</td>
+          <td>
+            <a class="documents-table__link" [routerLink]="['/app/documents', row.id]">Open</a>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

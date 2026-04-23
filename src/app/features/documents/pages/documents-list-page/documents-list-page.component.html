@@ -1,0 +1,74 @@
+<section class="documents-list-page">
+  <header class="documents-list-page__hero">
+    <div>
+      <p class="documents-list-page__eyebrow">Documents</p>
+      <h1>Review incoming invoices and submissions</h1>
+      <p class="documents-list-page__intro">
+        Draft OCR results and submitted records appear together here so staff can pick up the
+        next document quickly.
+      </p>
+    </div>
+
+    <div class="documents-list-page__actions">
+      <a class="documents-list-page__button documents-list-page__button--primary" routerLink="/app/documents/upload">
+        Upload OCR
+      </a>
+      <a class="documents-list-page__button documents-list-page__button--secondary" routerLink="/app/documents/manual">
+        Manual Entry
+      </a>
+    </div>
+  </header>
+
+  @if (state().isLoading) {
+    <section class="documents-list-page__panel">
+      <p>Loading documents...</p>
+    </section>
+  } @else if (state().error; as error) {
+    <section class="documents-list-page__panel documents-list-page__panel--error">
+      <h2>Unable to load documents</h2>
+      <p>{{ error }}</p>
+    </section>
+  } @else if (
+    state().drafts.length === 0 &&
+    state().submitted.length === 0 &&
+    !state().draftsError &&
+    !state().submittedError
+  ) {
+    <section class="documents-list-page__panel">
+      <h2>No documents yet</h2>
+      <p>Upload a file or create a manual entry to start building your review queue.</p>
+    </section>
+  } @else {
+    <section class="documents-list-page__summary" aria-label="Document queue summary">
+      @if (!state().draftsError) {
+        <p>Showing {{ state().drafts.length }} of {{ state().draftTotalCount }} drafts</p>
+      }
+      @if (!state().submittedError) {
+        <p>Showing {{ state().submitted.length }} of {{ state().submittedTotalCount }} submitted</p>
+      }
+    </section>
+
+    @if (state().draftsError; as draftsError) {
+      <section class="documents-list-page__inline-warning" aria-label="Drafts warning">
+        <strong>Draft documents are temporarily unavailable.</strong>
+        <span>{{ draftsError }}</span>
+      </section>
+    }
+
+    @if (state().submittedError; as submittedError) {
+      <section class="documents-list-page__inline-warning" aria-label="Submitted warning">
+        <strong>Submitted documents are temporarily unavailable.</strong>
+        <span>{{ submittedError }}</span>
+      </section>
+    }
+
+    @if (state().drafts.length > 0 || state().submitted.length > 0) {
+      <app-documents-table [drafts]="state().drafts" [submitted]="state().submitted" />
+    } @else {
+      <section class="documents-list-page__panel">
+        <h2>No available documents in the loaded queues</h2>
+        <p>One queue is unavailable right now, and the other currently has no items to show.</p>
+      </section>
+    }
+  }
+</section>
