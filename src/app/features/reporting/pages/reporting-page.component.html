@@ -1,0 +1,448 @@
+<div class="flex min-h-full flex-col gap-6 pb-12">
+  <header class="flex-shrink-0">
+    <h1 class="text-2xl font-bold leading-tight text-slate-950">Báo cáo &amp; Phân tích</h1>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Theo dõi chi tiêu, ngân sách và hoàn tiền theo thời gian thực
+    </p>
+  </header>
+
+  @if (!canViewReports()) {
+    <section class="flex flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white py-24 text-center">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-300">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-7 w-7">
+          <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+          <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+        </svg>
+      </div>
+      <div>
+        <p class="text-base font-semibold text-slate-500">Không có quyền truy cập</p>
+        <p class="mt-1 text-sm text-slate-400">Liên hệ quản lý để được cấp quyền xem báo cáo.</p>
+      </div>
+    </section>
+  } @else {
+    <section class="sticky top-0 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 shadow-sm">
+      <div class="relative">
+        <select
+          class="appearance-none rounded-lg border border-slate-200 bg-white px-3.5 py-2 pr-9 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          [ngModel]="preset()"
+          (ngModelChange)="applyPreset($any($event))"
+          aria-label="Chọn kỳ báo cáo"
+        >
+          @for (option of datePresetOptions; track option.id) {
+            <option [ngValue]="option.id">{{ option.label }}</option>
+          }
+        </select>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400">
+          <path d="m6 9 6 6 6-6"></path>
+        </svg>
+      </div>
+
+      <div class="relative">
+        <select
+          data-testid="reporting-department-filter"
+          class="appearance-none rounded-lg border border-slate-200 bg-white px-3.5 py-2 pr-9 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          [ngModel]="selectedDepartmentId() ?? ''"
+          (ngModelChange)="onDepartmentChange($any($event))"
+          aria-label="Lọc báo cáo theo phòng ban"
+        >
+          <option value="">Tất cả phòng ban</option>
+          @for (department of departmentOptions(); track department.id) {
+            <option [value]="department.id">{{ department.label }}</option>
+          }
+        </select>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400">
+          <path d="m6 9 6 6 6-6"></path>
+        </svg>
+      </div>
+
+      <div class="ml-auto flex items-center gap-2">
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          (click)="exportPdf()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5">
+            <path d="M12 3v12"></path>
+            <path d="m7 10 5 5 5-5"></path>
+            <path d="M5 21h14"></path>
+          </svg>
+          <span>Xuất PDF</span>
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
+          (click)="refresh()"
+          aria-label="Tải lại báo cáo"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+            <path d="M21 12a9 9 0 0 1-15.4 6.4"></path>
+            <path d="M3 12A9 9 0 0 1 18.4 5.6"></path>
+            <path d="M18 2v4h-4"></path>
+            <path d="M6 22v-4h4"></path>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    @if (isLoading()) {
+      <section class="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+        Đang tải dữ liệu báo cáo...
+      </section>
+    } @else if (loadError()) {
+      <section class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+        <strong class="font-semibold">Lỗi:</strong> {{ loadError() }}
+      </section>
+    } @else {
+      @if (loadWarnings().length) {
+        <section class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p class="font-semibold">Một phần dữ liệu báo cáo chưa tải được.</p>
+              <p class="mt-0.5 text-xs text-amber-800">
+                Các biểu đồ/bảng còn lại vẫn hiển thị dữ liệu thật đã tải thành công.
+              </p>
+            </div>
+            <button type="button" class="text-xs font-semibold text-amber-900 underline-offset-2 hover:underline" (click)="refresh()">
+              Tải lại
+            </button>
+          </div>
+          <ul class="mt-2 list-disc space-y-0.5 pl-5 text-xs text-amber-800">
+            @for (warning of loadWarnings(); track warning) {
+              <li>{{ warning }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        @for (kpi of periodKpis(); track kpi.id) {
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ kpi.label }}</p>
+            <p
+              class="text-2xl font-bold leading-tight tabular-nums"
+              [ngClass]="{
+                'text-slate-950': kpi.tone === 'default',
+                'text-emerald-600': kpi.tone === 'green',
+                'text-amber-600': kpi.tone === 'amber',
+                'text-red-600': kpi.tone === 'red'
+              }"
+            >
+              {{ kpi.value }}
+            </p>
+            <p class="mt-2 text-xs text-slate-500">{{ kpi.hint }}</p>
+          </article>
+        }
+      </section>
+
+      <section class="grid gap-4 xl:grid-cols-2">
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="mb-4">
+            <p class="text-sm font-semibold text-slate-950">Chi tiêu theo danh mục</p>
+            <p class="mt-0.5 text-xs text-slate-400">
+              {{ presetLabel() }} · Tổng {{ formatMoney(categoryTotal()) }}
+            </p>
+          </div>
+
+          @if (!categoryRows().length) {
+            <div class="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+              Chưa có dữ liệu danh mục từ expense confirmed.
+            </div>
+          } @else {
+            <div class="grid gap-4 lg:grid-cols-[180px_1fr] lg:items-center">
+              <div class="relative mx-auto flex h-44 w-44 items-center justify-center rounded-full bg-slate-100">
+                <div class="absolute inset-0 rounded-full" [style.background]="categoryConicGradient()"></div>
+                <div class="absolute inset-[28px] rounded-full bg-white"></div>
+                <div class="relative flex h-24 w-24 flex-col items-center justify-center rounded-full bg-white shadow-sm">
+                  <span class="text-xs font-medium text-slate-400">Tổng</span>
+                  <span class="text-sm font-bold text-slate-900">{{ formatNumber(categoryRows().length) }} nhóm</span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2">
+                @for (row of categoryRows(); track row.keyId ?? row.keyName) {
+                  <div class="grid grid-cols-[10px_minmax(0,1fr)_auto_auto] items-center gap-2 text-xs">
+                    <span
+                      class="h-2.5 w-2.5 rounded-sm"
+                      [ngClass]="row.index === 0 ? 'bg-blue-600' : row.index === 1 ? 'bg-emerald-500' : row.index === 2 ? 'bg-amber-500' : 'bg-slate-400'"
+                    ></span>
+                    <span class="truncate font-medium text-slate-700">{{ row.keyName }}</span>
+                    <span class="tabular-nums text-slate-500">{{ row.percent }}%</span>
+                    <span class="min-w-24 text-right tabular-nums text-slate-400">{{ formatMoney(row.amountInBaseCurrency) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </article>
+
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="mb-4">
+            <p class="text-sm font-semibold text-slate-950">Xu hướng chi tiêu hàng tháng</p>
+            <p class="mt-0.5 text-xs text-slate-400">{{ trendBars()[0]?.label ?? '—' }} – {{ trendBars()[trendBars().length - 1]?.label ?? '—' }} · 6 tháng gần nhất</p>
+          </div>
+
+          @if (!trendBars().length) {
+            <div class="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+              Chưa có dữ liệu xu hướng từ expense confirmed.
+            </div>
+          } @else {
+            <div class="relative h-52">
+              <svg viewBox="0 0 600 180" class="h-full w-full overflow-visible">
+                <line x1="34" y1="30" x2="560" y2="30" stroke="#f1f5f9" stroke-dasharray="3 3" />
+                <line x1="34" y1="70" x2="560" y2="70" stroke="#f1f5f9" stroke-dasharray="3 3" />
+                <line x1="34" y1="110" x2="560" y2="110" stroke="#f1f5f9" stroke-dasharray="3 3" />
+                <line x1="34" y1="150" x2="560" y2="150" stroke="#f1f5f9" stroke-dasharray="3 3" />
+                <polyline
+                  [attr.points]="trendBenchmarkPolyline()"
+                  fill="none"
+                  stroke="#94a3b8"
+                  stroke-width="2"
+                  stroke-dasharray="6 4"
+                  stroke-linecap="round"
+                />
+                <polyline
+                  [attr.points]="trendPolyline()"
+                  fill="none"
+                  stroke="#2563eb"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                @for (point of trendSvgPoints(); track point.label) {
+                  <g>
+                    <circle [attr.cx]="point.x" [attr.cy]="point.y" r="4.5" fill="#2563eb"></circle>
+                    <text [attr.x]="point.x" y="172" text-anchor="middle" class="fill-slate-400 text-[10px]">
+                      {{ point.label }}
+                    </text>
+                  </g>
+                }
+              </svg>
+              <div class="mt-2 flex flex-wrap items-center gap-4 px-1 text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1.5">
+                  <span class="h-px w-6 border-t border-dashed border-slate-400"></span>
+                  Phân bổ
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                  <span class="h-2.5 w-2.5 rounded-full bg-blue-600"></span>
+                  Thực chi
+                </span>
+                <span>Dữ liệu thực tế · {{ formatNumber(trendBars()[0]?.documents ?? 0) }} chứng từ trong điểm gần nhất</span>
+              </div>
+            </div>
+          }
+        </article>
+      </section>
+
+      <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <p class="text-sm font-semibold text-slate-950">Sử dụng ngân sách theo phòng ban</p>
+          <p class="mt-0.5 text-xs text-slate-400">Kỳ theo ngày kết thúc bộ lọc: {{ toDate() }}</p>
+        </div>
+        @if (!budgetWatchList().length) {
+          <div class="p-8 text-center text-sm text-slate-500">Chưa có ngân sách nào trong kỳ.</div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-100">
+                  @for (col of ['Phòng ban', 'Phân bổ', 'Đã cam kết', 'Đã chi', 'Còn lại', 'Mức sử dụng', 'Trạng thái']; track col) {
+                    <th class="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      {{ col }}
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50">
+                @for (row of budgetWatchList(); track row.departmentId) {
+                  <tr class="transition hover:bg-slate-50" [ngClass]="row.isOverBudget ? 'bg-red-50/40' : ''">
+                    <td class="px-5 py-3.5 font-medium text-slate-950">{{ row.departmentName }}</td>
+                    <td class="px-5 py-3.5 tabular-nums text-slate-700">{{ formatMoney(row.allocated) }}</td>
+                    <td class="px-5 py-3.5 tabular-nums text-slate-600">{{ formatMoney(row.committed) }}</td>
+                    <td class="px-5 py-3.5 tabular-nums font-medium text-slate-700">{{ formatMoney(row.spent) }}</td>
+                    <td class="px-5 py-3.5 tabular-nums" [ngClass]="row.remaining < 0 ? 'font-semibold text-red-600' : 'text-slate-700'">
+                      {{ formatMoney(row.remaining) }}
+                    </td>
+                    <td class="px-5 py-3.5">
+                      <div class="flex min-w-32 items-center gap-2">
+                        <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            class="h-full rounded-full"
+                            [ngClass]="row.isOverBudget ? 'bg-red-600' : row.isApproachingLimit ? 'bg-amber-500' : 'bg-emerald-500'"
+                            [style.width.%]="row.utilizationPercent > 100 ? 100 : row.utilizationPercent"
+                          ></div>
+                        </div>
+                        <span class="w-10 text-right text-xs font-bold tabular-nums">{{ formatPercent(row.utilizationPercent) }}</span>
+                      </div>
+                    </td>
+                    <td class="px-5 py-3.5">
+                      <span
+                        class="rounded-full border px-2 py-0.5 text-xs font-semibold"
+                        [ngClass]="row.isOverBudget ? 'border-red-200 bg-red-100 text-red-900' : row.isApproachingLimit ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'"
+                      >
+                        {{ row.isOverBudget ? 'Vượt ngân sách' : row.isApproachingLimit ? 'Đang theo dõi' : 'Khỏe mạnh' }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="grid gap-4 xl:grid-cols-2">
+        <article class="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-slate-100 px-5 py-4">
+            <p class="text-sm font-semibold text-slate-950">Top 10 Nhà cung cấp</p>
+            <p class="mt-0.5 text-xs text-slate-400">Theo tổng chi tiêu</p>
+          </div>
+          @if (!merchantRows().length) {
+            <div class="p-8 text-center text-sm text-slate-500">Chưa có dữ liệu merchant.</div>
+          } @else {
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="border-b border-slate-100">
+                  <th class="px-4 py-2.5 text-left font-semibold uppercase tracking-wide text-slate-400">#</th>
+                  <th class="px-3 py-2.5 text-left font-semibold uppercase tracking-wide text-slate-400">Tên</th>
+                  <th class="px-3 py-2.5 text-right font-semibold uppercase tracking-wide text-slate-400">Tổng chi</th>
+                  <th class="px-3 py-2.5 text-right font-semibold uppercase tracking-wide text-slate-400">HĐ</th>
+                  <th class="px-3 py-2.5 text-center font-semibold uppercase tracking-wide text-slate-400">Xác minh</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50">
+                @for (row of merchantRows(); track row.id) {
+                  <tr class="transition hover:bg-slate-50">
+                    <td class="px-4 py-2.5 font-semibold text-slate-400">{{ row.rank }}</td>
+                    <td class="px-3 py-2.5 font-medium text-slate-800">{{ row.name }}</td>
+                    <td class="px-3 py-2.5 text-right font-semibold tabular-nums text-slate-950">
+                      {{ formatMoney(row.total, row.source === 'approval' ? approvalCurrencyCode() : baseCurrencyCode()) }}
+                    </td>
+                    <td class="px-3 py-2.5 text-right tabular-nums text-slate-500">{{ row.invoices }}</td>
+                    <td class="px-3 py-2.5 text-center">
+                      @if (row.verified) {
+                        <span class="inline-flex items-center justify-center text-emerald-600">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="h-3.5 w-3.5">
+                            <path d="m5 13 4 4L19 7"></path>
+                          </svg>
+                        </span>
+                      } @else if (row.source === 'approval') {
+                        <span class="rounded bg-violet-50 px-1.5 py-0.5 text-[11px] font-medium text-violet-600">Queue</span>
+                      } @else {
+                        <span class="text-xs text-slate-300">✕</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </article>
+
+        <article class="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-slate-100 px-5 py-4">
+            <p class="text-sm font-semibold text-slate-950">Top 10 Nhân viên được hoàn tiền</p>
+            <p class="mt-0.5 text-xs text-slate-400">Theo tổng số tiền hoàn — Accountant / TenantAdmin</p>
+          </div>
+          @if (!employeeRows().length) {
+            <div class="p-8 text-center text-sm text-slate-500">Chưa có dữ liệu nhân viên từ expense confirmed.</div>
+          } @else {
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="border-b border-slate-100">
+                  @for (col of ['#', 'Tên', 'Phòng ban', 'Tổng hoàn', 'Chi tiêu']; track col) {
+                    <th class="px-4 py-2.5 text-left font-semibold uppercase tracking-wide text-slate-400">{{ col }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50">
+                @for (row of employeeRows(); track row.id) {
+                  <tr class="transition hover:bg-slate-50">
+                    <td class="px-4 py-2.5 font-semibold text-slate-400">{{ row.rank }}</td>
+                    <td class="px-4 py-2.5 font-medium text-slate-800">{{ row.name }}</td>
+                    <td class="px-4 py-2.5 text-slate-500">{{ row.department }}</td>
+                    <td class="px-4 py-2.5 text-right font-semibold tabular-nums text-slate-950">{{ formatMoney(row.total, row.currencyCode) }}</td>
+                    <td class="px-4 py-2.5 text-right tabular-nums text-slate-500">{{ row.count }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </article>
+      </section>
+
+      <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-100 px-5 py-4">
+          <p class="text-sm font-semibold text-slate-950">Hàng đợi hoàn tiền</p>
+          <p class="mt-0.5 text-xs text-slate-400">Hóa đơn đã duyệt, đang chờ Accountant xử lý</p>
+        </div>
+        @if (!pendingReimbursementRows().length) {
+          <div class="p-8 text-center text-sm text-slate-500">Không có hóa đơn nào đang chờ hoàn tiền.</div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-100">
+                  @for (col of ['Nhân viên', 'Mã hóa đơn', 'Nhà cung cấp', 'Số tiền', 'Duyệt vào', 'Tuổi', 'Hành động']; track col) {
+                    <th class="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      {{ col }}
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50">
+                @for (row of pendingReimbursementRows(); track row.id) {
+                  <tr class="transition hover:bg-slate-50">
+                    <td class="px-5 py-3.5 font-medium text-slate-950">{{ row.employee }}</td>
+                    <td class="px-5 py-3.5">
+                      <span class="font-mono text-xs font-semibold text-slate-500">{{ row.code }}</span>
+                    </td>
+                    <td class="px-5 py-3.5 text-slate-600">{{ row.merchant }}</td>
+                    <td class="px-5 py-3.5 font-semibold tabular-nums text-slate-950">{{ formatMoney(row.amount, row.currencyCode) }}</td>
+                    <td class="px-5 py-3.5 text-xs text-slate-500">{{ formatDate(row.approvedAt) }}</td>
+                    <td class="px-5 py-3.5">
+                      <span class="tabular-nums" [ngClass]="row.ageDays > 7 ? 'font-bold text-red-600' : 'text-slate-500'">
+                        {{ row.ageDays }}d
+                      </span>
+                    </td>
+                    <td class="px-5 py-3.5">
+                      <button type="button" class="text-xs font-semibold text-blue-600 transition hover:underline" (click)="openPendingPayment(row)">
+                        {{ row.actionLabel }} →
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="mb-4 text-sm font-semibold text-slate-950">Chi tiêu theo loại tiền</p>
+        @if (!currencyRows().length) {
+          <div class="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+            Chưa có dữ liệu loại tiền.
+          </div>
+        } @else {
+          <div class="grid gap-4 md:grid-cols-3">
+            @for (row of currencyRows(); track row.code) {
+              <div class="rounded-xl border border-slate-100 bg-slate-50 px-5 py-4">
+                <div class="mb-3 flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase tracking-widest text-slate-400">{{ row.code }}</span>
+                  <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-500">
+                    {{ row.percent }}%
+                  </span>
+                </div>
+                <p class="text-lg font-bold leading-tight tabular-nums text-slate-950">
+                  {{ formatMoney(row.amount, row.code) }}
+                </p>
+                <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div class="h-full rounded-full bg-blue-500" [style.width.%]="row.percent"></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  }
+</div>
