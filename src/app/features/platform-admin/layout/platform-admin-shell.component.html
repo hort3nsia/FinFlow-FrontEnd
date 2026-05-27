@@ -1,0 +1,98 @@
+<div class="flex min-h-screen bg-slate-100">
+  <!-- Admin sidebar -->
+  <aside class="hidden w-64 flex-col border-r border-slate-200 bg-slate-900 text-slate-100 md:flex">
+    <header class="flex items-center gap-3 border-b border-slate-800 px-5 py-5">
+      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-amber-500 text-sm font-semibold text-white shadow">
+        FF
+      </span>
+      <div class="min-w-0">
+        <p class="truncate text-sm font-semibold">FinFlow Admin</p>
+        <p class="text-[11px] uppercase tracking-wide text-slate-400">Platform Console</p>
+      </div>
+    </header>
+
+    <nav class="flex-1 space-y-1 px-3 py-4">
+      @for (item of navItems; track item.route) {
+        <a
+          class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition"
+          [routerLink]="item.route"
+          routerLinkActive="bg-slate-800 text-white"
+          [routerLinkActiveOptions]="{ exact: false }"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+            @switch (item.icon) {
+              @case ('dashboard') {
+                <rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect>
+                <rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect>
+                <rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect>
+                <rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect>
+              }
+              @case ('tenants') {
+                <path d="M3 21h18"></path>
+                <path d="M5 21V7l8-4v18"></path>
+                <path d="M19 21V11l-6-4"></path>
+              }
+              @case ('subscriptions') {
+                <rect x="3.5" y="5" width="17" height="14" rx="2"></rect>
+                <path d="M3.5 10.5h17"></path>
+                <path d="M7.5 15h2"></path>
+              }
+              @case ('audit') {
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <path d="M14 2v6h6"></path>
+                <path d="M9 13h6"></path>
+                <path d="M9 17h6"></path>
+              }
+            }
+          </svg>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="space-y-2 border-t border-slate-800 p-3">
+      <a
+        class="block rounded-lg px-3 py-2 text-xs text-slate-300 hover:bg-slate-800"
+        routerLink="/app/dashboard"
+      >
+        ← Quay lại workspace
+      </a>
+      <button
+        type="button"
+        class="block w-full rounded-lg px-3 py-2 text-left text-xs text-rose-300 hover:bg-rose-500/10"
+        (click)="logout()"
+      >
+        Đăng xuất
+      </button>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="flex flex-1 flex-col">
+    <header class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
+      <div class="flex items-center gap-3">
+        <span class="rounded-md bg-rose-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-rose-700">
+          SuperAdmin
+        </span>
+        <p class="text-sm text-slate-700">
+          Đang làm việc trong workspace <strong>{{ currentTenantName() }}</strong>
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a
+          class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+          routerLink="/app/dashboard"
+        >
+          Workspace view
+        </a>
+        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-amber-500 text-sm font-semibold text-white shadow-sm">
+          {{ adminInitial() }}
+        </span>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-6">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
