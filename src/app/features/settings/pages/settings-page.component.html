@@ -1,0 +1,485 @@
+<div class="flex min-h-full flex-col gap-5 pb-10">
+  <header class="flex flex-col gap-3">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Workspace Settings</p>
+        <h1 class="mt-1 text-2xl font-bold leading-tight text-slate-950">Cấu hình tổ chức</h1>
+        <p class="mt-1 text-sm text-slate-500">
+          Quản trị nhận diện, policy vận hành, thông báo và hạn mức gói bằng dữ liệu thật của workspace.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <a
+          routerLink="/app/subscription"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+            <path d="M12 3v18"></path>
+            <path d="M5 8h14"></path>
+            <path d="M5 16h14"></path>
+          </svg>
+          Gói & hạn mức
+        </a>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          (click)="refresh()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+            <path d="M21 12a9 9 0 0 1-15.4 6.4"></path>
+            <path d="M3 12A9 9 0 0 1 18.4 5.6"></path>
+            <path d="M18 2v4h-4"></path>
+            <path d="M6 22v-4h4"></path>
+          </svg>
+          Làm mới
+        </button>
+      </div>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <section class="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+      Đang tải cấu hình workspace...
+    </section>
+  } @else if (loadError()) {
+    <section class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <strong class="font-semibold">Lỗi tải cấu hình:</strong> {{ loadError() }}
+    </section>
+  } @else if (settings(); as s) {
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="relative p-5">
+        <div class="absolute right-0 top-0 h-28 w-72 rounded-bl-full bg-blue-50"></div>
+        <div class="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex items-center gap-4">
+            <div
+              class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-xl font-black text-white shadow-sm"
+              [style.background]="primaryColor() || '#2563eb'"
+            >
+              {{ brandInitial() }}
+            </div>
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="truncate text-xl font-bold text-slate-950">{{ workspaceName() }}</h2>
+                <span class="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                  {{ currentRole() }}
+                </span>
+              </div>
+              <p class="mt-1 text-sm text-slate-500">
+                {{ workspaceCode() }} · {{ userEmail() }}
+              </p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Cập nhật cuối</p>
+            <p class="mt-1 text-sm font-semibold text-slate-800">{{ formatDate(s.updatedAt) }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    @if (!canEdit()) {
+      <section class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        Bạn đang xem ở chế độ chỉ đọc. Chỉ Tenant Admin hoặc SuperAdmin mới được chỉnh sửa cấu hình tổ chức.
+      </section>
+    }
+
+    <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      @for (card of settingsSummaryCards(); track card.label) {
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ card.label }}</p>
+              <p class="mt-2 truncate text-lg font-bold text-slate-950">{{ card.value }}</p>
+              <p class="mt-1 truncate text-xs text-slate-500">{{ card.detail }}</p>
+            </div>
+            <span
+              class="h-2.5 w-2.5 rounded-full"
+              [ngClass]="{
+                'bg-blue-500': card.tone === 'blue',
+                'bg-emerald-500': card.tone === 'emerald',
+                'bg-amber-500': card.tone === 'amber',
+                'bg-slate-400': card.tone === 'slate'
+              }"
+            ></span>
+          </div>
+        </article>
+      }
+    </section>
+
+    <section class="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)_300px]">
+      <aside class="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm xl:sticky xl:top-4 xl:self-start">
+        <div class="px-3 py-3">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Settings map</p>
+          <p class="mt-1 text-xs text-slate-500">Chọn một vùng cấu hình để chỉnh.</p>
+        </div>
+
+        <nav class="flex flex-col gap-1">
+          @for (tab of tabs; track tab.id) {
+            <button
+              type="button"
+              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition"
+              [ngClass]="activeTab() === tab.id ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'"
+              (click)="setActiveTab(tab.id)"
+            >
+              <span
+                class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border"
+                [ngClass]="activeTab() === tab.id ? 'border-blue-100 bg-white text-blue-600' : 'border-slate-100 bg-slate-50 text-slate-400 group-hover:text-slate-600'"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+                  @switch (tab.icon) {
+                    @case ('branding') {
+                      <path d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v13l-4-2-4 2-4-2-4 2z"></path>
+                    }
+                    @case ('approval') {
+                      <path d="M20 6 9 17l-5-5"></path>
+                      <path d="M14 14h6v6"></path>
+                    }
+                    @case ('budget') {
+                      <path d="M4 6h16"></path>
+                      <path d="M7 3v18"></path>
+                      <path d="M17 3v18"></path>
+                      <path d="M10 12h4"></path>
+                    }
+                    @case ('reimbursement') {
+                      <rect x="3.5" y="5" width="17" height="14" rx="2"></rect>
+                      <path d="M3.5 10.5h17"></path>
+                    }
+                    @case ('notifications') {
+                      <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h11Z"></path>
+                      <path d="M9 17a3 3 0 0 0 6 0"></path>
+                    }
+                    @default {
+                      <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Z"></path>
+                      <path d="M12 7v5l3 2"></path>
+                    }
+                  }
+                </svg>
+              </span>
+              <span class="min-w-0">
+                <span class="block text-sm font-semibold">{{ tab.shortLabel }}</span>
+                <span class="block truncate text-[11px] opacity-70">{{ tab.eyebrow }}</span>
+              </span>
+            </button>
+          }
+        </nav>
+      </aside>
+
+      <main class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <header class="border-b border-slate-100 px-5 py-4">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+            {{ activeTabConfig().eyebrow }}
+          </p>
+          <h2 class="mt-1 text-lg font-bold text-slate-950">{{ activeTabConfig().label }}</h2>
+          <p class="mt-1 text-sm text-slate-500">{{ activeTabConfig().description }}</p>
+        </header>
+
+        <div class="p-5">
+          @switch (activeTab()) {
+            @case ('branding') {
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="block md:col-span-2">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Tên hiển thị</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="text" [disabled]="!canEdit()" placeholder="VD: Công ty TNHH FinFlow" [ngModel]="companyDisplayName()" (ngModelChange)="companyDisplayName.set($event)" name="companyDisplayName" />
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Màu thương hiệu</span>
+                  <div class="flex items-center gap-2">
+                    <input class="h-10 w-12 cursor-pointer rounded-lg border border-slate-200 bg-white" type="color" [disabled]="!canEdit()" [ngModel]="primaryColor()" (ngModelChange)="primaryColor.set($event)" name="primaryColor" />
+                    <input class="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="text" [disabled]="!canEdit()" [ngModel]="primaryColor()" (ngModelChange)="primaryColor.set($event)" name="primaryColorText" />
+                  </div>
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Ngôn ngữ</span>
+                  <select class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" [disabled]="!canEdit()" [ngModel]="locale()" (ngModelChange)="locale.set($event)" name="locale">
+                    @for (l of locales; track l.code) {
+                      <option [value]="l.code">{{ l.label }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Múi giờ</span>
+                  <select class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" [disabled]="!canEdit()" [ngModel]="timezone()" (ngModelChange)="timezone.set($event)" name="timezone">
+                    @for (tz of timezones; track tz.code) {
+                      <option [value]="tz.code">{{ tz.label }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">URL logo</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="url" [disabled]="!canEdit()" placeholder="https://cdn.example.com/logo.svg" [ngModel]="logoUrl()" (ngModelChange)="logoUrl.set($event)" name="logoUrl" />
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">URL favicon</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="url" [disabled]="!canEdit()" placeholder="https://cdn.example.com/favicon.ico" [ngModel]="faviconUrl()" (ngModelChange)="faviconUrl.set($event)" name="faviconUrl" />
+                </label>
+              </div>
+
+              <div class="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                @if (tabError()?.tab === 'branding') {
+                  <span class="text-sm text-rose-600">{{ tabError()?.message }}</span>
+                }
+                @if (tabSuccess()?.tab === 'branding') {
+                  <span class="text-sm text-emerald-600">{{ tabSuccess()?.message }}</span>
+                }
+                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!canEdit() || savingTab() === 'branding'" (click)="saveBranding()">
+                  @if (savingTab() === 'branding') { Đang lưu... } @else { Lưu thương hiệu }
+                </button>
+              </div>
+            }
+
+            @case ('approval') {
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Ngưỡng tự động duyệt</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="number" min="0" step="100000" [disabled]="!canEdit()" [ngModel]="autoApproveThreshold()" (ngModelChange)="autoApproveThreshold.set(+$event)" name="autoApproveThreshold" />
+                  <span class="mt-1 block text-xs text-slate-500">Hiện tại: {{ formatMoney(autoApproveThreshold()) }}</span>
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Ngưỡng leo thang</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="number" min="0" step="500000" [disabled]="!canEdit()" [ngModel]="escalationThreshold()" (ngModelChange)="escalationThreshold.set(+$event)" name="escalationThreshold" />
+                  <span class="mt-1 block text-xs text-slate-500">Hiện tại: {{ formatMoney(escalationThreshold()) }}</span>
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Vai trò leo thang</span>
+                  <select class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" [disabled]="!canEdit()" [ngModel]="escalationApproverRole()" (ngModelChange)="escalationApproverRole.set($event)" name="escalationApproverRole">
+                    @for (role of approverRoles; track role.code) {
+                      <option [value]="role.code">{{ role.label }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">SLA duyệt</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="number" min="1" max="720" [disabled]="!canEdit()" [ngModel]="maxApprovalAgeHours()" (ngModelChange)="maxApprovalAgeHours.set(+$event)" name="maxApprovalAgeHours" />
+                  <span class="mt-1 block text-xs text-slate-500">{{ maxApprovalAgeHours() }} giờ</span>
+                </label>
+
+                <label class="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                  <span class="flex items-start gap-3">
+                    <input class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-60" type="checkbox" [disabled]="!canEdit()" [ngModel]="requireDifferentApprover()" (ngModelChange)="requireDifferentApprover.set($event)" name="requireDifferentApprover" />
+                    <span>
+                      <span class="block text-sm font-semibold text-slate-900">Yêu cầu người duyệt khác người lập</span>
+                      <span class="mt-1 block text-xs text-slate-500">Giảm rủi ro self-approval trong luồng expense.</span>
+                    </span>
+                  </span>
+                </label>
+
+                <label class="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                  <span class="flex items-start gap-3">
+                    <input class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-60" type="checkbox" [disabled]="!canEdit()" [ngModel]="isEscalationEnabled()" (ngModelChange)="isEscalationEnabled.set($event)" name="isEscalationEnabled" />
+                    <span>
+                      <span class="block text-sm font-semibold text-slate-900">Bật quy trình leo thang</span>
+                      <span class="mt-1 block text-xs text-slate-500">Tự chuyển yêu cầu vượt ngưỡng tới vai trò cao hơn.</span>
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              <div class="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                @if (tabError()?.tab === 'approval') {
+                  <span class="text-sm text-rose-600">{{ tabError()?.message }}</span>
+                }
+                @if (tabSuccess()?.tab === 'approval') {
+                  <span class="text-sm text-emerald-600">{{ tabSuccess()?.message }}</span>
+                }
+                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!canEdit() || savingTab() === 'approval'" (click)="saveApproval()">
+                  @if (savingTab() === 'approval') { Đang lưu... } @else { Lưu chính sách }
+                </button>
+              </div>
+            }
+
+            @case ('budget') {
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="block md:col-span-2">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Cơ chế kiểm soát</span>
+                  <select class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" [disabled]="!canEdit()" [ngModel]="defaultEnforcementMode()" (ngModelChange)="defaultEnforcementMode.set($event)" name="defaultEnforcementMode">
+                    @for (mode of enforcementModes; track mode.code) {
+                      <option [value]="mode.code">{{ mode.label }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Carry-over</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="number" min="0" max="100" step="5" [disabled]="!canEdit()" [ngModel]="defaultCarryOverPercent()" (ngModelChange)="defaultCarryOverPercent.set(+$event)" name="defaultCarryOverPercent" />
+                  <span class="mt-1 block text-xs text-slate-500">{{ defaultCarryOverPercent() }}% ngân sách thừa chuyển kỳ sau.</span>
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Cảnh báo cấp 1</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="number" min="1" max="100" step="5" [disabled]="!canEdit()" [ngModel]="warningThreshold1()" (ngModelChange)="warningThreshold1.set(+$event)" name="warningThreshold1" />
+                </label>
+
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Cảnh báo cấp 2</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="number" min="1" max="100" step="5" [disabled]="!canEdit()" [ngModel]="warningThreshold2()" (ngModelChange)="warningThreshold2.set(+$event)" name="warningThreshold2" />
+                </label>
+              </div>
+
+              <div class="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                @if (tabError()?.tab === 'budget') {
+                  <span class="text-sm text-rose-600">{{ tabError()?.message }}</span>
+                }
+                @if (tabSuccess()?.tab === 'budget') {
+                  <span class="text-sm text-emerald-600">{{ tabSuccess()?.message }}</span>
+                }
+                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!canEdit() || savingTab() === 'budget'" (click)="saveBudget()">
+                  @if (savingTab() === 'budget') { Đang lưu... } @else { Lưu ngân sách }
+                </button>
+              </div>
+            }
+
+            @case ('reimbursement') {
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Hạn mức yêu cầu hoàn</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="number" min="0" step="100000" [disabled]="!canEdit()" [ngModel]="maxClaimAmount()" (ngModelChange)="maxClaimAmount.set(+$event)" name="maxClaimAmount" />
+                  <span class="mt-1 block text-xs text-slate-500">Hiện tại: {{ formatMoney(maxClaimAmount()) }}</span>
+                </label>
+                <label class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Bắt buộc chứng từ từ</span>
+                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="number" min="0" step="50000" [disabled]="!canEdit()" [ngModel]="receiptRequiredAbove()" (ngModelChange)="receiptRequiredAbove.set(+$event)" name="receiptRequiredAbove" />
+                  <span class="mt-1 block text-xs text-slate-500">Hiện tại: {{ formatMoney(receiptRequiredAbove()) }}</span>
+                </label>
+              </div>
+
+              <div class="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                @if (tabError()?.tab === 'reimbursement') {
+                  <span class="text-sm text-rose-600">{{ tabError()?.message }}</span>
+                }
+                @if (tabSuccess()?.tab === 'reimbursement') {
+                  <span class="text-sm text-emerald-600">{{ tabSuccess()?.message }}</span>
+                }
+                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!canEdit() || savingTab() === 'reimbursement'" (click)="saveReimbursement()">
+                  @if (savingTab() === 'reimbursement') { Đang lưu... } @else { Lưu hoàn tiền }
+                </button>
+              </div>
+            }
+
+            @case ('notifications') {
+              <div class="space-y-4">
+                <label class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <span class="flex items-start gap-3">
+                    <input class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-60" type="checkbox" [disabled]="!canEdit()" [ngModel]="emailDigestEnabled()" (ngModelChange)="emailDigestEnabled.set($event)" name="emailDigestEnabled" />
+                    <span>
+                      <span class="block text-sm font-semibold text-slate-900">Bật email tổng hợp</span>
+                      <span class="mt-1 block text-xs text-slate-500">Digest hằng tuần hoặc theo tần suất bạn chọn. Cảnh báo khẩn cấp vẫn được gửi riêng.</span>
+                    </span>
+                  </span>
+                </label>
+
+                <label class="block md:max-w-xs">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Tần suất digest</span>
+                  <select class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" [disabled]="!canEdit() || !emailDigestEnabled()" [ngModel]="emailDigestFrequency()" (ngModelChange)="emailDigestFrequency.set($event)" name="emailDigestFrequency">
+                    @for (frequency of digestFrequencies; track frequency.code) {
+                      <option [value]="frequency.code">{{ frequency.label }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+
+              <div class="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                @if (tabError()?.tab === 'notifications') {
+                  <span class="text-sm text-rose-600">{{ tabError()?.message }}</span>
+                }
+                @if (tabSuccess()?.tab === 'notifications') {
+                  <span class="text-sm text-emerald-600">{{ tabSuccess()?.message }}</span>
+                }
+                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!canEdit() || savingTab() === 'notifications'" (click)="saveNotifications()">
+                  @if (savingTab() === 'notifications') { Đang lưu... } @else { Lưu thông báo }
+                </button>
+              </div>
+            }
+
+            @default {
+              @if (subscriptionData(); as sub) {
+                <div class="space-y-4">
+                  <div class="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Plan</p>
+                    <p class="mt-1 text-2xl font-black text-slate-950">{{ sub.planTier }}</p>
+                    <p class="text-sm text-slate-600">Trạng thái: {{ sub.status }}</p>
+                  </div>
+
+                  @for (quota of [
+                    { label: 'OCR workspace', used: sub.usage.ocrPagesUsed, limit: sub.entitlements.workspaceMonthlyOcrPages, unit: 'trang' },
+                    { label: 'Tin AI workspace', used: sub.usage.chatbotMessagesUsed, limit: sub.entitlements.workspaceMonthlyChatbotMessages, unit: 'tin' },
+                    { label: 'Lưu trữ tài liệu', used: sub.usage.storageUsedBytes, limit: sub.entitlements.storageLimitBytes, unit: 'bytes' },
+                    { label: 'OCR cá nhân', used: sub.currentMemberUsage.ocrPagesUsed, limit: sub.entitlements.memberMonthlyOcrPages, unit: 'trang' },
+                    { label: 'Tin AI cá nhân', used: sub.currentMemberUsage.chatbotMessagesUsed, limit: sub.entitlements.memberMonthlyChatbotMessages, unit: 'tin' }
+                  ]; track quota.label) {
+                    <div>
+                      <div class="flex items-center justify-between text-sm">
+                        <span class="font-semibold text-slate-700">{{ quota.label }}</span>
+                        <span class="text-slate-500">
+                          @if (quota.unit === 'bytes') {
+                            {{ formatBytes(quota.used) }} / {{ formatBytes(quota.limit) }}
+                          } @else {
+                            {{ quota.used }} / {{ quota.limit }} {{ quota.unit }}
+                          }
+                        </span>
+                      </div>
+                      <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          class="h-full rounded-full"
+                          [ngClass]="{
+                            'bg-emerald-500': quotaTone(quota.used, quota.limit) === 'safe',
+                            'bg-amber-500': quotaTone(quota.used, quota.limit) === 'warning',
+                            'bg-rose-500': quotaTone(quota.used, quota.limit) === 'danger',
+                            'bg-slate-300': quotaTone(quota.used, quota.limit) === 'unlimited'
+                          }"
+                          [style.width.%]="quotaPercent(quota.used, quota.limit)"
+                        ></div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+                  Chưa tải được dữ liệu gói hiện tại.
+                </p>
+              }
+            }
+          }
+        </div>
+      </main>
+
+      <aside class="flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start">
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Operational snapshot</p>
+          <div class="mt-3 divide-y divide-slate-100">
+            @for (item of workflowSnapshot(); track item.label) {
+              <div class="flex items-center justify-between gap-3 py-2.5">
+                <span class="text-xs text-slate-500">{{ item.label }}</span>
+                <span class="text-right text-xs font-semibold text-slate-900">{{ item.value }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Policy health</p>
+          <div class="mt-3 space-y-2">
+            <div class="rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+              Quy tắc self-approval: {{ requireDifferentApprover() ? 'Đã chặn' : 'Chưa chặn' }}
+            </div>
+            <div class="rounded-xl bg-blue-50 px-3 py-2 text-xs text-blue-700">
+              Locale: {{ locale() }} · {{ timezone() }}
+            </div>
+            <div class="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              Các thay đổi được lưu trực tiếp qua GraphQL settings mutations.
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  }
+</div>

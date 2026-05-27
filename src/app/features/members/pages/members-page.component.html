@@ -1,0 +1,565 @@
+<div class="members-workspace">
+  @if (operationNotice()) {
+    <aside
+      class="operation-toast"
+      [ngClass]="'operation-toast--' + operationNoticeKind()"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="toast-glow"></span>
+      <span class="toast-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 6 9 17l-5-5"></path>
+        </svg>
+      </span>
+      <div>
+        <strong>{{ operationNoticeTitle() }}</strong>
+        <p>{{ operationNotice() }}</p>
+      </div>
+      <button type="button" aria-label="Đóng thông báo" (click)="dismissOperationNotice()">×</button>
+      <span class="toast-spark toast-spark--one"></span>
+      <span class="toast-spark toast-spark--two"></span>
+      <span class="toast-spark toast-spark--three"></span>
+    </aside>
+  }
+
+  <header class="workspace-header">
+    <div>
+      <p class="eyebrow">MEMBERSHIP MANAGEMENT</p>
+      <h1>Quản lý thành viên</h1>
+      <p>{{ pageCopy }}</p>
+    </div>
+    <button type="button" class="primary-action" (click)="openInviteModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14"></path>
+        <path d="M5 12h14"></path>
+      </svg>
+      Mời thành viên
+    </button>
+  </header>
+
+  <section class="kpi-strip" aria-label="Tổng quan thành viên">
+    @for (k of kpis(); track k.id) {
+      <article class="kpi-card" [ngClass]="'tone-' + k.tone">
+        <span class="kpi-icon">
+          @switch (k.id) {
+            @case ('total') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            }
+            @case ('active') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M20 6 9 17l-5-5"></path>
+              </svg>
+            }
+            @case ('pending') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+              </svg>
+            }
+            @case ('inactive') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="m17 8 5 5"></path>
+                <path d="m22 8-5 5"></path>
+              </svg>
+            }
+          }
+        </span>
+        <span>
+          <strong>{{ k.value }}</strong>
+          <small>{{ k.label }}</small>
+        </span>
+      </article>
+    }
+  </section>
+
+  <section class="workspace-card">
+    <div class="tabs-row">
+      <nav aria-label="Member tabs">
+        @for (tab of tabs(); track tab.id) {
+          <button
+            type="button"
+            [class.active]="activeTab() === tab.id"
+            (click)="setActiveTab(tab.id)"
+          >
+            {{ tab.label }}
+          </button>
+        }
+      </nav>
+      <span>{{ resultsCountLabel() }}</span>
+    </div>
+
+    <div class="filters-row">
+      <label class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <input
+          type="search"
+          placeholder="Tìm tên, email, vai trò..."
+          [value]="searchQuery()"
+          (input)="updateSearchQuery($any($event.target).value)"
+        />
+      </label>
+      <select [value]="departmentFilter()" (change)="updateDepartmentFilter($any($event.target).value)">
+        <option value="">Tất cả phòng ban</option>
+        @for (d of departments(); track d.id) {
+          <option [value]="d.id">{{ d.name }}</option>
+        }
+      </select>
+      <select [value]="statusFilter()" (change)="updateStatusFilter($any($event.target).value)">
+        <option value="all">Tất cả trạng thái</option>
+        <option value="active">Đang hoạt động</option>
+        <option value="inactive">Vô hiệu</option>
+      </select>
+      <select [value]="roleFilter()" (change)="updateRoleFilter($any($event.target).value)">
+        <option value="">Tất cả vai trò</option>
+        @for (r of roleOptions(); track r) {
+          <option [value]="r">{{ r }}</option>
+        }
+      </select>
+    </div>
+
+    @if (loadError()) {
+      <div class="error-state">
+        <strong>Lỗi tải dữ liệu:</strong> {{ loadError() }}
+      </div>
+    }
+
+    @if (isLoading()) {
+      <div class="empty-state">Đang tải dữ liệu thành viên...</div>
+    } @else {
+      <div class="content-grid" [class.has-inspector]="hasMemberInspector()">
+        @if (activeTab() === 'members') {
+          <section class="table-panel">
+            @if (!visibleMemberRows().length) {
+              <div class="empty-state">{{ emptyStateCopy() }}</div>
+            } @else {
+              <table>
+                <thead>
+                  <tr>
+                    <th>Thành viên</th>
+                    <th>Vai trò</th>
+                    <th>Phòng ban</th>
+                    <th>Trạng thái</th>
+                    <th>Tham gia</th>
+                    <th class="text-right">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of visibleMemberRows(); track row.id) {
+                    <tr
+                      class="member-row"
+                      [class.selected]="row.id === selectedMemberId()"
+                      [class.inactive]="row.statusValue === 'inactive'"
+                      tabindex="0"
+                      (click)="selectMemberRow(row.id)"
+                      (keydown)="onMemberRowKeydown($event, row.id)"
+                    >
+                      <td>
+                        <div class="identity-cell">
+                          <span class="avatar">{{ row.initials }}</span>
+                          <span class="min-w-0">
+                            <strong>{{ row.name }}</strong>
+                            <small>{{ row.email }}</small>
+                          </span>
+                          @if (row.typeLabel === 'Owner') {
+                            <span class="owner-badge">Owner</span>
+                          }
+                          @if (row.isCurrentUser && row.typeLabel !== 'Owner') {
+                            <span class="you-badge">Bạn</span>
+                          }
+                        </div>
+                      </td>
+                      <td><span class="role-badge">{{ row.roleLabel }}</span></td>
+                      <td>{{ row.departmentName }}</td>
+                      <td>
+                        <span class="status-badge" [class.active]="row.statusValue === 'active'">
+                          {{ row.statusLabel === 'Active' ? 'Hoạt động' : 'Vô hiệu' }}
+                        </span>
+                      </td>
+                      <td>{{ row.joinedLabel }}</td>
+                      <td class="text-right">
+                        <span class="row-action">{{ row.actionLabel }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+            @if (inactiveCount() > 0) {
+              <div class="table-note">
+                {{ inactiveCount() }} thành viên đang bị vô hiệu hoá và không tham gia workflow đang hoạt động.
+              </div>
+            }
+          </section>
+        } @else {
+          <section class="table-panel">
+            @if (!visibleInvitationRows().length) {
+              <div class="empty-state">{{ emptyStateCopy() }}</div>
+            } @else {
+              <table>
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Ngày gửi</th>
+                    <th>Hết hạn</th>
+                    <th>Trạng thái</th>
+                    <th class="text-right">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (inv of visibleInvitationRows(); track inv.id) {
+                    <tr>
+                      <td><strong>{{ inv.email }}</strong></td>
+                      <td>{{ inv.roleLabel }}</td>
+                      <td>{{ inv.createdLabel }}</td>
+                      <td>{{ inv.expiresLabel }}</td>
+                      <td>
+                        <span class="status-badge pending">
+                          @switch (inv.statusLabel) {
+                            @case ('Pending') { Đang chờ }
+                            @case ('Expired') { Hết hạn }
+                            @case ('Revoked') { Đã thu hồi }
+                            @case ('Accepted') { Đã chấp nhận }
+                          }
+                        </span>
+                      </td>
+                      <td class="text-right">
+                        <button
+                          type="button"
+                          class="row-action invitation-action"
+                          [class.danger]="inv.actionType === 'revoke'"
+                          [disabled]="inv.actionType === 'view' || invitationActionSubmitting() === inv.id"
+                          [attr.data-testid]="'invitation-action-' + inv.id"
+                          (click)="handleInvitationAction(inv, $event)"
+                        >
+                          @if (invitationActionSubmitting() === inv.id) { Đang xử lý... } @else { {{ inv.actionLabel }} }
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+              @if (invitationActionError()) {
+                <div class="table-note error-note">{{ invitationActionError() }}</div>
+              }
+            }
+          </section>
+        }
+
+        @if (hasMemberInspector()) {
+          <aside class="member-inspector">
+            <header>
+              <div>
+                <p class="eyebrow">MEMBER DETAILS</p>
+                <h2>Chi tiết thành viên</h2>
+              </div>
+              <button type="button" aria-label="Đóng chi tiết" (click)="closeSelectedMemberPanel()">×</button>
+            </header>
+
+            <nav class="inspector-tabs">
+              @for (t of inspectorTabs(); track t.id) {
+                <button
+                  type="button"
+                  [class.active]="activeInspectorTab() === t.id"
+                  (click)="setActiveInspectorTab(t.id)"
+                >
+                  {{ t.label }}
+                </button>
+              }
+            </nav>
+
+            @if (isMemberDetailLoading()) {
+              <div class="inspector-body">Đang tải chi tiết...</div>
+            } @else if (memberDetailError()) {
+              <div class="inspector-body error-state">
+                {{ memberDetailError() }}
+                <button type="button" (click)="retrySelectedMemberDetail()">Thử lại</button>
+              </div>
+            } @else {
+              <div class="inspector-body">
+                @if (activeInspectorTab() === 'identity') {
+                  <div class="profile-hero">
+                    <span class="avatar large">{{ selectedMemberRow()?.initials }}</span>
+                    <h3>{{ selectedMemberRow()?.name }}</h3>
+                    <p>{{ selectedMemberRow()?.email }}</p>
+                    <div class="badge-row">
+                      <span class="role-badge">{{ selectedMemberRoleLabel() }}</span>
+                      <span class="status-badge" [class.active]="selectedMemberStatusLabel() === 'Active'">
+                        {{ selectedMemberStatusLabel() === 'Active' ? 'Hoạt động' : 'Vô hiệu' }}
+                      </span>
+                    </div>
+                  </div>
+                  <dl class="detail-list">
+                    <div><dt>Phòng ban</dt><dd>{{ selectedMemberDepartmentLabel() }}</dd></div>
+                    <div><dt>Loại</dt><dd>{{ selectedMemberTypeLabel() === 'Owner' ? 'Owner' : 'Member' }}</dd></div>
+                    <div><dt>Tham gia</dt><dd>{{ selectedMemberJoinedLabel() }}</dd></div>
+                    <div><dt>Hoạt động cuối</dt><dd>{{ selectedMemberLastActiveLabel() }}</dd></div>
+                    <div><dt>Membership ID</dt><dd class="mono">{{ selectedMemberDetail()?.id }}</dd></div>
+                    <div><dt>Account ID</dt><dd class="mono">{{ selectedMemberDetail()?.accountId }}</dd></div>
+                  </dl>
+                  <p class="policy-note">{{ selectedMemberProtectedNote() }}</p>
+                }
+
+                @if (activeInspectorTab() === 'access') {
+                  <p class="panel-copy">
+                    Quyền được sinh từ vai trò <strong>{{ selectedMemberRoleLabel() }}</strong> và hiển thị read-only để tránh sai lệch với backend.
+                  </p>
+                  <div class="permission-list">
+                    @for (permission of selectedMemberPermissions(); track permission.id) {
+                      <div class="permission-row">
+                        <span>
+                          <strong>{{ permission.label }}</strong>
+                          <small>{{ permission.note }}</small>
+                        </span>
+                        <span class="permission-mark" [class.allowed]="permission.allowed">
+                          {{ permission.allowed ? 'Cho phép' : 'Không' }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (activeInspectorTab() === 'activity') {
+                  <p class="panel-copy">
+                    Hoạt động nghiệp vụ của thành viên, lấy từ các chứng từ đã gửi trong hàng đợi phê duyệt.
+                  </p>
+                  @if (selectedMemberBusinessActivities().length) {
+                    <div class="timeline">
+                      @for (item of selectedMemberBusinessActivities(); track item.id) {
+                        <div class="timeline-item" [ngClass]="'tone-' + item.tone">
+                          <span></span>
+                          <div>
+                            <strong>{{ item.title }}</strong>
+                            <small>{{ item.meta }}</small>
+                            <p>{{ item.detail }}</p>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="empty-state compact">
+                      Chưa có log submit nào của thành viên này trong dữ liệu hiện tại.
+                    </div>
+                  }
+                }
+
+                @if (activeInspectorTab() === 'audit-log') {
+                  <p class="panel-copy">
+                    Nhật ký dưới đây lấy từ các field lifecycle thật của membership hiện tại. Khi backend mở rộng audit log theo entity, panel này có thể hiển thị toàn bộ sự kiện chi tiết hơn.
+                  </p>
+                  <div class="timeline">
+                    @for (item of selectedMemberTimeline(); track item.id) {
+                      <div class="timeline-item" [ngClass]="'tone-' + item.tone">
+                        <span></span>
+                        <div>
+                          <strong>{{ item.title }}</strong>
+                          <small>{{ item.meta }}</small>
+                          @if (item.detail) {
+                            <p>{{ item.detail }}</p>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            <footer>
+              @if (memberActionError()) {
+                <span class="footer-error">{{ memberActionError() }}</span>
+              }
+              @if (selectedMemberDetail()?.isActive) {
+                <button type="button" class="secondary-action" [disabled]="memberActionSubmitting()" (click)="openChangeRoleModal($event)">
+                  Đổi vai trò
+                </button>
+                <button type="button" class="danger-action" [disabled]="memberActionSubmitting()" (click)="openDeactivateModal($event)">
+                  Vô hiệu hoá
+                </button>
+              } @else {
+                <button type="button" class="success-action" [disabled]="memberActionSubmitting()" (click)="reactivateSelectedMember($event)">
+                  Kích hoạt lại
+                </button>
+              }
+            </footer>
+          </aside>
+        }
+      </div>
+    }
+  </section>
+</div>
+
+@if (isInviteModalOpen()) {
+  <div class="modal-shell" (click)="closeInviteModal()">
+    <section class="invite-modal" (click)="stopEventPropagation($event)">
+      <header>
+        <div>
+          <p class="eyebrow">INVITE MEMBER</p>
+          <h2>Mời thành viên mới</h2>
+          <p>Gửi lời mời workspace qua email. Liên kết dùng một lần và tự hết hạn sau 14 ngày.</p>
+        </div>
+        <button type="button" aria-label="Đóng" (click)="closeInviteModal()">×</button>
+      </header>
+
+      <div class="modal-body">
+        <label class="field">
+          <span>Địa chỉ email</span>
+          <input
+            type="email"
+            placeholder="colleague@meridian.vn"
+            [value]="inviteEmail()"
+            (input)="updateInviteEmail($any($event.target).value)"
+          />
+        </label>
+
+        <div class="field">
+          <span>Vai trò</span>
+          <div class="role-options">
+            @for (opt of inviteRoleOptions(); track opt.value) {
+              <label class="role-option" [class.selected]="inviteRole() === opt.value">
+                <input
+                  type="radio"
+                  name="invite-role"
+                  [value]="opt.value"
+                  [checked]="inviteRole() === opt.value"
+                  (change)="updateInviteRole(opt.value)"
+                />
+                <span>
+                  <strong>{{ opt.label }}</strong>
+                  @if (opt.value === 'STAFF') {
+                    <em>Mặc định</em>
+                  }
+                  <small>{{ opt.description }}</small>
+                </span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Phòng ban</span>
+          <select [value]="inviteDepartmentId()" (change)="updateInviteDepartment($any($event.target).value)">
+            <option value="">Chọn phòng ban...</option>
+            @for (d of departments(); track d.id) {
+              <option [value]="d.id">{{ d.name }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="expiry-note">
+          Liên kết dùng một lần · Hết hạn sau 14 ngày · Không dùng dữ liệu demo.
+        </div>
+
+        @if (inviteSubmitError()) {
+          <div class="error-state">{{ inviteSubmitError() }}</div>
+        }
+      </div>
+
+      <footer>
+        <button type="button" class="secondary-action" [disabled]="inviteSubmitting()" (click)="closeInviteModal()">Huỷ</button>
+        <button
+          type="button"
+          class="primary-action"
+          [disabled]="!inviteFormValid() || inviteSubmitting()"
+          (click)="submitInviteMember()"
+        >
+          @if (inviteSubmitting()) { Đang gửi... } @else { Gửi lời mời }
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (isChangeRoleModalOpen()) {
+  <div class="modal-shell" (click)="closeChangeRoleModal()">
+    <section class="invite-modal" (click)="stopEventPropagation($event)">
+      <header>
+        <div>
+          <p class="eyebrow">CHANGE ROLE</p>
+          <h2>Đổi vai trò thành viên</h2>
+          <p>Thay đổi vai trò sẽ cập nhật quyền truy cập do backend kiểm soát.</p>
+        </div>
+        <button type="button" aria-label="Đóng" (click)="closeChangeRoleModal()">×</button>
+      </header>
+      <div class="modal-body">
+        <div class="role-options">
+          @for (opt of inviteRoleOptions(); track opt.value) {
+            <label class="role-option" [class.selected]="changeRoleValue() === opt.value">
+              <input
+                type="radio"
+                name="change-role"
+                [value]="opt.value"
+                [checked]="changeRoleValue() === opt.value"
+                (change)="updateChangeRoleValue(opt.value)"
+              />
+              <span>
+                <strong>{{ opt.label }}</strong>
+                <small>{{ opt.description }}</small>
+              </span>
+            </label>
+          }
+        </div>
+        @if (memberActionError()) {
+          <div class="error-state">{{ memberActionError() }}</div>
+        }
+      </div>
+      <footer>
+        <button type="button" class="secondary-action" [disabled]="memberActionSubmitting()" (click)="closeChangeRoleModal()">Huỷ</button>
+        <button type="button" class="primary-action" [disabled]="memberActionSubmitting()" (click)="submitChangeRole()">
+          @if (memberActionSubmitting()) { Đang lưu... } @else { Lưu vai trò }
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (isDeactivateModalOpen()) {
+  <div class="modal-shell" (click)="closeDeactivateModal()">
+    <section class="invite-modal" (click)="stopEventPropagation($event)">
+      <header>
+        <div>
+          <p class="eyebrow">DEACTIVATE MEMBER</p>
+          <h2>Vô hiệu hoá thành viên</h2>
+          <p>Thành viên sẽ không còn tham gia các workflow đang hoạt động.</p>
+        </div>
+        <button type="button" aria-label="Đóng" (click)="closeDeactivateModal()">×</button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span>Lý do vô hiệu hoá</span>
+          <textarea
+            rows="3"
+            placeholder="Nhập lý do để lưu vào audit/lifecycle..."
+            [value]="deactivateReason()"
+            (input)="updateDeactivateReason($any($event.target).value)"
+          ></textarea>
+        </label>
+        @if (memberActionError()) {
+          <div class="error-state">{{ memberActionError() }}</div>
+        }
+      </div>
+      <footer>
+        <button type="button" class="secondary-action" [disabled]="memberActionSubmitting()" (click)="closeDeactivateModal()">Huỷ</button>
+        <button
+          type="button"
+          class="danger-action"
+          [disabled]="!deactivateReason().trim() || memberActionSubmitting()"
+          (click)="submitDeactivateMember()"
+        >
+          @if (memberActionSubmitting()) { Đang xử lý... } @else { Xác nhận vô hiệu hoá }
+        </button>
+      </footer>
+    </section>
+  </div>
+}

@@ -1,0 +1,405 @@
+<div class="space-y-6 pb-12">
+  <!-- Header -->
+  <header class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex items-center gap-4">
+      <span class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xl font-semibold text-white shadow-md">
+        {{ userInitial() }}
+      </span>
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-900">Hồ sơ cá nhân</h1>
+        <p class="mt-0.5 text-sm text-slate-500">{{ userEmail() || '—' }}</p>
+        <p class="mt-0.5 text-xs text-slate-500">{{ tenantName() }} · {{ userRoleLabel() }}</p>
+      </div>
+    </div>
+    <button
+      type="button"
+      class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+      (click)="refresh()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+        <path d="M3 12a9 9 0 0 1 15.55-6.36L21 8"></path>
+        <path d="M21 3v5h-5"></path>
+        <path d="M21 12a9 9 0 0 1-15.55 6.36L3 16"></path>
+        <path d="M8 16H3v5"></path>
+      </svg>
+      Làm mới
+    </button>
+  </header>
+
+  @if (isLoading()) {
+    <div class="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+      Đang tải hồ sơ...
+    </div>
+  } @else if (loadError()) {
+    <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <strong class="font-semibold">Lỗi:</strong> {{ loadError() }}
+    </div>
+  } @else {
+    <div class="grid gap-6 lg:grid-cols-3">
+      <!-- LEFT: Bank info card -->
+      <section class="lg:col-span-1">
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header class="mb-3 flex items-center justify-between">
+            <h2 class="text-base font-semibold text-slate-900">Thông tin ngân hàng</h2>
+            <span
+              class="rounded-full px-2 py-0.5 text-xs font-medium"
+              [ngClass]="hasBankInfo() ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
+            >
+              @if (hasBankInfo()) { Đã cập nhật } @else { Chưa cập nhật }
+            </span>
+          </header>
+
+          @if (bankInfoSummary(); as bank) {
+            <div class="space-y-3">
+              <div class="rounded-lg border border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 p-4">
+                <p class="text-xs font-medium uppercase tracking-wide text-indigo-700">{{ bank.bankCode }}</p>
+                <p class="mt-1 text-sm font-semibold text-slate-900">{{ bank.bankName }}</p>
+                <p class="mt-2 font-mono text-base tracking-widest text-slate-700">
+                  •••• •••• •••• {{ bank.last4 }}
+                </p>
+                <p class="mt-2 text-sm text-slate-700">{{ bank.holder }}</p>
+                @if (bank.branch) {
+                  <p class="text-xs text-slate-500">CN: {{ bank.branch }}</p>
+                }
+              </div>
+              <p class="text-xs text-slate-500">
+                Số tài khoản chỉ hiển thị 4 chữ số cuối để bảo mật.
+                Cập nhật sau cùng: {{ formatDate(profile()?.updatedAt) }}.
+              </p>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  class="flex-1 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+                  (click)="openBankDialog(false)"
+                >
+                  Cập nhật
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                  (click)="openBankDialog(true)"
+                >
+                  Xoá
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="space-y-3">
+              <div class="rounded-lg border border-dashed border-slate-300 p-5 text-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2 h-9 w-9 text-slate-300">
+                  <rect x="3" y="6" width="18" height="14" rx="2"></rect>
+                  <path d="M3 10h18"></path>
+                </svg>
+                <p class="text-sm font-medium text-slate-700">Chưa khai báo tài khoản</p>
+                <p class="mt-1 text-xs text-slate-500">
+                  Cần thêm tài khoản để được hoàn tiền qua chuyển khoản ngân hàng.
+                </p>
+              </div>
+              <button
+                type="button"
+                class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                (click)="openBankDialog(false)"
+              >
+                Thêm tài khoản ngân hàng
+              </button>
+            </div>
+          }
+
+          <div class="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs text-amber-800">
+            <strong class="font-semibold">Bảo mật:</strong>
+            Mọi thay đổi tài khoản ngân hàng cần xác thực OTP qua email được đăng ký.
+          </div>
+        </article>
+      </section>
+
+      <!-- RIGHT: Preferences form -->
+      <section class="space-y-6 lg:col-span-2">
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <header class="mb-4">
+            <h2 class="text-base font-semibold text-slate-900">Liên hệ &amp; Tuỳ chọn hoàn tiền</h2>
+            <p class="text-xs text-slate-500">
+              Các trường này không yêu cầu OTP. Email và phương thức hoàn tiền được kế toán dùng để
+              xử lý chứng từ.
+            </p>
+          </header>
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="block">
+              <span class="mb-1 block text-xs font-medium text-slate-600">Phương thức hoàn tiền ưu tiên</span>
+              <select
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                [ngModel]="preferredPaymentMethod()"
+                (ngModelChange)="preferredPaymentMethod.set($event)"
+                name="preferredPaymentMethod"
+              >
+                <option value="">Không đặt ưu tiên</option>
+                @for (m of paymentMethods; track m.code) {
+                  <option [value]="m.code">{{ m.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="block">
+              <span class="mb-1 block text-xs font-medium text-slate-600">Số điện thoại</span>
+              <input
+                type="tel"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                placeholder="VD: 0901234567"
+                [ngModel]="contactPhone()"
+                (ngModelChange)="contactPhone.set($event)"
+                name="contactPhone"
+              />
+            </label>
+
+            <label class="block md:col-span-2">
+              <span class="mb-1 block text-xs font-medium text-slate-600">Email nhận hoàn tiền</span>
+              <input
+                type="email"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                placeholder="VD: nhanhoantien@congty.vn"
+                [ngModel]="reimbursementEmail()"
+                (ngModelChange)="reimbursementEmail.set($event)"
+                name="reimbursementEmail"
+              />
+              <span class="mt-1 block text-[11px] text-slate-500">
+                Nếu để trống sẽ dùng email đăng nhập: <strong>{{ userEmail() }}</strong>
+              </span>
+            </label>
+
+            <label class="block md:col-span-2">
+              <span class="mb-1 block text-xs font-medium text-slate-600">Mã số thuế cá nhân (tuỳ chọn)</span>
+              <input
+                type="text"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                placeholder="VD: 8123456789 (10 chữ số)"
+                [ngModel]="taxId()"
+                (ngModelChange)="taxId.set($event)"
+                name="taxId"
+              />
+            </label>
+          </div>
+
+          @if (profileSaveError()) {
+            <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+              {{ profileSaveError() }}
+            </div>
+          }
+          @if (profileSaveSuccess()) {
+            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+              {{ profileSaveSuccess() }}
+            </div>
+          }
+
+          <div class="mt-5 flex justify-end">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              [disabled]="isSavingProfile()"
+              (click)="saveProfile()"
+            >
+              @if (isSavingProfile()) { Đang lưu… } @else { Lưu thay đổi }
+            </button>
+          </div>
+        </article>
+
+        <!-- Account info -->
+        <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="mb-4 text-base font-semibold text-slate-900">Thông tin tài khoản</h2>
+          <dl class="grid gap-4 text-sm md:grid-cols-2">
+            <div>
+              <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Workspace</dt>
+              <dd class="mt-1 text-slate-800">{{ tenantName() }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Vai trò</dt>
+              <dd class="mt-1 text-slate-800">{{ userRoleLabel() }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Email đăng nhập</dt>
+              <dd class="mt-1 text-slate-800">{{ userEmail() }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Cập nhật cuối</dt>
+              <dd class="mt-1 text-slate-800">{{ formatDate(profile()?.updatedAt) }}</dd>
+            </div>
+          </dl>
+        </article>
+      </section>
+    </div>
+  }
+</div>
+
+<!-- Bank info dialog -->
+@if (isBankDialogOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
+      <header class="mb-4 flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">
+            @if (clearBankInfoMode()) { Xoá tài khoản ngân hàng }
+            @else if (hasBankInfo()) { Cập nhật tài khoản ngân hàng }
+            @else { Thêm tài khoản ngân hàng }
+          </h3>
+          <p class="text-xs text-slate-500">
+            @if (bankFormStep() === 'edit') {
+              Bước 1 / 2 — Nhập thông tin
+            } @else {
+              Bước 2 / 2 — Xác thực OTP
+            }
+          </p>
+        </div>
+        <button
+          type="button"
+          class="text-slate-400 hover:text-slate-600"
+          (click)="closeBankDialog()"
+          aria-label="Đóng"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5">
+            <path d="m6 6 12 12"></path>
+            <path d="m18 6-12 12"></path>
+          </svg>
+        </button>
+      </header>
+
+      @if (bankFormStep() === 'edit') {
+        @if (clearBankInfoMode()) {
+          <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            <p class="font-semibold">Bạn đang xoá toàn bộ thông tin tài khoản ngân hàng.</p>
+            <p class="mt-1 text-xs">
+              Sau khi xoá, các yêu cầu hoàn tiền theo phương thức <em>chuyển khoản</em> sẽ không thể
+              xử lý cho đến khi bạn cập nhật lại.
+            </p>
+          </div>
+        } @else {
+          <div class="space-y-3">
+            <label class="block">
+              <span class="mb-1 block text-xs font-medium text-slate-600">Ngân hàng</span>
+              <select
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                [ngModel]="bankCode()"
+                (ngModelChange)="bankCode.set($event)"
+                name="bankCode"
+              >
+                <option value="">Chọn ngân hàng…</option>
+                @for (b of bankCodes(); track b.code) {
+                  <option [value]="b.code">{{ b.code }} – {{ b.name }}</option>
+                }
+              </select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-medium text-slate-600">Số tài khoản</span>
+              <input
+                type="text"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                placeholder="VD: 0123456789"
+                [ngModel]="bankAccountNumber()"
+                (ngModelChange)="bankAccountNumber.set($event)"
+                name="bankAccountNumber"
+                inputmode="numeric"
+              />
+              <span class="mt-1 block text-[11px] text-slate-500">
+                Hệ thống chỉ lưu số đã mã hoá; chỉ hiển thị 4 chữ số cuối.
+              </span>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-medium text-slate-600">Tên chủ tài khoản</span>
+              <input
+                type="text"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                placeholder="VD: NGUYEN VAN A"
+                [ngModel]="bankAccountHolderName()"
+                (ngModelChange)="bankAccountHolderName.set($event)"
+                name="bankAccountHolderName"
+              />
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-medium text-slate-600">Chi nhánh (tuỳ chọn)</span>
+              <input
+                type="text"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                placeholder="VD: Hà Nội"
+                [ngModel]="bankBranch()"
+                (ngModelChange)="bankBranch.set($event)"
+                name="bankBranch"
+              />
+            </label>
+          </div>
+        }
+
+        @if (bankDialogError()) {
+          <div class="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+            {{ bankDialogError() }}
+          </div>
+        }
+
+        <div class="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            (click)="closeBankDialog()"
+          >
+            Huỷ
+          </button>
+          <button
+            type="button"
+            class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            [disabled]="!bankFormValid() || isRequestingOtp()"
+            (click)="requestOtp()"
+          >
+            @if (isRequestingOtp()) { Đang gửi OTP… } @else { Gửi mã OTP }
+          </button>
+        </div>
+      } @else {
+        <div class="rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-800">
+          Đã gửi mã OTP đến email <strong>{{ userEmail() }}</strong>. Mã có hiệu lực trong 5 phút.
+        </div>
+        <label class="mt-4 block">
+          <span class="mb-1 block text-xs font-medium text-slate-600">Nhập mã OTP</span>
+          <input
+            type="text"
+            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-center text-lg tracking-[0.5em] focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            placeholder="••••••"
+            maxlength="8"
+            inputmode="numeric"
+            [ngModel]="otpCode()"
+            (ngModelChange)="otpCode.set($event)"
+            name="otpCode"
+          />
+        </label>
+
+        @if (bankDialogError()) {
+          <div class="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+            {{ bankDialogError() }}
+          </div>
+        }
+
+        <div class="mt-5 flex justify-between gap-2">
+          <button
+            type="button"
+            class="text-sm font-medium text-indigo-600 hover:underline"
+            (click)="bankFormStep.set('edit')"
+          >
+            ← Quay lại
+          </button>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              (click)="closeBankDialog()"
+            >
+              Huỷ
+            </button>
+            <button
+              type="button"
+              class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              [disabled]="!otpFormValid() || isConfirmingOtp()"
+              (click)="confirmBankUpdate()"
+            >
+              @if (isConfirmingOtp()) { Đang xác nhận… } @else { Xác nhận }
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}
