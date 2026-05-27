@@ -1,0 +1,387 @@
+<section class="flex min-h-[calc(100vh-6rem)] flex-col gap-5 pb-6">
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-900">Phòng ban</h1>
+      <p class="mt-0.5 text-sm text-slate-500">
+        Cấu trúc tổ chức — phân cấp, thành viên và tổng quan ngân sách
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="!workspace()"
+        (click)="exportWorkspace()"
+      >
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M4 20h16"></path></svg>
+        Xuất
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+        (click)="openCreateDepartmentModal()"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5v14"></path></svg>
+        Phòng ban mới
+      </button>
+    </div>
+  </header>
+
+  @if (loadError()) {
+    <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+      <strong class="font-semibold">Lỗi:</strong> {{ loadError() }}
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm text-slate-400">
+      Đang tải dữ liệu phòng ban...
+    </div>
+  } @else if (workspace(); as w) {
+    <div class="flex min-h-0 flex-1 gap-4">
+      <aside class="flex w-[260px] flex-none flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div class="border-b border-slate-100 px-3 py-3">
+          <label class="relative block">
+            <svg class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            <input
+              type="search"
+              class="w-full rounded-lg border border-slate-200 py-2 pl-8 pr-2 text-xs text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              placeholder="Tìm phòng ban…"
+              [value]="searchQuery()"
+              (input)="updateSearchQuery($any($event.target).value)"
+            />
+          </label>
+        </div>
+
+        <div class="flex-1 overflow-auto p-2">
+          @if (!treeRows().length) {
+            <p class="px-3 py-8 text-center text-xs text-slate-400">Không tìm thấy phòng ban.</p>
+          } @else {
+            <div class="space-y-0.5">
+              @for (row of treeRows(); track row.id) {
+                <button
+                  type="button"
+                  class="group flex w-full items-center gap-1 rounded-lg px-2 py-2 text-left transition-all"
+                  [class.border]="isTreeRowSelected(row.id)"
+                  [class.border-blue-100]="isTreeRowSelected(row.id)"
+                  [class.bg-blue-50]="isTreeRowSelected(row.id)"
+                  [class.hover:bg-slate-50]="!isTreeRowSelected(row.id)"
+                  [class.opacity-60]="!row.isActive"
+                  [style.padding-left.px]="8 + row.depth * 16"
+                  (click)="selectDepartment(row.id)"
+                >
+                  <span
+                    class="flex h-4 w-4 flex-none items-center justify-center rounded text-slate-400 hover:text-slate-600"
+                    (click)="row.childCount > 0 && toggleDepartmentExpansion(row.id); $event.stopPropagation()"
+                  >
+                    @if (row.childCount > 0) {
+                      <svg class="h-3 w-3 transition-transform" [class.rotate-90]="row.isExpanded" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"></path></svg>
+                    }
+                  </span>
+                  <span class="flex h-6 w-6 flex-none items-center justify-center rounded bg-slate-100" [class.bg-blue-100]="isTreeRowSelected(row.id)">
+                    <svg class="h-3 w-3" [class.text-blue-600]="isTreeRowSelected(row.id)" [class.text-slate-500]="!isTreeRowSelected(row.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"></path></svg>
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="flex items-center gap-1.5">
+                      <span class="truncate text-xs font-semibold" [class.text-blue-700]="isTreeRowSelected(row.id)" [class.text-slate-800]="!isTreeRowSelected(row.id)" [class.line-through]="!row.isActive">{{ treeRowLabel(row) }}</span>
+                      @if (!row.isActive) {
+                        <span class="rounded bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-500">Vô hiệu</span>
+                      }
+                    </span>
+                    <span class="mt-0.5 flex items-center gap-2">
+                      <span class="text-[11px] text-slate-400">{{ row.memberCount }} thành viên</span>
+                      <span class="h-1 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <span
+                          class="block h-full rounded-full"
+                          [class.bg-emerald-500]="utilizationTone(row.budgetUtilizationPct) === 'healthy'"
+                          [class.bg-amber-500]="utilizationTone(row.budgetUtilizationPct) === 'warning'"
+                          [class.bg-slate-300]="utilizationTone(row.budgetUtilizationPct) === 'neutral'"
+                          [style.width.%]="row.budgetUtilizationPct === null ? 0 : (row.budgetUtilizationPct > 100 ? 100 : row.budgetUtilizationPct)"
+                        ></span>
+                      </span>
+                      <span class="text-[11px] font-medium" [class.text-emerald-600]="utilizationTone(row.budgetUtilizationPct) === 'healthy'" [class.text-amber-600]="utilizationTone(row.budgetUtilizationPct) === 'warning'" [class.text-slate-400]="utilizationTone(row.budgetUtilizationPct) === 'neutral'">
+                        {{ row.budgetUtilizationPct === null ? '—' : (row.budgetUtilizationPct | number:'1.0-0') + '%' }}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <footer class="border-t border-slate-100 bg-slate-50/60 px-3.5 py-3">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>{{ w.summary.totalDepartments }} phòng ban</span>
+            <span>{{ w.summary.totalMembers }} tổng thành viên</span>
+          </div>
+        </footer>
+      </aside>
+
+      @if (selectedDepartment(); as d) {
+        <section class="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <header class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"></path></svg>
+              </span>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <h2 class="truncate text-base font-bold text-slate-900">{{ selectedDepartmentDisplayName() }}</h2>
+                  <span class="rounded-full px-2 py-0.5 text-xs font-medium" [class.bg-emerald-50]="d.status === 'Active'" [class.text-emerald-700]="d.status === 'Active'" [class.bg-slate-100]="d.status !== 'Active'" [class.text-slate-600]="d.status !== 'Active'">
+                    {{ d.status === 'Active' ? 'Hoạt động' : 'Vô hiệu' }}
+                  </span>
+                </div>
+                @if (selectedDepartmentSubtitle()) {
+                  <p class="mt-0.5 text-xs text-slate-400">{{ selectedDepartmentSubtitle() }}</p>
+                }
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-100" [disabled]="!hasExplicitSelection()" (click)="openCreateChildDepartmentModal()">+ Tạo phòng ban con</button>
+              <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50" [disabled]="!hasExplicitSelection()" (click)="openRenameDepartmentModal()">Đổi tên</button>
+              @if (d.status === 'Active') {
+                <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-100" [disabled]="!hasExplicitSelection()" (click)="openDeactivateDepartmentModal()">Vô hiệu hóa</button>
+              } @else {
+                <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100" [disabled]="!hasExplicitSelection()" (click)="openActivateDepartmentModal()">Kích hoạt lại</button>
+              }
+            </div>
+          </header>
+
+          <div class="flex-1 overflow-auto p-5">
+            <div class="flex flex-col gap-5">
+              <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                @for (kpi of [
+                  { label: 'Thành viên', value: d.memberCount, tone: 'blue' },
+                  { label: 'Phòng ban con', value: d.subDepartmentCount, tone: 'violet' },
+                  { label: 'Khối lượng chi tiêu', value: formatCurrency(d.expenseVolumeAmount), tone: 'emerald' },
+                  { label: 'Tổng chi phí', value: d.expenseCount ?? 0, tone: 'amber' }
+                ]; track kpi.label) {
+                  <article class="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-3">
+                    <span class="flex h-7 w-7 flex-none items-center justify-center rounded-lg" [class.bg-blue-50]="kpi.tone === 'blue'" [class.text-blue-700]="kpi.tone === 'blue'" [class.bg-violet-50]="kpi.tone === 'violet'" [class.text-violet-700]="kpi.tone === 'violet'" [class.bg-emerald-50]="kpi.tone === 'emerald'" [class.text-emerald-700]="kpi.tone === 'emerald'" [class.bg-amber-50]="kpi.tone === 'amber'" [class.text-amber-700]="kpi.tone === 'amber'">●</span>
+                    <span>
+                      <p class="text-sm font-bold tabular-nums text-slate-900">{{ kpi.value }}</p>
+                      <p class="text-xs text-slate-400">{{ kpi.label }}</p>
+                    </span>
+                  </article>
+                }
+              </div>
+
+              <div class="grid gap-4 xl:grid-cols-2">
+                <section>
+                  <p class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Tổng quan ngân sách</p>
+                  <div class="rounded-xl border border-slate-100 p-4">
+                    @if (d.budgetSnapshot; as budget) {
+                      <div class="mb-2 flex items-center justify-between">
+                        <span class="text-xs text-slate-500">Mức sử dụng</span>
+                        <span class="text-xs font-bold tabular-nums" [class.text-emerald-600]="utilizationTone(budget.utilizationPct) === 'healthy'" [class.text-amber-600]="utilizationTone(budget.utilizationPct) === 'warning'">{{ budgetUtilizationLabel() }}</span>
+                      </div>
+                      <div class="mb-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div class="h-full rounded-full" [class.bg-emerald-500]="utilizationTone(budget.utilizationPct) === 'healthy'" [class.bg-amber-500]="utilizationTone(budget.utilizationPct) === 'warning'" [style.width.%]="budget.utilizationPct > 100 ? 100 : budget.utilizationPct"></div>
+                      </div>
+                      <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="rounded-lg bg-slate-50 px-2.5 py-2"><p class="mb-0.5 font-medium text-slate-400">Phân bổ</p><p class="font-bold text-slate-800">{{ formatCurrency(budget.allocatedAmount) }}</p></div>
+                        <div class="rounded-lg bg-slate-50 px-2.5 py-2"><p class="mb-0.5 font-medium text-slate-400">Đã chi</p><p class="font-bold text-slate-700">{{ formatCurrency(budget.spentAmount) }}</p></div>
+                        <div class="rounded-lg bg-slate-50 px-2.5 py-2"><p class="mb-0.5 font-medium text-slate-400">Kỳ</p><p class="font-bold text-slate-600">{{ budget.periodLabel }}</p></div>
+                        <div class="rounded-lg bg-slate-50 px-2.5 py-2"><p class="mb-0.5 font-medium text-slate-400">Còn lại</p><p class="font-bold" [class.text-emerald-600]="budget.remainingAmount >= 0" [class.text-rose-600]="budget.remainingAmount < 0">{{ formatCurrency(budget.remainingAmount) }}</p></div>
+                      </div>
+                    } @else {
+                      <p class="py-8 text-center text-xs text-slate-400">Chưa có ngân sách đang hoạt động.</p>
+                    }
+                  </div>
+                </section>
+
+                <section>
+                  <p class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Thông tin phòng ban</p>
+                  <dl class="overflow-hidden rounded-xl border border-slate-100">
+                    @for (row of [
+                      { label: 'Mã phòng ban', value: d.departmentCode || d.id, mono: true },
+                      { label: 'Phòng ban cha', value: selectedDepartmentParentLabel(), mono: false },
+                      { label: 'Trạng thái', value: d.status === 'Active' ? 'Hoạt động' : 'Vô hiệu', mono: false },
+                      { label: 'Tạo lúc', value: formatDate(d.createdAt), mono: false },
+                      { label: 'Thành viên', value: '' + d.memberCount, mono: false },
+                      { label: 'Quản lý', value: d.manager?.fullName || 'Chưa gán', mono: false }
+                    ]; track row.label; let even = $even) {
+                      <div class="flex items-center justify-between border-b border-slate-50 px-3.5 py-2.5 text-xs last:border-0" [class.bg-slate-50]="even">
+                        <dt class="font-medium text-slate-400">{{ row.label }}</dt>
+                        <dd class="text-right font-semibold text-slate-800" [class.font-mono]="row.mono">{{ row.value }}</dd>
+                      </div>
+                    }
+                  </dl>
+                </section>
+              </div>
+
+              @if (d.subDepartments.length) {
+                <section>
+                  <p class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Phòng ban con ({{ d.subDepartments.length }})</p>
+                  <div class="grid gap-2 xl:grid-cols-2">
+                    @for (child of d.subDepartments; track child.id) {
+                      <article class="flex items-center gap-2.5 rounded-lg border border-slate-100 px-3 py-2.5 hover:bg-slate-50">
+                        <span class="flex h-6 w-6 flex-none items-center justify-center rounded bg-slate-100 text-slate-500">
+                          <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"></path></svg>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                          <p class="truncate text-xs font-semibold text-slate-800">{{ child.name }}</p>
+                          <p class="text-xs text-slate-400">{{ child.memberCount }} thành viên</p>
+                        </span>
+                        <span class="text-right text-xs">
+                          <p class="font-semibold" [class.text-emerald-600]="utilizationTone(child.budgetUtilizationPct) === 'healthy'" [class.text-amber-600]="utilizationTone(child.budgetUtilizationPct) === 'warning'" [class.text-slate-400]="utilizationTone(child.budgetUtilizationPct) === 'neutral'">{{ child.budgetUtilizationPct === null ? '—' : (child.budgetUtilizationPct | number:'1.0-0') + '%' }}</p>
+                          <p class="text-slate-400">ngân sách</p>
+                        </span>
+                      </article>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+          </div>
+        </section>
+
+        <aside class="flex w-[280px] flex-none flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <header class="border-b border-slate-100 px-4 py-3.5">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bối cảnh phòng ban</p>
+          </header>
+          <div class="flex-1 overflow-auto">
+            <section class="border-b border-slate-50 px-4 py-3">
+              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Quản lý</p>
+              @if (d.manager) {
+                <div class="flex items-center gap-2.5">
+                  <span class="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">{{ d.manager.initials }}</span>
+                  <span class="min-w-0">
+                    <p class="truncate text-xs font-semibold text-slate-800">{{ d.manager.fullName }}</p>
+                    <p class="truncate text-xs text-slate-400">{{ formatRole(d.manager.role) }}</p>
+                  </span>
+                </div>
+              } @else {
+                <p class="text-xs text-slate-400">Chưa có quản lý</p>
+              }
+            </section>
+
+            <section class="border-b border-slate-50 px-4 py-3">
+              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Thành viên ({{ d.memberCount }})</p>
+              <div class="space-y-2">
+                @for (member of visibleMembersPreview(); track member.membershipId) {
+                  <div class="flex items-center gap-2">
+                    <span class="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-600">{{ member.initials }}</span>
+                    <span class="min-w-0">
+                      <p class="truncate text-xs font-medium text-slate-800">{{ member.fullName }}</p>
+                      <p class="truncate text-xs text-slate-400">{{ formatRole(member.role) }}</p>
+                    </span>
+                  </div>
+                }
+                @if (remainingMemberCount() > 0) {
+                  <p class="text-xs font-medium text-blue-600">+{{ remainingMemberCount() }} thành viên khác</p>
+                }
+              </div>
+            </section>
+
+            <section class="border-b border-slate-50 px-4 py-3">
+              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Ngân sách gần nhất</p>
+              @if (d.budgetSnapshot; as budget) {
+                <div class="mb-1.5 flex items-center justify-between text-xs">
+                  <span class="text-slate-500">{{ budget.periodLabel }}</span>
+                  <span class="font-semibold text-slate-800">{{ formatCurrency(budget.allocatedAmount) }}</span>
+                </div>
+                <div class="mb-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div class="h-full rounded-full" [class.bg-emerald-500]="utilizationTone(budget.utilizationPct) === 'healthy'" [class.bg-amber-500]="utilizationTone(budget.utilizationPct) === 'warning'" [style.width.%]="budget.utilizationPct > 100 ? 100 : budget.utilizationPct"></div>
+                </div>
+                <p class="text-xs text-slate-400">{{ formatCurrency(budget.spentAmount) }} đã chi · {{ budgetUtilizationLabel() }}</p>
+              } @else {
+                <p class="text-xs text-slate-300">Không có ngân sách</p>
+              }
+            </section>
+
+            <section class="px-4 py-3">
+              <p class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Hoạt động gần đây</p>
+              @if (!d.recentActivity.length) {
+                <p class="text-xs text-slate-300">Không có hoạt động</p>
+              } @else {
+                <div class="space-y-2.5">
+                  @for (activity of d.recentActivity; track activity.id) {
+                    <article class="flex items-start gap-2">
+                      <span class="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full" [class.bg-blue-50]="activityTone(activity.tone) === 'info'" [class.text-blue-600]="activityTone(activity.tone) === 'info'" [class.bg-emerald-50]="activityTone(activity.tone) === 'success'" [class.text-emerald-600]="activityTone(activity.tone) === 'success'" [class.bg-amber-50]="activityTone(activity.tone) === 'warning'" [class.text-amber-600]="activityTone(activity.tone) === 'warning'">•</span>
+                      <span class="min-w-0 flex-1">
+                        <p class="text-xs leading-snug text-slate-700">{{ activityHeadline(activity) }}</p>
+                        <p class="mt-0.5 text-xs text-slate-400">{{ activity.actorName }} · {{ activityMeta(activity) }}</p>
+                      </span>
+                    </article>
+                  }
+                </div>
+              }
+            </section>
+          </div>
+        </aside>
+      } @else {
+        <section class="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-white px-8 text-center">
+          <p class="text-sm font-semibold text-slate-400">Chọn một phòng ban</p>
+          <p class="text-xs text-slate-300">Nhấn vào phòng ban bất kỳ để xem chi tiết</p>
+        </section>
+      }
+    </div>
+  }
+</section>
+
+@if (isDepartmentModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" (click)="closeDepartmentModal()">
+    <div class="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" (click)="$event.stopPropagation()">
+      <header class="border-b border-slate-100 px-6 py-4">
+        <h3 class="text-base font-bold text-slate-900">{{ departmentModalTitle() }}</h3>
+        <p class="mt-0.5 text-xs text-slate-500">{{ departmentModalSubtitle() }}</p>
+      </header>
+
+      <div class="p-6">
+        @if (isDeactivateDepartmentModal() || isActivateDepartmentModal()) {
+          <div class="rounded-lg border px-3 py-2.5 text-xs leading-relaxed" [ngClass]="isActivateDepartmentModal() ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
+            {{ departmentModalWarning() }}
+          </div>
+        } @else {
+          <div class="space-y-3">
+            <label class="block">
+              <span class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ departmentModalNameLabel() }}</span>
+              <input
+                type="text"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                [placeholder]="departmentModalNamePlaceholder()"
+                [value]="departmentModalName()"
+                (input)="updateDepartmentModalName($any($event.target).value)"
+              />
+            </label>
+            @if (!isRenameDepartmentModal()) {
+              <label class="block">
+                <span class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Phòng ban cha</span>
+                <select
+                  class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  [value]="departmentModalParentId()"
+                  (change)="updateDepartmentModalParent($any($event.target).value)"
+                >
+                  @for (opt of createDepartmentParentOptions(); track opt.id) {
+                    <option [value]="opt.id">{{ opt.label }}</option>
+                  }
+                </select>
+              </label>
+            }
+          </div>
+        }
+
+        @if (departmentModalError()) {
+          <div class="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs text-rose-700">
+            {{ departmentModalError() }}
+          </div>
+        }
+      </div>
+
+      <footer class="flex justify-end gap-2 border-t border-slate-100 px-6 py-4">
+        <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" [disabled]="isSubmittingDepartmentModal()" (click)="closeDepartmentModal()">Hủy</button>
+        <button
+          type="button"
+          class="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          [ngClass]="isDeactivateDepartmentModal() ? 'bg-rose-600 hover:bg-rose-700' : isActivateDepartmentModal() ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'"
+          [disabled]="isSubmittingDepartmentModal()"
+          (click)="submitDepartmentModal()"
+        >
+          @if (isSubmittingDepartmentModal()) { Đang xử lý... } @else { {{ departmentModalSubmitLabel() }} }
+        </button>
+      </footer>
+    </div>
+  </div>
+}
