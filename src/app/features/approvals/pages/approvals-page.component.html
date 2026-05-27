@@ -1,99 +1,503 @@
-<section class="approvals-page">
-  <header class="approvals-page__hero">
+<div class="flex h-full min-h-[calc(100vh-5rem)] flex-col gap-5 pb-10">
+  <header class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div>
-      <div class="approvals-page__eyebrow-row">
-        <span class="approvals-page__eyebrow">Decision workspace</span>
-      </div>
-      <h1 data-testid="approvals-title">Approvals</h1>
-      <p data-testid="approvals-copy">{{ pageCopy }}</p>
+      <h1 class="text-2xl font-semibold text-slate-950">Hàng đợi phê duyệt</h1>
+      <p class="mt-1 max-w-2xl text-sm text-slate-500">
+        Nhà quản lý duyệt các yêu cầu chi đã trình. Sau khi duyệt, chứng từ sẽ chuyển sang kế toán để thanh toán.
+      </p>
+      <p class="mt-1 text-xs text-slate-400">{{ summaryLine() }}</p>
     </div>
 
-    <div class="approvals-page__hero-actions">
-      <button class="approvals-page__cta approvals-page__cta--secondary" type="button">Approval policies</button>
-      <button class="approvals-page__cta approvals-page__cta--primary" type="button">Open review queue</button>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="relative">
+        <span class="sr-only">Tìm nhà cung cấp, người gửi, mã yêu cầu</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-3.5-3.5"></path>
+        </svg>
+        <input
+          type="search"
+          class="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 sm:w-72"
+          placeholder="Tìm nhà cung cấp, người gửi, mã yêu cầu…"
+          [value]="searchQuery()"
+          (input)="updateSearchQuery($any($event.target).value)"
+        />
+      </div>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        [disabled]="isExporting()"
+        (click)="exportCurrentQueue()"
+      >
+        @if (isExporting()) { Đang xuất… }
+        @else {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Xuất CSV
+        }
+      </button>
     </div>
   </header>
 
-  @if (!loadError() && kpis().length > 0) {
-    <section class="approvals-page__kpi-grid" data-testid="approvals-kpi-grid">
-      @for (kpi of kpis(); track kpi.label) {
-        <article class="approvals-page__kpi-card">
-          @if (kpi.accent) {
-            <p class="approvals-page__kpi-accent">{{ kpi.accent }}</p>
+  <section class="flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5">
+    <span class="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">2</span>
+    <p class="text-xs font-medium text-amber-900">
+      <span class="font-bold">Giai đoạn 2 / 3:</span>
+      Duyệt chi phí đã trình. Mục đã duyệt sẽ chuyển sang hàng đợi thanh toán, mục bị từ chối quay lại người gửi để xử lý.
+    </p>
+  </section>
+
+  <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    @for (k of kpis(); track k.id) {
+      <article class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <span
+          class="flex h-9 w-9 items-center justify-center rounded-lg"
+          [ngClass]="{
+            'bg-amber-50 text-amber-700': k.id === 'pending',
+            'bg-emerald-50 text-emerald-700': k.id === 'approved',
+            'bg-rose-50 text-rose-700': k.id === 'rejected',
+            'bg-slate-50 text-slate-600': k.id === 'resolved'
+          }"
+        >
+          @switch (k.id) {
+            @case ('pending') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+            }
+            @case ('approved') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4"><path d="M20 6 9 17l-5-5"></path></svg>
+            }
+            @case ('rejected') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4"><path d="m18 6-12 12"></path><path d="m6 6 12 12"></path></svg>
+            }
+            @case ('resolved') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4"><path d="M9 11 12 14 22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            }
           }
-          <p class="approvals-page__kpi-label">{{ kpi.label }}</p>
-          <p class="approvals-page__kpi-value">{{ kpi.value }}</p>
-        </article>
-      }
-    </section>
+        </span>
+        <div>
+          <p class="text-xl font-bold text-slate-950">{{ k.value }}</p>
+          <p class="text-xs text-slate-400">
+            @switch (k.id) {
+              @case ('pending') { Đang chờ duyệt }
+              @case ('approved') { Đã duyệt tháng này }
+              @case ('rejected') { Đã từ chối tháng này }
+              @case ('resolved') { Đã xử lý }
+            }
+          </p>
+        </div>
+      </article>
+    }
+  </section>
+
+  @if (loadError()) {
+    <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <strong class="font-semibold">Lỗi:</strong> {{ loadError() }}
+    </div>
+  }
+  @if (exportError()) {
+    <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+      Không xuất được CSV: {{ exportError() }}
+    </div>
   }
 
-  <section class="approvals-page__grid">
-    <article class="approvals-page__panel">
-      <div class="approvals-page__panel-header">
-        <div>
-          <h2 data-testid="approvals-queue-title">Approval Queue</h2>
-          <p>Submitted requests awaiting manager review.</p>
+  <div class="flex flex-1 gap-4 overflow-hidden">
+    <section class="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 lg:flex-row lg:items-center">
+        <div class="flex flex-wrap gap-1">
+          @for (tab of tabs(); track tab.id) {
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition"
+              [ngClass]="activeTab() === tab.id ? 'bg-slate-100 text-slate-950' : 'text-slate-500 hover:text-slate-700'"
+              (click)="setActiveTab(tab.id)"
+            >
+              @switch (tab.id) {
+                @case ('all') { Tất cả }
+                @case ('pending') { Chờ duyệt }
+                @case ('resolved') { Đã xử lý }
+              }
+              <span class="rounded bg-slate-200/70 px-1 py-0.5 text-[10px] font-semibold text-slate-600">
+                @switch (tab.id) {
+                  @case ('all') { {{ queueSnapshots().all?.totalCount ?? 0 }} }
+                  @case ('pending') { {{ queueSnapshots().pending?.totalCount ?? 0 }} }
+                  @case ('resolved') { {{ queueSnapshots().resolved?.totalCount ?? 0 }} }
+                }
+              </span>
+            </button>
+          }
         </div>
-        <button type="button">Filters</button>
       </div>
 
       @if (isLoading()) {
-        <div class="approvals-page__empty-state">
-          <strong>Loading the manager decision workspace…</strong>
-          <p>We are pulling the latest approval queue from the API.</p>
-        </div>
-      } @else if (loadError()) {
-        <div class="approvals-page__empty-state approvals-page__empty-state--error" data-testid="approvals-load-error">
-          <strong>Approval queue unavailable</strong>
-          <p>{{ loadError() }}</p>
-        </div>
-      } @else if (approvals().length === 0) {
-        <div class="approvals-page__empty-state">
-          <strong>No pending approvals right now</strong>
-          <p>The manager decision workspace will populate as submitted requests arrive.</p>
+        <p class="p-10 text-center text-sm text-slate-500">Đang tải hàng đợi…</p>
+      } @else if (!visibleRows().length) {
+        <div class="flex flex-1 flex-col items-center justify-center p-10 text-center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-3 h-10 w-10 text-emerald-300">
+            <path d="M20 6 9 17l-5-5"></path>
+          </svg>
+          <p class="text-sm font-medium text-slate-700">Không có yêu cầu nào khớp bộ lọc.</p>
         </div>
       } @else {
-        <div class="approvals-page__list">
-          @for (item of approvals(); track item.id) {
-            <article class="approvals-page__item">
-              <div>
-                <div class="approvals-page__item-topline">
-                  <h3>{{ item.title }}</h3>
-                  <span class="approvals-page__priority" [class.approvals-page__priority--high]="item.priority === 'High'">{{ item.priority }}</span>
+        <div class="flex-1 overflow-auto">
+          <table class="w-full text-sm">
+            <thead class="sticky top-0 z-10 bg-white">
+              <tr class="border-b border-slate-100">
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Mã yêu cầu</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Người gửi</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Nhà cung cấp</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Phòng ban</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Số tiền</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Tín hiệu</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Trạng thái</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Hạn duyệt</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+              @for (row of visibleRows(); track row.id) {
+                <tr
+                  class="group cursor-pointer transition"
+                  [ngClass]="row.id === selectedQueueRow()?.id ? 'border-l-2 border-l-indigo-500 bg-indigo-50/50' : 'hover:bg-slate-50'"
+                  (click)="selectApproval(row.id)"
+                >
+                  <td class="px-4 py-3.5">
+                    <p class="font-mono text-xs font-semibold text-slate-500">{{ row.requestCode }}</p>
+                    <p class="mt-1 max-w-[13rem] truncate text-xs text-slate-400">{{ row.requestTitle }}</p>
+                  </td>
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-2">
+                      <span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">{{ row.requesterInitials }}</span>
+                      <div>
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Người gửi</p>
+                        <p class="text-xs font-medium text-slate-900">{{ row.requester }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5 text-xs font-medium text-slate-700">{{ row.vendorLabel }}</td>
+                  <td class="px-4 py-3.5 text-xs text-slate-500">{{ row.department }}</td>
+                  <td class="px-4 py-3.5 text-right">
+                    <p class="font-semibold tabular-nums text-slate-950">{{ row.amountDisplay }}</p>
+                    <p class="text-[11px] text-slate-400">{{ row.currency }}</p>
+                  </td>
+                  <td class="px-4 py-3.5">
+                    <span class="inline-flex items-center rounded bg-slate-50 px-1.5 py-0.5 text-xs text-slate-300">—</span>
+                  </td>
+                  <td class="px-4 py-3.5">
+                    <span
+                      class="rounded-full px-2 py-0.5 text-xs font-medium"
+                      [ngClass]="{
+                        'bg-amber-100 text-amber-700': row.statusTone === 'pending',
+                        'bg-emerald-100 text-emerald-700': row.statusTone === 'approved',
+                        'bg-rose-100 text-rose-700': row.statusTone === 'rejected',
+                        'bg-slate-100 text-slate-700': row.statusTone === 'default'
+                      }"
+                    >{{ row.status }}</span>
+                  </td>
+                  <td class="px-4 py-3.5 text-xs text-slate-400">{{ row.expenseDateLabel }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <footer class="flex items-center justify-between border-t border-slate-100 bg-slate-50/40 px-4 py-2 text-xs text-slate-600">
+          <span>Hiển thị {{ pagination().start }}–{{ pagination().end }} / {{ pagination().totalCount }}</span>
+          <div class="flex items-center gap-2">
+            <button type="button" class="rounded-md border border-slate-200 bg-white px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="pagination().page <= 1" (click)="previousPage()">‹ Trước</button>
+            <span class="font-medium text-slate-700">{{ pagination().page }} / {{ pagination().totalPages }}</span>
+            <button type="button" class="rounded-md border border-slate-200 bg-white px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="pagination().page >= pagination().totalPages" (click)="nextPage()">Sau ›</button>
+          </div>
+        </footer>
+      }
+    </section>
+
+    @if (selectedQueueRow(); as selected) {
+      <aside
+        class="flex w-[480px] flex-shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+        data-testid="approval-inspector-panel"
+      >
+        <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+          <div class="flex min-w-0 items-center gap-2">
+            <span class="font-mono text-xs font-bold text-slate-500">{{ selected.requestCode }}</span>
+            <span
+              class="rounded-full px-2 py-0.5 text-xs font-medium"
+              [ngClass]="{
+                'bg-amber-100 text-amber-700': selected.statusTone === 'pending',
+                'bg-emerald-100 text-emerald-700': selected.statusTone === 'approved',
+                'bg-rose-100 text-rose-700': selected.statusTone === 'rejected',
+                'bg-slate-100 text-slate-700': selected.statusTone === 'default'
+              }"
+            >{{ selected.status }}</span>
+          </div>
+          <button type="button" class="text-slate-400 transition hover:text-slate-600" aria-label="Đóng" (click)="closeInspector()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4"><path d="m6 6 12 12"></path><path d="m18 6-12 12"></path></svg>
+          </button>
+        </div>
+
+        <div class="border-b border-slate-100 bg-slate-50 px-5 py-4" data-testid="approval-inspector-hero">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-2xl font-bold leading-tight tabular-nums text-slate-950">{{ selected.amountDisplay }}</p>
+              <p class="mt-1 text-xs text-slate-400">{{ inspectorDetail()?.priority ?? 'Mức ưu tiên chưa xác định' }}</p>
+              <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                <span class="rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">Giá trị lớn</span>
+                @if (selected.statusTone === 'pending') {
+                  <span class="rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Sắp đến hạn</span>
+                }
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Nhà cung cấp</p>
+              <p class="text-sm font-semibold text-slate-800">{{ selected.vendorLabel }}</p>
+              <p class="mt-0.5 font-mono text-xs text-slate-400">{{ selected.requestCode }}</p>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center gap-2 border-t border-slate-200 pt-3">
+            <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">{{ selected.requesterInitials }}</span>
+            <span class="text-xs font-medium text-slate-700">{{ selected.requester }}</span>
+            <span class="text-xs text-slate-300">·</span>
+            <span class="text-xs text-slate-400">{{ selected.department }}</span>
+            <span class="ml-auto text-xs font-medium text-slate-500">Hạn duyệt {{ selected.expenseDateLabel }}</span>
+          </div>
+        </div>
+
+        <nav class="flex border-b border-slate-100">
+          @for (t of inspectorTabs; track t.id) {
+            <button
+              type="button"
+              class="flex-1 border-b-2 px-2 py-2.5 text-xs font-medium transition"
+              [ngClass]="inspectorTab() === t.id ? 'border-indigo-600 bg-indigo-50/40 text-indigo-700' : 'border-transparent text-slate-400 hover:text-slate-600'"
+              (click)="setInspectorTab(t.id)"
+            >
+              {{ t.label }}
+            </button>
+          }
+        </nav>
+
+        <div class="flex-1 overflow-auto">
+          @if (isDetailLoading()) {
+            <p class="p-8 text-center text-sm text-slate-500">Đang tải chi tiết…</p>
+          } @else {
+            @switch (inspectorTab()) {
+              @case ('details') {
+                <div class="flex flex-col gap-4 p-5">
+                  <section>
+                    <p class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Người gửi</p>
+                    <div class="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                      <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{{ selected.requesterInitials }}</span>
+                      <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-950">{{ selected.requester }}</p>
+                        <p class="text-xs text-slate-400">{{ selected.department }}</p>
+                        <p class="mt-1 text-xs font-medium text-emerald-700">Nhân sự này sẽ được hoàn ứng sau khi duyệt.</p>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section>
+                    <p class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Thông tin chi phí</p>
+                    <div class="overflow-hidden rounded-lg border border-slate-100">
+                      @for (row of [
+                        { label: 'Mã yêu cầu', value: selected.requestCode },
+                        { label: 'Invoice Ref', value: selected.requestTitle },
+                        { label: 'Vendor', value: selected.vendorLabel },
+                        { label: 'Department', value: selected.department },
+                        { label: 'Mức ưu tiên', value: inspectorDetail()?.priority ?? '—' },
+                        { label: 'Status', value: selected.status }
+                      ]; track row.label) {
+                        <div class="flex items-center justify-between border-b border-slate-50 px-3.5 py-2.5 text-xs last:border-0 odd:bg-slate-50/60">
+                          <span class="font-medium text-slate-400">{{ row.label }}</span>
+                          <span class="max-w-[15rem] truncate font-semibold text-slate-800">{{ row.value }}</span>
+                        </div>
+                      }
+                    </div>
+                  </section>
+
+                  <section>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Diễn giải nghiệp vụ</p>
+                    <div class="rounded-lg border border-indigo-100 bg-indigo-50 p-3.5">
+                      <p class="text-xs leading-relaxed text-indigo-900">{{ selected.summary }}</p>
+                    </div>
+                  </section>
+
+                  <section data-testid="approval-financial-breakdown">
+                    <div class="mb-2.5 flex items-center justify-between">
+                      <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">PHÂN TÍCH TÀI CHÍNH</p>
+                        <p class="mt-0.5 text-[11px] text-slate-400">Tài chính · kiểm tra line item, giảm giá và thuế trước khi duyệt</p>
+                      </div>
+                      @if (inspectorDetail()?.lineItems?.length) {
+                        <span class="rounded bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-500">Dòng chi phí ({{ inspectorDetail()?.lineItems?.length }})</span>
+                      }
+                    </div>
+
+                    @if (inspectorDetail(); as detail) {
+                      <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                        <div class="border-b border-slate-100 bg-slate-50/80 px-3.5 py-2.5">
+                          <p class="text-xs font-semibold text-slate-700">Dòng chi phí</p>
+                        </div>
+
+                        @if (detail.lineItems.length === 0) {
+                          <p class="p-4 text-sm text-slate-500">Chưa có dòng chi tiết.</p>
+                        } @else {
+                          <div class="overflow-x-auto">
+                            <table class="min-w-[620px] table-fixed text-xs">
+                              <colgroup>
+                                <col class="w-[170px]" />
+                                <col class="w-[64px]" />
+                                <col class="w-[104px]" />
+                                <col class="w-[104px]" />
+                                <col class="w-[88px]" />
+                                <col class="w-[90px]" />
+                              </colgroup>
+                              <thead class="bg-slate-50 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                <tr>
+                                  <th class="px-3 py-2 text-left">MÔ TẢ</th>
+                                  <th class="px-3 py-2 text-right">SL</th>
+                                  <th class="px-3 py-2 text-right">ĐƠN GIÁ</th>
+                                  <th class="px-3 py-2 text-right">TẠM TÍNH</th>
+                                  <th class="px-3 py-2 text-right text-rose-500">GIẢM GIÁ</th>
+                                  <th class="px-3 py-2 text-right">THÀNH TIỀN</th>
+                                </tr>
+                              </thead>
+                              <tbody class="divide-y divide-slate-100">
+                                @for (li of detail.lineItems; track $index) {
+                                  <tr class="odd:bg-white even:bg-slate-50/30">
+                                    <td class="px-3 py-2.5">
+                                      <p class="truncate font-semibold text-slate-800" [title]="li.description">{{ li.description }}</p>
+                                    </td>
+                                    <td class="px-3 py-2.5 text-right tabular-nums text-slate-600">{{ li.quantityLabel }}</td>
+                                    <td class="px-3 py-2.5 text-right tabular-nums text-slate-600">{{ li.unitPriceLabel }}</td>
+                                    <td class="px-3 py-2.5 text-right tabular-nums font-medium text-slate-700">{{ li.grossLabel }}</td>
+                                    <td class="px-3 py-2.5 text-right tabular-nums" [ngClass]="li.discountLabel === '—' ? 'text-slate-300' : 'text-rose-600 font-semibold'">{{ li.discountLabel }}</td>
+                                    <td class="px-3 py-2.5 text-right tabular-nums font-bold text-slate-950">{{ li.netLabel }}</td>
+                                  </tr>
+                                }
+                              </tbody>
+                            </table>
+                          </div>
+                        }
+
+                        <div class="divide-y divide-slate-100 border-t border-slate-100 bg-white px-3.5 py-2.5">
+                          <div class="flex items-center justify-between py-1.5 text-xs">
+                            <span class="text-slate-500">Tạm tính</span>
+                            <span class="font-semibold tabular-nums text-slate-800">{{ detail.grossSubtotalDisplay }}</span>
+                          </div>
+                          <div class="flex items-center justify-between py-1.5 text-xs">
+                            <span class="text-rose-600">Tổng giảm giá</span>
+                            <span class="font-semibold tabular-nums" [ngClass]="detail.hasDiscount ? 'text-rose-600' : 'text-slate-300'">{{ detail.totalDiscountDisplay }}</span>
+                          </div>
+                          <div class="flex items-center justify-between py-1.5 text-xs">
+                            <span class="text-slate-500">VAT / Thuế</span>
+                            <span class="font-semibold tabular-nums" [ngClass]="detail.hasVat ? 'text-slate-800' : 'text-slate-300'">{{ detail.vatDisplay }}</span>
+                          </div>
+                          <div class="flex items-center justify-between pt-2 text-sm">
+                            <span class="font-bold text-slate-950">Tổng cộng</span>
+                            <span class="font-bold tabular-nums text-slate-950">{{ detail.grandTotalDisplay }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/70 px-4 py-3.5">
+                        <p class="mb-2.5 text-xs font-semibold text-indigo-800">Số tiền cần thanh toán</p>
+                        <div class="flex items-center justify-between border-t border-indigo-200 pt-2 text-sm">
+                          <span class="font-bold text-indigo-950">Net payable</span>
+                          <span class="font-bold tabular-nums text-indigo-950">{{ detail.grandTotalDisplay }}</span>
+                        </div>
+                      </div>
+                    }
+                  </section>
                 </div>
-                <p>{{ item.requester }} · {{ item.department }}</p>
-              </div>
+              }
 
-              <div class="approvals-page__item-meta">
-                <strong>{{ item.amount }}</strong>
-                <span>Due {{ item.due }}</span>
-              </div>
+              @case ('invoice') {
+                <div class="p-5">
+                  <div class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    @if (isInvoicePreviewLoading()) {
+                      <div class="flex min-h-[18rem] items-center justify-center text-sm text-slate-500">
+                        Đang tải bản xem trước chứng từ…
+                      </div>
+                    } @else if (invoicePreviewPdfUrl()) {
+                      <iframe class="h-[28rem] w-full bg-white" [src]="invoicePreviewPdfUrl()" title="Bản xem trước hoá đơn"></iframe>
+                    } @else if (invoicePreviewImageUrl()) {
+                      <div class="flex h-[28rem] items-center justify-center bg-slate-50 p-4">
+                        <img
+                          data-testid="approval-invoice-preview-image"
+                          [src]="invoicePreviewImageUrl()"
+                          [alt]="invoicePreviewFileName()"
+                          class="max-h-full max-w-full rounded-lg border border-slate-200 bg-white object-contain shadow-sm"
+                        />
+                      </div>
+                    } @else {
+                      <div class="p-8 text-center">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="mx-auto mb-3 h-10 w-10 text-slate-300"><path d="M6 4h7l5 5v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"></path><path d="M13 4v5h5"></path></svg>
+                        <p class="text-sm font-semibold text-slate-500">{{ invoicePreviewFileName() }}</p>
+                        <p class="mt-1 text-xs text-slate-400">
+                          {{ invoiceError() || 'Bản xem trước chứng từ sẽ hiển thị tại đây khi API trả file đính kèm.' }}
+                        </p>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
 
-              <div class="approvals-page__item-actions">
-                <button type="button" class="approvals-page__inline approvals-page__inline--ghost">Reject</button>
-                <button type="button" class="approvals-page__inline approvals-page__inline--primary">Approve</button>
-              </div>
-            </article>
+              @case ('notes') {
+                <div class="space-y-3 p-5">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Ghi chú chính sách</p>
+                  <div class="rounded-lg border border-indigo-100 bg-indigo-50 p-3.5 text-xs leading-relaxed text-indigo-900">
+                    {{ selected.policySummary }}
+                  </div>
+                </div>
+              }
+
+              @case ('history') {
+                <div class="space-y-3 p-5">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Lịch sử</p>
+                  <div class="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-500">
+                    Đã trình bởi {{ selected.requester }} vào {{ selected.submittedLabel }}.
+                  </div>
+                </div>
+              }
+
+              @case ('actions') {
+                @if (selected.statusTone === 'pending') {
+                  <div class="space-y-3 p-5">
+                    <label class="block">
+                      <span class="mb-1 block text-xs font-medium text-slate-600">Ghi chú quyết định</span>
+                      <textarea rows="3" class="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100" placeholder="Bình luận sẽ được lưu vào lịch sử phê duyệt" [value]="actionComment()" (input)="updateActionComment($any($event.target).value)"></textarea>
+                    </label>
+                    <label class="block">
+                      <span class="mb-1 block text-xs font-medium text-slate-600">Lý do từ chối</span>
+                      <input type="text" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100" placeholder="Bắt buộc nếu từ chối" [value]="rejectReason()" (input)="updateRejectReason($any($event.target).value)" />
+                    </label>
+                    @if (inspectorError()) {
+                      <div class="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-700">{{ inspectorError() }}</div>
+                    }
+                    <div class="grid gap-2">
+                      <button type="button" class="rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="isApproving() || isRejecting()" (click)="approveSelectedApproval()">
+                        @if (isApproving()) { Đang duyệt… } @else { Duyệt yêu cầu }
+                      </button>
+                      <button type="button" class="rounded-lg bg-rose-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="isApproving() || isRejecting()" (click)="rejectSelectedApproval()">
+                        @if (isRejecting()) { Đang từ chối… } @else { Từ chối }
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="p-5">
+                    <div class="rounded-lg border border-slate-100 bg-slate-50 p-4 text-sm text-slate-500">Yêu cầu đã được xử lý. Không thể chỉnh sửa.</div>
+                  </div>
+                }
+              }
+            }
           }
         </div>
-      }
-    </article>
-
-    <aside class="approvals-page__rail">
-      <article class="approvals-page__panel approvals-page__panel--summary">
-        <h2>Review guidance</h2>
-        <p>Use request details, due dates, and policy context to make fast, consistent approval decisions.</p>
-      </article>
-
-      <article class="approvals-page__panel approvals-page__panel--summary">
-        <h2>Up next</h2>
-        <ul>
-          <li>Wire approval details drawer</li>
-          <li>Connect approve/reject mutations</li>
-          <li>Link back to source document</li>
-        </ul>
-      </article>
-    </aside>
-  </section>
-</section>
+      </aside>
+    } @else {
+      <aside class="flex w-[280px] flex-shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-8 text-center">
+        <p class="text-sm font-medium text-slate-700">Chọn một yêu cầu</p>
+        <p class="mt-1 text-xs text-slate-400">Chi tiết phê duyệt sẽ hiển thị tại đây.</p>
+      </aside>
+    }
+  </div>
+</div>
