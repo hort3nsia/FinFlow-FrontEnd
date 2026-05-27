@@ -1,0 +1,336 @@
+<div class="flex h-[calc(100vh-4.5rem)] w-full overflow-hidden bg-slate-50 md:-m-6 md:h-[calc(100vh-3.5rem)]">
+  @if (isSidebarOpen()) {
+    <aside class="hidden w-[260px] flex-shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
+      <div class="flex items-center justify-between px-4 pb-3 pt-4">
+        <h2 class="text-sm font-semibold text-slate-950">Cuộc trò chuyện</h2>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-blue-700"
+          (click)="newConversation()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3 w-3">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+          <span>Mới</span>
+        </button>
+      </div>
+
+      <div class="px-4 pb-3">
+        <div class="relative">
+          <span class="sr-only">Tìm cuộc trò chuyện</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m20 20-3.5-3.5"></path>
+          </svg>
+          <input
+            type="search"
+            class="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+            placeholder="Tìm cuộc trò chuyện..."
+            [ngModel]="sessionSearch()"
+            (ngModelChange)="onSessionSearchChange($event)"
+          />
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-2 pb-3">
+        @if (isLoadingSessions()) {
+          <p class="px-3 py-6 text-xs text-slate-500">Đang tải cuộc trò chuyện...</p>
+        } @else if (!filteredSessions().length) {
+          <div class="px-3 py-6 text-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" class="mx-auto mb-1.5 h-5 w-5 text-slate-300">
+              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+            </svg>
+            <p class="text-xs text-slate-400">Không tìm thấy cuộc trò chuyện</p>
+          </div>
+        } @else {
+          <ul class="flex flex-col gap-0.5">
+            @for (s of filteredSessions(); track s.id) {
+              <li>
+                <button
+                  type="button"
+                  class="group relative w-full rounded-lg border-l-2 px-3 py-2.5 pl-[10px] text-left transition"
+                  [ngClass]="activeSessionId() === s.id
+                    ? 'border-l-blue-500 bg-blue-50'
+                    : 'border-l-transparent hover:bg-slate-50'"
+                  (click)="selectSession(s.id)"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <p
+                      class="min-w-0 flex-1 truncate text-xs font-semibold"
+                      [ngClass]="activeSessionId() === s.id ? 'text-blue-900' : 'text-slate-950'"
+                    >
+                      {{ s.title || 'Hội thoại không tiêu đề' }}
+                    </p>
+                    <span class="opacity-0 transition group-hover:opacity-100">
+                      <svg viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5 text-slate-400">
+                        <circle cx="5" cy="12" r="1.5"></circle>
+                        <circle cx="12" cy="12" r="1.5"></circle>
+                        <circle cx="19" cy="12" r="1.5"></circle>
+                      </svg>
+                    </span>
+                  </div>
+                  <p class="mt-0.5 truncate text-xs text-slate-500">{{ sessionPreview(s) }}</p>
+                  <p class="mt-1 text-[11px] text-slate-400">{{ formatRelativeDate(s.lastMessageAt) }}</p>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </aside>
+  }
+
+  <section class="flex min-w-0 flex-1 flex-col bg-slate-50">
+    <header class="sticky top-0 z-10 flex flex-shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-6 py-3">
+      <button
+        type="button"
+        class="rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 md:hidden"
+        aria-label="Mở danh sách cuộc trò chuyện"
+        (click)="toggleSidebar()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+          <path d="M4 7h16"></path>
+          <path d="M4 12h16"></path>
+          <path d="M4 17h16"></path>
+        </svg>
+      </button>
+      <div class="min-w-0 flex-1">
+        <h1 class="truncate text-left text-sm font-semibold text-slate-950">{{ activeSessionTitle() }}</h1>
+        <p class="mt-0.5 truncate text-xs text-slate-400">
+          Trợ lý AI · Dữ liệu workspace thật · Token phiên này: {{ totalTokens() }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+        aria-label="Menu"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4">
+          <circle cx="5" cy="12" r="1.5"></circle>
+          <circle cx="12" cy="12" r="1.5"></circle>
+          <circle cx="19" cy="12" r="1.5"></circle>
+        </svg>
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto">
+      @if (isLoadingHistory()) {
+        <p class="p-8 text-center text-sm text-slate-500">Đang tải lịch sử hội thoại...</p>
+      } @else if (!hasTurns()) {
+        <div class="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
+          <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 shadow-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-8 w-8 text-white">
+              <path d="m12 3 1.9 5.9L20 11l-6.1 2.1L12 19l-1.9-5.9L4 11l6.1-2.1z"></path>
+            </svg>
+          </div>
+          <h2 class="text-xl font-semibold text-slate-950">Trợ lý AI FinFlow</h2>
+          <p class="mt-2 max-w-md text-sm text-slate-500">
+            Hỏi tôi bất cứ điều gì về dữ liệu workspace của bạn
+          </p>
+
+          <div class="mt-8 grid w-full max-w-xl gap-2 sm:grid-cols-2">
+            @for (prompt of suggestedPrompts(); track prompt.title) {
+              <button
+                type="button"
+                class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-xs text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                (click)="applySuggestedPrompt(prompt.prompt)"
+              >
+                <span class="inline-flex items-center gap-1.5">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3 w-3 flex-shrink-0 text-violet-500">
+                    <path d="m13 2-2 9h7l-7 11 2-9H6z"></path>
+                  </svg>
+                  <span>{{ prompt.title }}</span>
+                </span>
+              </button>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-6">
+          @for (turn of turns(); track turn.id) {
+            @if (turn.role === 'user') {
+              <div class="flex items-start justify-end gap-3">
+                <div class="flex max-w-[75%] flex-col items-end">
+                  <div class="rounded-2xl rounded-tr-sm bg-blue-600 px-4 py-2.5 text-white">
+                    <p class="whitespace-pre-wrap text-sm leading-relaxed">{{ turn.content }}</p>
+                  </div>
+                  <span class="mr-1 mt-1 text-xs text-slate-400">{{ formatTime(turn.createdAt) }}</span>
+                </div>
+                <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                  {{ userInitials() }}
+                </div>
+              </div>
+            } @else {
+              <div class="flex items-start gap-3">
+                <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-white">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+                    <path d="m12 3 1.9 5.9L20 11l-6.1 2.1L12 19l-1.9-5.9L4 11l6.1-2.1z"></path>
+                  </svg>
+                </div>
+
+                <div class="min-w-0 max-w-[85%] flex-1">
+                  <div class="rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3">
+                    <p class="mb-1.5 text-xs font-semibold text-slate-500">Trợ lý AI</p>
+                    @if (turn.isPending) {
+                      <div class="flex items-center gap-2 py-1">
+                        <span class="inline-flex items-center gap-1">
+                          <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:0ms]"></span>
+                          <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:150ms]"></span>
+                          <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:300ms]"></span>
+                        </span>
+                        <span class="text-xs italic text-slate-400">Đang tạo phản hồi...</span>
+                      </div>
+                    } @else {
+                      <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{{ turn.content }}</p>
+                    }
+                  </div>
+
+                  @if (turn.role === 'assistant' && turn.citations && turn.citations.length > 0 && !isReportingTurn(turn)) {
+                    <div class="mt-3 flex flex-col gap-2">
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Nguồn:</p>
+                      @for (citation of turn.citations; track citation.chunkId) {
+                        <div class="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+                          <div class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-xs font-bold tabular-nums text-blue-700">
+                            [{{ citation.chunkNumber }}]
+                          </div>
+                          <div class="min-w-0 flex-1">
+                            <p class="truncate text-xs font-semibold text-slate-800">{{ citationRef(citation) }}</p>
+                            <p class="mt-0.5 truncate text-xs italic text-slate-500">{{ citation.preview }}</p>
+                          </div>
+                          <button type="button" class="flex-shrink-0 whitespace-nowrap text-xs font-medium text-blue-600 hover:underline" (click)="openCitation(citation)">
+                            Xem hóa đơn →
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  @if (turn.role === 'assistant' && !turn.isPending) {
+                    <p class="ml-1 mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                      <span>{{ formatTime(turn.createdAt) }}</span>
+                      @if (answerSourceLabel(turn.answerSource); as sourceLabel) {
+                        <span>·</span>
+                        <span
+                          class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                          [ngClass]="turn.answerSource === 'REPORTING'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : turn.answerSource === 'RAG'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-slate-100 text-slate-700'"
+                        >
+                          {{ sourceLabel }}
+                        </span>
+                      }
+                      @if (turn.documentCount && turn.documentCount > 0 && turn.answerSource !== 'REPORTING') {
+                        <span>·</span>
+                        <span>{{ turn.documentCount }} tài liệu được tham chiếu</span>
+                      }
+                      @if (turn.tokenUsage) {
+                        <span>·</span>
+                        <span>{{ turn.tokenUsage }} token</span>
+                      }
+                    </p>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
+        <div #messagesEnd></div>
+      }
+    </div>
+
+    @if (shouldWarnQuota()) {
+      <div
+        class="flex flex-shrink-0 items-center justify-center gap-2 px-4 py-2 text-xs font-medium"
+        [ngClass]="isQuotaExceeded()
+          ? 'bg-red-600 text-white'
+          : 'border-t border-amber-200 bg-amber-100 text-amber-800'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5 flex-shrink-0">
+          <path d="m12 3 10 18H2z"></path>
+          <path d="M12 9v5"></path>
+          <path d="M12 18h.01"></path>
+        </svg>
+        @if (isQuotaExceeded()) {
+          <span>Đã hết hạn mức chat tháng này. Reset 01/06/2026 hoặc nâng cấp.</span>
+        } @else {
+          <span>Sắp hết hạn mức chat tháng này: {{ formatNumber(chatbotUsage().used) }} / {{ formatNumber(chatbotUsage().limit) }} tin. Xem chi tiết →</span>
+        }
+      </div>
+    }
+
+    <div class="sticky bottom-0 flex-shrink-0 border-t border-slate-200 bg-white px-6 py-4">
+      <div class="mx-auto max-w-3xl">
+        @if (errorMessage()) {
+          <div class="mb-2 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-sm text-rose-700">
+            {{ errorMessage() }}
+          </div>
+        }
+
+        <div
+          class="relative rounded-xl border bg-white transition-all"
+          [ngClass]="isQuotaExceeded()
+            ? 'border-slate-200 bg-slate-50 opacity-60'
+            : 'border-slate-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100'"
+        >
+          <span class="sr-only">Hỏi trợ lý AI bất cứ điều gì</span>
+          <textarea
+            rows="1"
+            class="max-h-28 w-full resize-none bg-transparent px-4 pb-2 pr-20 pt-3 text-sm leading-relaxed text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+            [placeholder]="isQuotaExceeded() ? 'Đã hết hạn mức chat tháng này...' : 'Hỏi trợ lý AI bất cứ điều gì...'"
+            [ngModel]="draft()"
+            (ngModelChange)="onDraftChange($event)"
+            (keydown)="onTextareaKeydown($event)"
+            [disabled]="isQuotaExceeded()"
+            name="chatDraft"
+          ></textarea>
+          <span class="pointer-events-none absolute bottom-2 right-3 text-[11px] tabular-nums text-slate-400">
+            {{ draftCharacterCount() }} / 2000
+          </span>
+        </div>
+
+        <div class="mt-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-300">
+              <kbd class="font-sans">Shift</kbd> + <kbd class="font-sans">Enter</kbd> để xuống dòng
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            @if (isSending()) {
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                (click)="stopStreaming()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <rect x="9" y="9" width="6" height="6" rx="1"></rect>
+                </svg>
+                <span>Dừng</span>
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition"
+                [ngClass]="canSend()
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'cursor-not-allowed bg-slate-100 text-slate-400'"
+                [disabled]="!canSend()"
+                (click)="send()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5">
+                  <path d="m22 2-7 20-4-9-9-4Z"></path>
+                  <path d="M22 2 11 13"></path>
+                </svg>
+                <span>Gửi</span>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
