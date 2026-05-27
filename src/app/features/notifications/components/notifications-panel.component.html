@@ -1,0 +1,151 @@
+@if (isOpenSignal()) {
+  <div class="fixed inset-0 z-40">
+    <!-- Backdrop -->
+    <button
+      type="button"
+      aria-label="Đóng thông báo"
+      class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+      (click)="onClose()"
+    ></button>
+
+    <!-- Panel -->
+    <aside
+      class="absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl"
+    >
+      <header class="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div>
+          <h2 class="text-base font-semibold text-slate-900">Thông báo</h2>
+          <p class="text-xs text-slate-500">
+            @if (unreadCount() > 0) {
+              {{ unreadCount() }} thông báo chưa đọc
+            } @else {
+              Bạn đã đọc hết thông báo.
+            }
+          </p>
+        </div>
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+            aria-label="Làm mới"
+            (click)="refresh()"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+              <path d="M3 12a9 9 0 0 1 15.55-6.36L21 8"></path>
+              <path d="M21 3v5h-5"></path>
+              <path d="M21 12a9 9 0 0 1-15.55 6.36L3 16"></path>
+              <path d="M8 16H3v5"></path>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+            aria-label="Đóng"
+            (click)="onClose()"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-4 w-4">
+              <path d="m6 6 12 12"></path>
+              <path d="m18 6-12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Filter + actions -->
+      <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50/40 px-5 py-2">
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            class="rounded-md px-2.5 py-1 text-xs font-medium transition"
+            [ngClass]="filter() === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'"
+            (click)="setFilter('all')"
+          >
+            Tất cả
+          </button>
+          <button
+            type="button"
+            class="rounded-md px-2.5 py-1 text-xs font-medium transition"
+            [ngClass]="filter() === 'unread' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'"
+            (click)="setFilter('unread')"
+          >
+            Chưa đọc ({{ unreadCount() }})
+          </button>
+        </div>
+        <button
+          type="button"
+          class="text-xs font-medium text-indigo-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="isMarkingAll() || unreadCount() === 0"
+          (click)="markAllAsRead()"
+        >
+          @if (isMarkingAll()) { Đang xử lý… } @else { Đánh dấu tất cả đã đọc }
+        </button>
+      </div>
+
+      <!-- List -->
+      <div class="flex-1 overflow-y-auto">
+        @if (errorMessage()) {
+          <div class="m-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+            {{ errorMessage() }}
+          </div>
+        }
+
+        @if (isLoading()) {
+          <p class="px-5 py-8 text-center text-sm text-slate-500">Đang tải thông báo…</p>
+        } @else if (filteredItems().length === 0) {
+          <div class="flex flex-col items-center px-6 py-12 text-center">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6">
+                <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h11Z"></path>
+                <path d="M9 17a3 3 0 0 0 6 0"></path>
+              </svg>
+            </span>
+            <p class="mt-3 text-sm font-medium text-slate-700">
+              @if (filter() === 'unread') {
+                Không còn thông báo chưa đọc.
+              } @else {
+                Chưa có thông báo nào.
+              }
+            </p>
+            <p class="mt-1 text-xs text-slate-500">
+              Các sự kiện quan trọng (duyệt, thanh toán, ngân sách) sẽ xuất hiện ở đây.
+            </p>
+          </div>
+        } @else {
+          <ul class="divide-y divide-slate-100">
+            @for (n of filteredItems(); track n.id) {
+              <li>
+                <button
+                  type="button"
+                  class="flex w-full items-start gap-3 px-5 py-3 text-left transition hover:bg-slate-50"
+                  [ngClass]="!n.isRead ? 'bg-indigo-50/40' : ''"
+                  (click)="onItemClick(n)"
+                >
+                  <span
+                    class="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                    [ngClass]="severityClass(n.severity)"
+                  >
+                    <span class="h-2 w-2 rounded-full" [ngClass]="severityDotClass(n.severity)"></span>
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start gap-2">
+                      <p class="flex-1 text-sm font-medium text-slate-800">
+                        {{ n.title }}
+                      </p>
+                      @if (!n.isRead) {
+                        <span class="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-indigo-500" aria-label="Chưa đọc"></span>
+                      }
+                    </div>
+                    @if (n.body) {
+                      <p class="mt-0.5 line-clamp-2 text-xs text-slate-600">{{ n.body }}</p>
+                    }
+                    <p class="mt-1 text-[11px] text-slate-400">{{ formatRelativeTime(n.createdAt) }}</p>
+                  </div>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </aside>
+  </div>
+}

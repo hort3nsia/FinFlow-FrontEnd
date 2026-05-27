@@ -1,225 +1,321 @@
-<div class="shell">
-  <aside class="shell__sidebar">
-    <div class="shell__sidebar-pane">
-      <a class="shell__brand" routerLink="/app/dashboard" aria-label="Open FinFlow dashboard">
-        <app-brand-mark />
-      </a>
+<div class="flex h-screen overflow-hidden bg-slate-50" data-testid="app-shell-frame">
+  <!-- Mobile backdrop -->
+  @if (isSidebarOpen()) {
+    <button
+      type="button"
+      class="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+      aria-label="Close navigation"
+      data-testid="shell-sidebar-backdrop"
+      (click)="closeSidebar()"
+    ></button>
+  }
 
-      <div class="shell__workspace-copy">
-        <h1>FinFlow Systems</h1>
-        <p>Finance Workspace</p>
+  <!-- Sidebar -->
+  <aside
+    class="fixed inset-y-0 left-0 z-40 flex w-64 flex-none flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:static lg:translate-x-0"
+    data-testid="app-shell-sidebar"
+    [ngClass]="isSidebarOpen() ? 'translate-x-0' : '-translate-x-full'"
+  >
+    <!-- Brand -->
+    <a
+      class="flex items-center gap-3 border-b border-slate-100 px-4 py-4 transition hover:bg-slate-50"
+      routerLink="/app/dashboard"
+      aria-label="Mở Tổng quan"
+    >
+      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+          <path d="M4.5 9.25 12 5l7.5 4.25L12 13.5 4.5 9.25Z"></path>
+          <path d="M4.5 13.1 12 17.35l7.5-4.25"></path>
+          <path d="M4.5 16.95 12 21.2l7.5-4.25"></path>
+        </svg>
+      </span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-sm font-semibold text-slate-900">{{ workspaceBrandName() }}</p>
+        <p class="truncate text-[11px] text-slate-500">{{ workspaceSubtitle() }}</p>
+      </div>
+    </a>
+
+    <!-- Nav -->
+    <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-4 [scrollbar-gutter:stable]">
+      <!-- Workflow -->
+      <div>
+        <p class="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          Quy trình chi tiêu
+        </p>
+        @for (item of visibleExpenseWorkflowItems(); track item.label) {
+          <a
+            class="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition"
+            [routerLink]="item.route"
+            routerLinkActive="bg-indigo-50 text-indigo-700"
+            [routerLinkActiveOptions]="{ exact: false }"
+            (click)="closeSidebar()"
+            #rla="routerLinkActive"
+          >
+            <span
+              class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-[11px] font-semibold transition"
+              [ngClass]="rla.isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'"
+            >{{ item.step }}</span>
+            <span class="flex-1 truncate"
+                  [ngClass]="rla.isActive ? 'text-indigo-700' : 'text-slate-700 group-hover:text-slate-900'">
+              {{ item.label }}
+            </span>
+            @if (item.badge) {
+              <span
+                class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                [ngClass]="item.badgeTone === 'warning'
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-slate-100 text-slate-600'"
+              >{{ item.badge }}</span>
+            }
+          </a>
+        }
       </div>
 
-      <nav class="shell__nav" aria-label="Workspace navigation">
-        @for (item of navItems; track item.label) {
-          @if (item.route) {
-            <a
-              class="shell__nav-link"
-              [routerLink]="item.route"
-              routerLinkActive="shell__nav-link--active"
-              [routerLinkActiveOptions]="{ exact: true }"
+      <!-- Management -->
+      <div>
+        <p class="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          Quản lý
+        </p>
+        @for (item of visibleManagementItems(); track item.label) {
+          <a
+            class="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition"
+            [routerLink]="item.route"
+            routerLinkActive="bg-indigo-50 text-indigo-700"
+            [routerLinkActiveOptions]="{ exact: true }"
+            (click)="closeSidebar()"
+            #rla="routerLinkActive"
+          >
+            <span
+              class="flex h-6 w-6 flex-shrink-0 items-center justify-center transition"
+              [ngClass]="rla.isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'"
             >
-              <span class="shell__nav-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  @switch (item.icon) {
-                    @case ('overview') {
-                      <rect x="3" y="3" width="7" height="7"></rect>
-                      <rect x="14" y="3" width="7" height="7"></rect>
-                      <rect x="14" y="14" width="7" height="7"></rect>
-                      <rect x="3" y="14" width="7" height="7"></rect>
-                    }
-                    @case ('documents') {
-                      <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
-                      <path d="M14 3v6h6"></path>
-                      <path d="M9 13h6"></path>
-                      <path d="M9 17h6"></path>
-                    }
-                    @case ('approvals') {
-                      <rect x="4" y="3" width="16" height="18" rx="2"></rect>
-                      <path d="M8 7h8"></path>
-                      <path d="M8 11h4"></path>
-                      <path d="m8 16 2 2 5-5"></path>
-                    }
-                    @case ('expenses') {
-                      <rect x="3" y="6" width="18" height="12" rx="2"></rect>
-                      <path d="M3 10h18"></path>
-                      <circle cx="8" cy="14" r="1"></circle>
-                    }
-                    @case ('budgets') {
-                      <path d="M12 1v22"></path>
-                      <path d="M17 5H9a3 3 0 0 0 0 6h6a3 3 0 1 1 0 6H6"></path>
-                    }
-                    @case ('vendors') {
-                      <path d="M3 7 12 3l9 4"></path>
-                      <path d="M4 10h16"></path>
-                      <path d="M6 10v8"></path>
-                      <path d="M10 10v8"></path>
-                      <path d="M14 10v8"></path>
-                      <path d="M18 10v8"></path>
-                      <path d="M3 21h18"></path>
-                    }
-                    @case ('assistant') {
-                      <rect x="7" y="7" width="10" height="9" rx="2"></rect>
-                      <path d="M9 11h.01"></path>
-                      <path d="M15 11h.01"></path>
-                      <path d="M9.5 15c.7.6 1.5.9 2.5.9s1.8-.3 2.5-.9"></path>
-                      <path d="M12 2v3"></path>
-                      <path d="M8 4 6 6"></path>
-                      <path d="M16 4 18 6"></path>
-                    }
-                    @case ('audit') {
-                      <path d="M4 6h16"></path>
-                      <path d="M4 12h10"></path>
-                      <path d="M4 18h7"></path>
-                      <path d="m16 15 2 2 4-4"></path>
-                    }
-                    @default {
-                      <circle cx="12" cy="12" r="3"></circle>
-                      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1 0 2.8 2 2 0 0 1-2.8 0l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"></path>
-                    }
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                @switch (item.icon) {
+                  @case ('dashboard') {
+                    <rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect>
+                    <rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect>
+                    <rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect>
+                    <rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect>
                   }
-                </svg>
-              </span>
-              <span>{{ item.label }}</span>
-            </a>
-          } @else {
-            <button type="button" class="shell__nav-link" disabled>
-              <span class="shell__nav-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  @switch (item.icon) {
-                    @case ('overview') {
-                      <rect x="3" y="3" width="7" height="7"></rect>
-                      <rect x="14" y="3" width="7" height="7"></rect>
-                      <rect x="14" y="14" width="7" height="7"></rect>
-                      <rect x="3" y="14" width="7" height="7"></rect>
-                    }
-                    @case ('documents') {
-                      <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
-                      <path d="M14 3v6h6"></path>
-                      <path d="M9 13h6"></path>
-                      <path d="M9 17h6"></path>
-                    }
-                    @case ('approvals') {
-                      <rect x="4" y="3" width="16" height="18" rx="2"></rect>
-                      <path d="M8 7h8"></path>
-                      <path d="M8 11h4"></path>
-                      <path d="m8 16 2 2 5-5"></path>
-                    }
-                    @case ('expenses') {
-                      <rect x="3" y="6" width="18" height="12" rx="2"></rect>
-                      <path d="M3 10h18"></path>
-                      <circle cx="8" cy="14" r="1"></circle>
-                    }
-                    @case ('budgets') {
-                      <path d="M12 1v22"></path>
-                      <path d="M17 5H9a3 3 0 0 0 0 6h6a3 3 0 1 1 0 6H6"></path>
-                    }
-                    @case ('vendors') {
-                      <path d="M3 7 12 3l9 4"></path>
-                      <path d="M4 10h16"></path>
-                      <path d="M6 10v8"></path>
-                      <path d="M10 10v8"></path>
-                      <path d="M14 10v8"></path>
-                      <path d="M18 10v8"></path>
-                      <path d="M3 21h18"></path>
-                    }
-                    @case ('assistant') {
-                      <rect x="7" y="7" width="10" height="9" rx="2"></rect>
-                      <path d="M9 11h.01"></path>
-                      <path d="M15 11h.01"></path>
-                      <path d="M9.5 15c.7.6 1.5.9 2.5.9s1.8-.3 2.5-.9"></path>
-                      <path d="M12 2v3"></path>
-                      <path d="M8 4 6 6"></path>
-                      <path d="M16 4 18 6"></path>
-                    }
-                    @case ('audit') {
-                      <path d="M4 6h16"></path>
-                      <path d="M4 12h10"></path>
-                      <path d="M4 18h7"></path>
-                      <path d="m16 15 2 2 4-4"></path>
-                    }
-                    @default {
-                      <circle cx="12" cy="12" r="3"></circle>
-                      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1 0 2.8 2 2 0 0 1-2.8 0l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"></path>
-                    }
+                  @case ('members') {
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9.5" cy="7" r="3"></circle>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 4.13a4 4 0 0 1 0 7.75"></path>
                   }
-                </svg>
-              </span>
-              <span>{{ item.label }}</span>
-            </button>
-          }
+                  @case ('vendors') {
+                    <path d="M3 7.5 12 3l9 4.5-9 4.5L3 7.5Z"></path>
+                    <path d="M7 10v4.5c0 1.8 2.2 3.5 5 3.5s5-1.7 5-3.5V10"></path>
+                  }
+                  @case ('budgets') {
+                    <path d="M4 7h16"></path>
+                    <path d="M6 3v18"></path>
+                    <path d="M18 3v18"></path>
+                    <path d="M10 11h4"></path>
+                    <path d="M9 15h6"></path>
+                  }
+                  @case ('departments') {
+                    <path d="M6 20V10"></path>
+                    <path d="M12 20V4"></path>
+                    <path d="M18 20v-7"></path>
+                  }
+                  @case ('subscription') {
+                    <path d="M12 2 3 7l9 5 9-5-9-5Z"></path>
+                    <path d="m3 12 9 5 9-5"></path>
+                    <path d="m3 17 9 5 9-5"></path>
+                  }
+                  @case ('reports') {
+                    <path d="M3 3v18h18"></path>
+                    <path d="M7 14l3-3 3 3 5-5"></path>
+                    <path d="M16 9h4v4"></path>
+                  }
+                  @case ('chat') {
+                    <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"></path>
+                  }
+                }
+              </svg>
+            </span>
+            <span class="flex-1 truncate"
+                  [ngClass]="rla.isActive ? 'text-indigo-700' : 'text-slate-700 group-hover:text-slate-900'">
+              {{ item.label }}
+            </span>
+            @if (item.badge) {
+              <span
+                class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                [ngClass]="item.badgeTone === 'warning'
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-slate-100 text-slate-600'"
+              >{{ item.badge }}</span>
+            }
+          </a>
         }
-      </nav>
+      </div>
+    </nav>
+
+    <!-- Footer -->
+    <div class="space-y-1 border-t border-slate-100 p-3">
+      <button
+        type="button"
+        class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        [routerLink]="['/app/settings']"
+        data-testid="shell-settings-button"
+        (click)="closeSidebar()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-400">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"></path>
+        </svg>
+        <span>Cấu hình</span>
+      </button>
+
+      <button
+        type="button"
+        class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+        (click)="logout()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <path d="m16 17 5-5-5-5"></path>
+          <path d="M21 12H9"></path>
+        </svg>
+        <span>Đăng xuất</span>
+      </button>
+
+      <a
+        class="mt-1 flex items-center gap-2.5 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-left transition hover:bg-slate-100"
+        [routerLink]="['/app/profile']"
+      >
+        <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-semibold text-white shadow-sm">
+          {{ userInitial() }}
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-slate-800">{{ profileDisplayName() }}</p>
+          <p class="truncate text-[11px] text-slate-500">{{ profileRole() }}</p>
+        </div>
+      </a>
     </div>
   </aside>
 
-  <div class="shell__main shell__main-frame">
-    <header class="shell__topbar">
-      <div class="shell__topbar-inner">
-        <div class="shell__search" aria-label="Search workspace">
-          <span class="shell__search-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="7"></circle>
-              <path d="m20 20-3.5-3.5"></path>
-            </svg>
-          </span>
-          <span>Search workspace...</span>
+  <!-- Main column -->
+  <div class="flex min-w-0 flex-1 flex-col overflow-hidden" data-testid="app-shell-main-column">
+    <!-- Topbar -->
+    <header class="sticky top-0 z-20 flex flex-none items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3 lg:px-6">
+      <div class="flex min-w-0 flex-1 items-center gap-3">
+        <!-- Mobile menu -->
+        <button
+          type="button"
+          class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+          aria-label="Mở danh sách điều hướng"
+          data-testid="shell-menu-button"
+          (click)="toggleSidebar()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" class="h-5 w-5">
+            <path d="M4 7h16"></path>
+            <path d="M4 12h16"></path>
+            <path d="M4 17h16"></path>
+          </svg>
+        </button>
+
+        <!-- Title / Breadcrumb -->
+        <div class="min-w-0 flex-1" data-testid="shell-title-slot">
+          @if (shellBreadcrumbs().length > 1) {
+            <nav class="flex items-center gap-1.5 text-sm" aria-label="Đường dẫn workspace">
+              @for (crumb of shellBreadcrumbs(); track crumb.label; let last = $last) {
+                @if (crumb.routerLink && !last) {
+                  <a
+                    class="font-medium text-slate-500 transition hover:text-indigo-700"
+                    [routerLink]="crumb.routerLink"
+                    [attr.aria-label]="'Quay lại ' + crumb.label"
+                    data-testid="shell-breadcrumb-parent"
+                  >{{ crumb.label }}</a>
+                } @else {
+                  <span
+                    [class.font-medium]="last"
+                    [class.text-slate-900]="last"
+                    [class.text-slate-500]="!last"
+                    [attr.data-testid]="last ? 'shell-breadcrumb-current' : null"
+                  >{{ crumb.label }}</span>
+                }
+                @if (!last) {
+                  <span class="text-slate-300">›</span>
+                }
+              }
+            </nav>
+          } @else {
+            <p class="truncate text-base font-semibold text-slate-900">{{ pageTitle() }}</p>
+          }
         </div>
+      </div>
 
-        <div class="shell__actions">
-          <button type="button" class="shell__icon-button" aria-label="Notifications">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-4-5.65V4a2 2 0 1 0-4 0v1.35A6 6 0 0 0 6 11v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
-              <path d="M9 17a3 3 0 0 0 6 0"></path>
+      <!-- Right actions -->
+      <div class="flex items-center gap-2">
+        @if (isSuperAdmin()) {
+          <a
+            class="hidden items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 sm:inline-flex"
+            [routerLink]="['/admin']"
+            data-testid="topbar-admin-link"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+              <path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"></path>
             </svg>
-          </button>
-          <button type="button" class="shell__icon-button" aria-label="Help">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"></circle>
-              <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4"></path>
-              <path d="M12 17h.01"></path>
+            <span>Admin</span>
+          </a>
+        }
+        @if (canShowUpgrade()) {
+          <a
+            class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:from-indigo-700 hover:to-violet-700"
+            [routerLink]="['/app/subscription']"
+            data-testid="topbar-upgrade-button"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+              <path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4Z"></path>
+              <path d="m9 12 2 2 4-4"></path>
             </svg>
-          </button>
+            <span>Nâng cấp</span>
+          </a>
+        }
 
-          <div class="shell__account-menu">
-            <button
-              type="button"
-              class="shell__account-trigger"
-              [attr.aria-expanded]="isAccountMenuOpen()"
-              aria-haspopup="menu"
-              (click)="toggleAccountMenu()"
-            >
-              <span class="shell__account-avatar" aria-hidden="true">
-                {{ (userEmail() || 'U').charAt(0).toUpperCase() }}
-              </span>
+        <button
+          type="button"
+          class="relative rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+          aria-label="Thông báo"
+          data-testid="topbar-notifications-button"
+          (click)="toggleNotifications()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+            <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-4-5.65V4a2 2 0 1 0-4 0v1.35A6 6 0 0 0 6 11v3.2a2 2 0 0 1-.6 1.4L4 17h5"></path>
+            <path d="M9 17a3 3 0 0 0 6 0"></path>
+          </svg>
+          @if (unreadNotifications() > 0) {
+            <span class="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold leading-none text-white">
+              {{ unreadNotifications() > 99 ? '99+' : unreadNotifications() }}
+            </span>
+          }
+        </button>
 
-              <span class="shell__account-copy">
-                <span class="shell__label">Signed in as</span>
-                <strong>{{ userEmail() || 'demo@finflow.local' }}</strong>
-              </span>
-            </button>
-
-            @if (isAccountMenuOpen()) {
-              <div class="shell__account-dropdown" role="menu">
-                <button
-                  type="button"
-                  class="shell__account-item shell__account-item--danger"
-                  role="menuitem"
-                  (click)="logout()"
-                >
-                  Đăng xuất
-                </button>
-              </div>
-            }
-          </div>
-        </div>
+        <button
+          type="button"
+          class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-semibold text-white shadow-sm transition hover:opacity-90"
+          aria-label="Trang cá nhân"
+          [routerLink]="['/app/profile']"
+          data-testid="topbar-profile-chip"
+        >
+          {{ userInitial() }}
+        </button>
       </div>
     </header>
 
-    <main class="shell__content">
-      <div class="shell__content-shell">
+    <!-- Content -->
+    <main class="min-h-0 flex-1 overflow-y-auto px-4 py-6 [scrollbar-gutter:stable] lg:px-8">
+      <div class="mx-auto max-w-screen-2xl">
         <router-outlet></router-outlet>
       </div>
     </main>
   </div>
+
+  <!-- Notifications panel (overlay) -->
+  <app-notifications-panel
+    [isOpen]="isNotificationsPanelOpen()"
+    (close)="closeNotifications()"
+  ></app-notifications-panel>
 </div>

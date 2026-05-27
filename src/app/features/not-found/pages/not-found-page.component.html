@@ -1,13 +1,28 @@
-<section class="not-found-page">
-  <app-brand-mark />
-  <p class="not-found-page__eyebrow">404</p>
-  <h1>That page is off the ledger.</h1>
-  <p>
-    The route does not exist in this starter workspace yet. Head back to the guarded dashboard
-    or sign in again if your session has expired.
-  </p>
-  <div class="not-found-page__actions">
-    <a routerLink="/app/dashboard">Go to dashboard</a>
-    <a routerLink="/login">Go to login</a>
+<div class="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+  <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-xl">
+    <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6">
+        <path d="M4.5 9.25 12 5l7.5 4.25L12 13.5 4.5 9.25Z"></path>
+        <path d="M4.5 13.1 12 17.35l7.5-4.25"></path>
+        <path d="M4.5 16.95 12 21.2l7.5-4.25"></path>
+      </svg>
+    </span>
+
+    <p class="mt-6 text-sm font-medium uppercase tracking-wider text-indigo-600">404</p>
+    <h1 class="mt-2 text-2xl font-semibold text-slate-900">Trang không tồn tại</h1>
+    <p class="mt-2 text-sm text-slate-500">
+      Đường dẫn này không có trong hệ thống. Hãy quay về Tổng quan hoặc đăng nhập lại nếu phiên đã hết.
+    </p>
+
+    <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+      <a
+        routerLink="/app/dashboard"
+        class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+      >Về Tổng quan</a>
+      <a
+        routerLink="/login"
+        class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+      >Về Đăng nhập</a>
+    </div>
   </div>
-</section>
+</div>
