@@ -1,0 +1,108 @@
+<div
+  class="grid grid-cols-[36px_120px_1fr_70px_110px_110px_110px_60px] items-center gap-2 rounded-lg border border-slate-100 bg-white px-2 py-2 text-sm transition"
+  [ngClass]="{
+    'opacity-60': dragging(),
+    'bg-rose-50/40 border-rose-100': item().type === 'discount',
+    'bg-amber-50/40 border-amber-100': item().type === 'adjustment'
+  }"
+  draggable="true"
+  (dragstart)="dragStarted.emit()"
+  (dragend)="dragEnded.emit()"
+  (dragover)="allowDrop($event)"
+  (drop)="rowDropped.emit()"
+>
+  <div class="flex flex-col items-center gap-1 text-[10px] text-slate-500">
+    <span class="cursor-grab text-slate-400">⋮⋮</span>
+    <span class="font-mono">{{ rowNumber }}</span>
+  </div>
+
+  <select
+    class="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+    [value]="item().type"
+    (change)="emitFieldChange('type', $any($event.target).value)"
+  >
+    @for (opt of lineItemTypeOptions; track opt.value) {
+      <option [value]="opt.value">
+        @switch (opt.value) {
+          @case ('standard') { Tiêu chuẩn }
+          @case ('adjustment') { Điều chỉnh }
+          @case ('discount') { Giảm giá }
+        }
+      </option>
+    }
+  </select>
+
+  <input
+    type="text"
+    class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+    [value]="item().description"
+    placeholder="Mô tả"
+    (input)="emitFieldChange('description', $any($event.target).value)"
+  />
+
+  <input
+    type="number"
+    class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+    [value]="item().quantity"
+    min="1"
+    step="1"
+    (input)="emitFieldChange('quantity', $any($event.target).value)"
+  />
+
+  <input
+    type="number"
+    class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+    [value]="item().grossAmount"
+    min="0"
+    step="0.01"
+    (input)="emitFieldChange('grossAmount', $any($event.target).value)"
+  />
+
+  <input
+    type="number"
+    class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+    [value]="item().discountAmount"
+    min="0"
+    step="0.01"
+    (input)="emitFieldChange('discountAmount', normalizeDiscountInput($any($event.target).value))"
+  />
+
+  <div class="text-right text-sm font-semibold text-slate-900">{{ formatMoney(lineItemTotalValue(item())) }}</div>
+
+  <div class="flex items-center justify-end gap-0.5">
+    <button
+      type="button"
+      class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+      [disabled]="isFirstRow"
+      title="Lên"
+      (click)="moveUp.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-3 w-3">
+        <path d="m18 15-6-6-6 6"></path>
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+      [disabled]="isLastRow"
+      title="Xuống"
+      (click)="moveDown.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-3 w-3">
+        <path d="m6 9 6 6 6-6"></path>
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="rounded-md p-1 text-rose-400 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30"
+      [disabled]="isSingleRow"
+      title="Xoá"
+      (click)="remove.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-3 w-3">
+        <path d="m6 6 12 12"></path>
+        <path d="m18 6-12 12"></path>
+      </svg>
+    </button>
+  </div>
+</div>

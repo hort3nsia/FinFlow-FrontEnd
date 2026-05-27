@@ -1,0 +1,225 @@
+<div class="space-y-4 pb-12">
+  <div class="flex flex-wrap items-center gap-2 text-sm">
+    <a
+      [routerLink]="['/app/documents/list']"
+      class="inline-flex items-center gap-1.5 text-slate-500 transition hover:text-slate-700"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+        <path d="m15 18-6-6 6-6"></path>
+      </svg>
+      Quay lại danh sách
+    </a>
+    <span class="text-slate-300">/</span>
+    <span class="text-sm font-semibold text-slate-900">Chi phí thủ công mới</span>
+    <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3 w-3">
+        <path d="M12 20h9"></path>
+        <path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path>
+      </svg>
+      Nhập tay
+    </span>
+  </div>
+
+  <app-document-split-workspace>
+    <div workspace-left>
+      <app-document-surface-card [title]="'Chứng từ đính kèm'" [eyebrow]="'Receipt / Invoice Upload'">
+        <app-document-upload-zone
+          [inputId]="'manual-file-input'"
+          [title]="'Tải hoá đơn hoặc biên nhận'"
+          [hint]="'PDF, PNG, JPG. Tệp đính kèm là tùy chọn nhưng hữu ích cho đối soát và lưu vết kiểm toán.'"
+          [note]="'Tệp sẽ được lưu cùng chứng từ chi phí khi bạn lưu nháp hoặc gửi phê duyệt.'"
+          [fileName]="selectedFileName()"
+          [dragActive]="dragActive()"
+          [imagePreviewUrl]="selectedPreviewUrl()"
+          [pdfPreviewUrl]="selectedPdfPreviewUrl()"
+          [hasImagePreview]="hasImagePreview()"
+          [hasPdfPreview]="hasPdfPreview()"
+          [previewPlaceholder]="'Chưa có tệp đính kèm'"
+          [chooseLabel]="'Chọn chứng từ'"
+          (fileSelected)="onFileSelected($event)"
+          (dragOverEvent)="onDragOver($event)"
+          (dragLeaveEvent)="onDragLeave($event)"
+          (dropEvent)="onDrop($event)"
+        ></app-document-upload-zone>
+      </app-document-surface-card>
+    </div>
+
+    <div workspace-right>
+      <app-document-surface-card [title]="'Chi tiết chi phí'" [eyebrow]="'Expense Details'">
+        <div class="space-y-6">
+          <section class="space-y-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <h2 class="text-sm font-semibold text-slate-950">Thông tin nhà cung cấp</h2>
+                <p class="mt-1 text-xs text-slate-500">Nhập các trường chính của hoá đơn theo đúng chứng từ gốc.</p>
+              </div>
+              @if (prettyInvoiceDate()) {
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                  {{ prettyInvoiceDate() }}
+                </span>
+              }
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-2">
+              @for (field of vendorFields; track field.key) {
+                <label class="block">
+                  <span class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    {{ field.label }}
+                  </span>
+                  @if (field.key === 'category') {
+                    <select
+                      data-testid="manual-category-select"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                      [value]="formState().category"
+                      (change)="updateField('category', $any($event.target).value)"
+                    >
+                      <option value="" disabled>Chọn hạng mục chi phí</option>
+                      @for (category of selectableCategories(); track category) {
+                        <option [value]="category">{{ category }}</option>
+                      }
+                    </select>
+                  } @else {
+                    <input
+                      [type]="field.inputType ?? 'text'"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                      [placeholder]="field.placeholder"
+                      [value]="
+                        field.key === 'vendor-supplier' ? formState().vendorSupplier :
+                        field.key === 'invoice-number' ? formState().invoiceNumber :
+                        field.key === 'invoice-date' ? formState().invoiceDate :
+                        formState().taxId
+                      "
+                      (input)="updateField(
+                        field.key === 'vendor-supplier' ? 'vendorSupplier' :
+                        field.key === 'invoice-number' ? 'invoiceNumber' :
+                        field.key === 'invoice-date' ? 'invoiceDate' :
+                        'taxId',
+                        $any($event.target).value
+                      )"
+                    />
+                  }
+                </label>
+              }
+            </div>
+          </section>
+
+          <section class="space-y-4 border-t border-slate-100 pt-5">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <h2 class="text-sm font-semibold text-slate-950">Dòng chi phí</h2>
+                <p class="mt-1 text-xs text-slate-500">Sắp xếp, điều chỉnh hoặc thêm từng dòng phát sinh.</p>
+              </div>
+              <button
+                type="button"
+                class="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                (click)="addLineItem()"
+              >
+                + Thêm dòng
+              </button>
+            </div>
+
+            <div class="hidden grid-cols-[36px_120px_1fr_70px_110px_110px_110px_60px] gap-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 xl:grid">
+              <span></span>
+              <span>Loại dòng</span>
+              <span>Mô tả khoản chi</span>
+              <span class="text-right">SL</span>
+              <span class="text-right">Tạm tính</span>
+              <span class="text-right text-rose-500">Giảm giá</span>
+              <span class="text-right">Thành tiền</span>
+              <span></span>
+            </div>
+
+            <div class="space-y-2">
+              @for (item of lineItems(); track $index; let i = $index) {
+                <app-documents-manual-line-item-row
+                  [item]="item"
+                  [index]="i"
+                  [rowCount]="lineItems().length"
+                  [dragging]="draggedLineItemIndex() === i"
+                  (fieldChange)="updateLineItem(i, $event.field, $event.value)"
+                  (moveUp)="moveLineItemUp(i)"
+                  (moveDown)="moveLineItemDown(i)"
+                  (remove)="removeLineItem(i)"
+                  (dragStarted)="startDragLineItem(i)"
+                  (dragEnded)="endDragLineItem()"
+                  (rowDropped)="dropLineItem(i)"
+                  (rowDragOver)="allowLineItemDrop($event)"
+                ></app-documents-manual-line-item-row>
+              }
+            </div>
+          </section>
+
+          <section class="space-y-3 border-t border-slate-100 pt-5">
+            <h2 class="text-sm font-semibold text-slate-950">Tổng tài chính</h2>
+
+            <div class="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-600">Tạm tính</span>
+                <span class="font-semibold text-slate-950">{{ formatMoney(grossSubtotal()) }}</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-rose-600">Tổng giảm giá</span>
+                <span class="font-semibold text-rose-600">-{{ formatMoney(totalDiscount()) }}</span>
+              </div>
+              <div class="grid gap-3 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center">
+                <span class="text-slate-600">VAT / Thuế</span>
+                <label class="flex items-center gap-2 text-xs text-slate-500">
+                  <span>VAT %</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-right text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    [value]="taxRate() ?? ''"
+                    (input)="updateTaxRate($any($event.target).value)"
+                  />
+                </label>
+                <label class="flex items-center gap-2 text-xs text-slate-500">
+                  <span>Số tiền thuế</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="w-36 rounded-xl border border-slate-200 bg-white px-3 py-2 text-right text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  [value]="taxAmount()"
+                  (input)="updateTaxAmount($any($event.target).value)"
+                />
+                </label>
+              </div>
+              <div class="flex items-center justify-between border-t border-slate-200 pt-3">
+                <span class="text-sm font-semibold text-slate-900">Tổng cộng</span>
+                <span class="text-xl font-semibold text-slate-950">{{ formatMoney(totalAmount()) }}</span>
+              </div>
+            </div>
+          </section>
+
+          @if (submitError()) {
+            <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ submitError() }}</div>
+          }
+          @if (submitState()) {
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ submitState() }}</div>
+          }
+          @if (saveError()) {
+            <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ saveError() }}</div>
+          }
+          @if (saveState()) {
+            <div class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">{{ saveState() }}</div>
+          }
+        </div>
+
+        <app-document-action-bar
+          card-footer
+          [saveDisabled]="savingDraft() || submitting()"
+          [submitDisabled]="submitting() || savingDraft()"
+          [savePending]="savingDraft()"
+          [submitPending]="submitting()"
+          [submitLabel]="'Trình phê duyệt'"
+          (saveClicked)="saveDraft()"
+          (submitClicked)="submitManualExpense()"
+        >
+          <span action-note>Tất cả thay đổi được lưu trong cùng một flow để tiếp tục xử lý sau.</span>
+        </app-document-action-bar>
+      </app-document-surface-card>
+    </div>
+  </app-document-split-workspace>
+</div>

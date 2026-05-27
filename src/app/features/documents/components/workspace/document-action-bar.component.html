@@ -1,0 +1,31 @@
+<div class="flex flex-col gap-3 border-t border-slate-100 bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+  <div class="text-xs text-slate-400">
+    <ng-content select="[action-note]"></ng-content>
+  </div>
+  <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+    <button
+      type="button"
+      class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+      [disabled]="saveDisabled()"
+      (click)="saveClicked.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+        <path d="M5 5h11l3 3v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"></path>
+        <path d="M8 5v5h8"></path>
+      </svg>
+      {{ savePending() ? 'Đang lưu…' : saveLabel() }}
+    </button>
+    <button
+      type="button"
+      class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+      [disabled]="submitDisabled()"
+      (click)="submitClicked.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+        <path d="M22 2 11 13"></path>
+        <path d="M22 2 15 22l-4-9-9-4Z"></path>
+      </svg>
+      {{ submitPending() ? 'Đang xử lý…' : submitLabel() }}
+    </button>
+  </div>
+</div>

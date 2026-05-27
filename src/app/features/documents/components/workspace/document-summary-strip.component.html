@@ -1,0 +1,53 @@
+<section class="rounded-[22px] border border-slate-200 bg-white px-4 py-3.5">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-center">
+    <div class="flex min-w-0 items-start gap-4">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5">
+          <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"></path>
+          <path d="M14 3v5h5"></path>
+        </svg>
+      </div>
+
+      <div class="min-w-0 space-y-2">
+        @if (badges().length) {
+          <div class="flex flex-wrap items-center gap-2">
+            @for (badge of badges(); track badge.label) {
+              <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset" [class]="badgeClass(badge.tone)">
+                {{ badge.label }}
+              </span>
+            }
+          </div>
+        }
+
+        @if (leadingTitle() || leadingSubtitle()) {
+          <div class="space-y-0.5">
+            @if (leadingTitle()) {
+              <h2 class="truncate text-sm font-bold text-slate-950">{{ leadingTitle() }}</h2>
+            }
+            @if (leadingSubtitle()) {
+              <p class="truncate text-xs text-slate-400">{{ leadingSubtitle() }}</p>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="hidden h-10 w-px bg-slate-100 xl:block"></div>
+
+    @if (items().length) {
+      <div class="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        @for (item of items(); track item.label) {
+          <div class="min-w-0">
+            <p class="text-[11px] font-medium text-slate-400">{{ item.label }}</p>
+            <p class="mt-0.5 truncate text-sm font-semibold text-slate-800">{{ item.value }}</p>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="shrink-0 rounded-[20px] bg-slate-50 px-4 py-3 text-right ring-1 ring-slate-200/80">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ totalLabel() }}</p>
+      <p class="mt-1 text-2xl font-bold text-slate-950">{{ totalValue() }}</p>
+    </div>
+  </div>
+</section>

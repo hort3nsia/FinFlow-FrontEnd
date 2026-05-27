@@ -10,7 +10,6 @@ export interface ReviewedDocumentDraft {
   vendor: string;
   reference: string;
   documentDate: string;
-  dueDate: string;
   category: string;
   vendorTaxId: string;
   subtotal: string;

@@ -1,0 +1,290 @@
+<div class="space-y-5 pb-12">
+  <app-document-workspace-header
+    [title]="'Tải lên với OCR'"
+    [description]="'Tải chứng từ, để hệ thống trích xuất dữ liệu OCR và duyệt lại trước khi gửi sang phê duyệt.'"
+    [statusText]="'Upload With OCR'"
+  ></app-document-workspace-header>
+
+  @if (phase() === 'upload') {
+    <app-document-split-workspace>
+      <div workspace-left>
+        <app-document-surface-card [title]="'Tải chứng từ'" [eyebrow]="'OCR Intake'">
+          <app-document-upload-zone
+            [inputId]="'ocr-file-input'"
+            [title]="'Thả tệp vào đây hoặc chọn từ máy'"
+            [hint]="'Hỗ trợ PDF, JPG, PNG. Hệ thống sẽ trích xuất nhà cung cấp, tham chiếu và các dòng chi phí từ chứng từ.'"
+            [note]="'Sau khi tải lên, chứng từ sẽ đi qua các bước OCR và bạn có thể kiểm tra lại toàn bộ dữ liệu trước khi gửi.'"
+            [fileName]="selectedFileName()"
+            [dragActive]="false"
+            [imagePreviewUrl]="null"
+            [pdfPreviewUrl]="null"
+            [hasImagePreview]="false"
+            [hasPdfPreview]="false"
+            [previewPlaceholder]="'Chưa có tệp nào được chọn'"
+            [chooseLabel]="'Chọn tệp OCR'"
+            (fileSelected)="onFileSelected($event)"
+          ></app-document-upload-zone>
+        </app-document-surface-card>
+      </div>
+
+      <div workspace-right>
+        <app-document-surface-card [title]="'Quy trình OCR'" [eyebrow]="'What Happens Next'">
+          <div class="space-y-4">
+            @for (item of processingItems; track item.id) {
+              <div class="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                  {{ item.id }}
+                </span>
+                <p class="text-sm leading-6 text-slate-700">{{ item.label }}</p>
+              </div>
+            }
+          </div>
+
+          @if (uploadError()) {
+            <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {{ uploadError() }}
+            </div>
+          }
+        </app-document-surface-card>
+      </div>
+    </app-document-split-workspace>
+  }
+
+  @if (phase() === 'processing') {
+    <app-document-surface-card [title]="'Đang xử lý OCR'" [eyebrow]="'Processing'">
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div class="space-y-3">
+          @for (item of processingItems; track item.id) {
+            <div class="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+              <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                {{ item.id }}
+              </span>
+              <p class="text-sm font-medium text-slate-700">{{ item.label }}</p>
+            </div>
+          }
+        </div>
+
+        <div class="rounded-3xl bg-slate-50 px-5 py-5 ring-1 ring-slate-200">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current File</p>
+          <p class="mt-2 text-base font-semibold text-slate-950">{{ selectedFileName() || 'Đang chuẩn bị tệp...' }}</p>
+          <p class="mt-1 text-sm text-slate-500">{{ selectedFileMeta() }}</p>
+          <div class="mt-6 flex items-center gap-3 text-sm text-slate-600">
+            <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white ring-1 ring-slate-200">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5 animate-spin text-indigo-600">
+                <path d="M21 12a9 9 0 1 1-6.2-8.55"></path>
+              </svg>
+            </span>
+            Đang trích xuất dữ liệu từ chứng từ...
+          </div>
+        </div>
+      </div>
+    </app-document-surface-card>
+  }
+
+  @if (phase() === 'review') {
+    <app-document-summary-strip
+      [leadingTitle]="reviewState().reference || 'Bản nháp OCR'"
+      [leadingSubtitle]="selectedFileName() || 'Supporting document'"
+      [items]="summaryItems()"
+      [badges]="summaryBadges()"
+      [totalLabel]="'Tổng cộng'"
+      [totalValue]="formatMoney(totalAmount())"
+    ></app-document-summary-strip>
+
+    <app-document-split-workspace>
+      <div workspace-left>
+        <app-document-surface-card [title]="'Chứng từ đính kèm'" [eyebrow]="'Supporting Document'">
+          <app-document-upload-zone
+            [inputId]="'ocr-review-file-input'"
+            [title]="'Bản xem trước chứng từ'"
+            [hint]="'Tiếp tục xem trước hoặc thay tệp gốc để OCR lại khi cần.'"
+            [note]="'Bạn có thể rà soát dữ liệu ở panel bên phải trước khi lưu nháp hoặc gửi phê duyệt.'"
+            [fileName]="selectedFileName()"
+            [dragActive]="false"
+            [imagePreviewUrl]="selectedPreviewUrl()"
+            [pdfPreviewUrl]="selectedPdfPreviewUrl()"
+            [hasImagePreview]="hasImagePreview()"
+            [hasPdfPreview]="hasPdfPreview()"
+            [previewPlaceholder]="'Chưa có bản xem trước'"
+            [chooseLabel]="'Thay tệp'"
+            (fileSelected)="onFileSelected($event)"
+          ></app-document-upload-zone>
+        </app-document-surface-card>
+      </div>
+
+      <div workspace-right>
+        <app-document-surface-card [title]="'Chi tiết chi phí'" [eyebrow]="'Expense Details'">
+          <div class="space-y-6">
+            <section class="space-y-4">
+              <div class="grid gap-3 md:grid-cols-2">
+                <label class="block">
+                  <span class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Nhà cung cấp</span>
+                  <input
+                    type="text"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    [value]="reviewState().vendorName"
+                    (input)="updateField('vendorName', $any($event.target).value)"
+                  />
+                </label>
+                <label class="block">
+                  <span class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Số chứng từ</span>
+                  <input
+                    type="text"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    [value]="reviewState().reference"
+                    (input)="updateField('reference', $any($event.target).value)"
+                  />
+                </label>
+                <label class="block">
+                  <span class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Ngày hoá đơn</span>
+                  <input
+                    type="date"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    [value]="reviewState().documentDate"
+                    (input)="updateField('documentDate', $any($event.target).value)"
+                  />
+                </label>
+                <label class="block">
+                  <span class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Mã số thuế / VAT</span>
+                  <input
+                    type="text"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    [value]="reviewState().vendorTaxId"
+                    (input)="updateField('vendorTaxId', $any($event.target).value)"
+                  />
+                </label>
+                <label class="block md:col-span-2">
+                  <span class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Hạng mục</span>
+                  <select
+                    data-testid="ocr-category-select"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    [value]="reviewState().category"
+                    (change)="updateField('category', $any($event.target).value)"
+                  >
+                    <option value="" disabled>Chọn hạng mục chi phí</option>
+                    @for (category of selectableCategories(); track category) {
+                      <option [value]="category">{{ category }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section class="space-y-4 border-t border-slate-100 pt-5">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h2 class="text-sm font-semibold text-slate-950">Dòng chi phí</h2>
+                  <p class="mt-1 text-xs text-slate-500">Nhập đơn giá, kiểm tra tạm tính, giảm giá và thành tiền trước khi gửi.</p>
+                </div>
+                <button
+                  type="button"
+                  class="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                  (click)="addLineItem()"
+                >
+                  + Thêm dòng
+                </button>
+              </div>
+
+              <div class="overflow-x-auto pb-1">
+                <div class="min-w-[820px] space-y-2">
+                  <div class="grid grid-cols-[36px_minmax(220px,1fr)_72px_112px_112px_112px_60px] gap-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    <span></span>
+                    <span>Mô tả khoản chi</span>
+                    <span class="text-right">SL</span>
+                    <span class="text-right">Đơn giá</span>
+                    <span class="text-right text-rose-500">Giảm giá</span>
+                    <span class="text-right">Thành tiền</span>
+                    <span></span>
+                  </div>
+
+                  @for (item of lineItems(); track $index; let i = $index) {
+                    <app-documents-ocr-line-item-row
+                      [item]="item"
+                      [index]="i"
+                      [rowCount]="lineItems().length"
+                      [dragging]="draggedLineItemIndex() === i"
+                      (fieldChange)="updateLineItem(i, $event.field, $event.value)"
+                      (moveUp)="moveLineItemUp(i)"
+                      (moveDown)="moveLineItemDown(i)"
+                      (remove)="removeLineItem(i)"
+                      (dragStarted)="startDragLineItem(i)"
+                      (dragEnded)="endDragLineItem()"
+                      (rowDropped)="dropLineItem(i)"
+                      (rowDragOver)="allowLineItemDrop($event)"
+                    ></app-documents-ocr-line-item-row>
+                  }
+                </div>
+              </div>
+            </section>
+
+            <section class="space-y-3 border-t border-slate-100 pt-5">
+              <h2 class="text-sm font-semibold text-slate-950">Tổng tài chính</h2>
+
+              <div class="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-slate-600">Tạm tính</span>
+                  <span class="font-semibold text-slate-950">{{ formatMoney(grossSubtotal()) }}</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-rose-600">Tổng giảm giá</span>
+                  <span class="font-semibold text-rose-600">-{{ formatMoney(totalDiscount()) }}</span>
+                </div>
+                <div class="grid gap-3 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center">
+                  <span class="text-slate-600">VAT / Thuế</span>
+                  <label class="flex items-center gap-2 text-xs text-slate-500">
+                    <span>VAT %</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-right text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                      [value]="taxRate() ?? ''"
+                      (input)="updateTaxRate($any($event.target).value)"
+                    />
+                  </label>
+                  <label class="flex items-center gap-2 text-xs text-slate-500">
+                    <span>Số tiền thuế</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    class="w-36 rounded-xl border border-slate-200 bg-white px-3 py-2 text-right text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    [value]="taxAmount()"
+                    (input)="updateTaxAmount($any($event.target).value)"
+                  />
+                  </label>
+                </div>
+                <div class="flex items-center justify-between border-t border-slate-200 pt-3">
+                  <span class="text-sm font-semibold text-slate-900">Tổng cộng</span>
+                  <span class="text-xl font-semibold text-slate-950">{{ formatMoney(totalAmount()) }}</span>
+                </div>
+              </div>
+            </section>
+
+            @if (submitError()) {
+              <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ submitError() }}</div>
+            }
+            @if (submitState()) {
+              <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ submitState() }}</div>
+            }
+            @if (saveState()) {
+              <div class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">{{ saveState() }}</div>
+            }
+          </div>
+
+          <app-document-action-bar
+            card-footer
+            [saveDisabled]="submitting()"
+            [submitDisabled]="submitting()"
+            [submitPending]="submitting()"
+            [submitLabel]="'Trình phê duyệt'"
+            (saveClicked)="saveDraft()"
+            (submitClicked)="submitReview()"
+          >
+            <span action-note>Bạn có thể lưu nháp sau khi chỉnh sửa OCR hoặc gửi ngay sang hàng chờ phê duyệt.</span>
+          </app-document-action-bar>
+        </app-document-surface-card>
+      </div>
+    </app-document-split-workspace>
+  }
+</div>

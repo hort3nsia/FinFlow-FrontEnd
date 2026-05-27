@@ -1,0 +1,17 @@
+<header class="space-y-3">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div class="space-y-1.5">
+      @if (statusText()) {
+        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ statusText() }}</p>
+      }
+      <h1 class="text-[1.9rem] font-semibold leading-tight tracking-[-0.02em] text-slate-950">{{ title() }}</h1>
+      @if (description()) {
+        <p class="max-w-3xl text-sm leading-6 text-slate-500">{{ description() }}</p>
+      }
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+      <ng-content select="[header-actions]"></ng-content>
+    </div>
+  </div>
+</header>

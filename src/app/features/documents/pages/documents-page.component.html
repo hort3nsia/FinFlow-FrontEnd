@@ -1,469 +1,223 @@
-<section class="documents-page">
-  <header class="documents-page__hero">
-    <div class="documents-page__hero-copy">
-      <div class="documents-page__eyebrow-row">
-        <span class="documents-page__eyebrow">Personal OCR workspace</span>
-        <span class="documents-page__eyebrow documents-page__eyebrow--subtle">Only your drafts live here</span>
-      </div>
-
-      <div class="documents-page__hero-main">
-        <div class="documents-page__title-block">
-          <h1 data-testid="documents-title">Documents</h1>
-          <p class="documents-page__copy" data-testid="documents-copy">
-            {{ pageCopy }}
-          </p>
-        </div>
-
-        <div class="documents-page__hero-actions">
-          <button
-            class="documents-page__cta documents-page__cta--primary"
-            type="button"
-            data-testid="documents-cta-upload"
-            [disabled]="isUploading()"
-            (click)="triggerUploadPicker()"
-          >
-            {{ isUploading() ? 'Uploading…' : 'Upload document' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <input
-      #fileInput
-      class="documents-page__file-input"
-      type="file"
-      accept=".pdf,image/png,image/jpeg,image/webp,image/jpg"
-      data-testid="documents-file-input"
-      (change)="handleFileSelection($event)"
-    />
-  </header>
-
-  @if (lastSubmittedReference()) {
-    <article class="documents-page__submit-banner" data-testid="documents-submit-banner">
-      <strong>{{ lastSubmittedReference() }}</strong> moved from your drafts into submitted history.
-    </article>
-  }
-
-  @if (workspaceError() || (reviewError() && !isReviewOpen())) {
-    <article class="documents-page__submit-banner documents-page__submit-banner--error" data-testid="documents-error-banner">
-      {{ workspaceError() ?? reviewError() }}
-    </article>
-  }
-
-  <section class="documents-page__kpi-grid" aria-label="Personal documents overview">
-    @for (kpi of kpis(); track kpi.label) {
-      <article class="documents-page__kpi-card">
-        @if (kpi.accent) {
-          <p class="documents-page__kpi-accent">{{ kpi.accent }}</p>
-        }
-        <p class="documents-page__kpi-label">{{ kpi.label }}</p>
-        <p class="documents-page__kpi-value">{{ kpi.value }}</p>
-      </article>
+<div class="space-y-5 pb-12">
+  <app-document-workspace-header
+    [title]="'Tài liệu chi phí'"
+    [description]="pageCopy"
+    [statusText]="'Documents Workspace'"
+  >
+    @if (canUploadWithOcr()) {
+      <a
+        header-actions
+        [routerLink]="['/app/documents/upload']"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        data-testid="documents-ocr-action"
+      >
+        Tải lên với OCR
+      </a>
+    } @else {
+      <a
+        header-actions
+        [routerLink]="['/app/subscription']"
+        class="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+        data-testid="documents-ocr-upgrade-action"
+      >
+        Nâng cấp OCR
+      </a>
     }
-  </section>
+    @if (canCreateManualDocument()) {
+      <a
+        header-actions
+        [routerLink]="['/app/documents/manual']"
+        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+        data-testid="documents-manual-action"
+      >
+        Nhập thủ công
+      </a>
+    } @else {
+      <a
+        header-actions
+        [routerLink]="['/app/subscription']"
+        class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+        data-testid="documents-manual-upgrade-action"
+      >
+        Nâng cấp để nhập chứng từ
+      </a>
+    }
+  </app-document-workspace-header>
 
-  <section class="documents-page__workspace">
-    <article class="documents-page__panel">
-      <div class="documents-page__panel-header">
+  <app-document-surface-card [compact]="true">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-start gap-3">
+        <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
+          {{ activeTab() === 'drafts' ? '1' : '2' }}
+        </span>
         <div>
-          <h2 data-testid="documents-drafts-title">My Drafts</h2>
-          <p class="documents-page__panel-copy">Server-backed OCR drafts waiting for you to finish the current review flow.</p>
+          <p class="text-sm font-semibold text-slate-900">{{ statusBanner() }}</p>
+          <p class="mt-1 text-xs text-slate-500">{{ totalDocumentCount() }} chứng từ trong workspace này</p>
         </div>
       </div>
+      <a [routerLink]="['/app/approvals']" class="text-sm font-medium text-indigo-600 transition hover:text-indigo-700">
+        Đến phê duyệt
+      </a>
+    </div>
+  </app-document-surface-card>
 
-      @if (isDraftsLoading()) {
-        <div class="documents-page__empty-state">
-          <strong>Loading your drafts…</strong>
-          <p>We are syncing your personal workspace from the server.</p>
-        </div>
-      } @else if (draftsLoadError()) {
-        <div class="documents-page__empty-state documents-page__empty-state--error" data-testid="documents-drafts-error">
-          <strong>Drafts unavailable</strong>
-          <p>{{ draftsLoadError() }}</p>
-        </div>
-      } @else if (myDrafts().length === 0) {
-        <div class="documents-page__empty-state" data-testid="documents-empty-drafts">
-          <strong>No drafts in progress</strong>
-          <p>Upload a document to start OCR review in your personal workspace.</p>
-        </div>
-      } @else {
-        <div class="documents-page__list">
-          @for (draft of myDrafts(); track trackByDocumentId($index, draft)) {
-            <article class="documents-page__card">
-              <div class="documents-page__card-topline">
-                <div>
-                  <h3>{{ draft.reference }}</h3>
-                  <p>{{ draft.vendorName }}</p>
-                </div>
-                <span class="documents-page__status-pill">{{ draft.confidenceLabel }}</span>
-              </div>
-
-              <dl class="documents-page__meta-grid">
-                <div>
-                  <dt>File</dt>
-                  <dd>{{ draft.originalFileName }}</dd>
-                </div>
-                <div>
-                  <dt>Total</dt>
-                  <dd>{{ formatCurrency(draft.totalAmount) }}</dd>
-                </div>
-                <div>
-                  <dt>Owner</dt>
-                  <dd>{{ draft.ownerEmail }}</dd>
-                </div>
-                <div>
-                  <dt>Uploaded</dt>
-                  <dd>{{ formatDateTime(draft.uploadedAt) }}</dd>
-                </div>
-              </dl>
-
-              <p class="documents-page__card-copy">Server-backed draft in your personal workspace. Reopen it to continue OCR review and submit when ready.</p>
-              <button
-                type="button"
-                class="documents-page__cta documents-page__cta--secondary documents-page__card-action"
-                data-testid="documents-continue-draft"
-                [disabled]="openingDraftId() === draft.documentId"
-                (click)="resumeDraft(draft.documentId)"
-              >
-                {{ openingDraftId() === draft.documentId ? 'Opening…' : 'Continue editing' }}
-              </button>
-            </article>
-          }
-        </div>
-      }
-    </article>
-
-    <article class="documents-page__panel">
-      <div class="documents-page__panel-header">
-        <div>
-          <h2 data-testid="documents-submitted-title">My Submitted</h2>
-          <p class="documents-page__panel-copy">Track manager decisions after you hand work off. This history is read-only status tracking.</p>
-        </div>
-      </div>
-
-      @if (isSubmittedLoading()) {
-        <div class="documents-page__empty-state">
-          <strong>Loading your history…</strong>
-          <p>Submitted items will appear here as soon as the workspace sync completes.</p>
-        </div>
-      } @else if (submittedLoadError()) {
-        <div class="documents-page__empty-state documents-page__empty-state--error" data-testid="documents-submitted-error">
-          <strong>Submitted history unavailable</strong>
-          <p>{{ submittedLoadError() }}</p>
-        </div>
-      } @else if (mySubmitted().length === 0) {
-        <div class="documents-page__empty-state" data-testid="documents-empty-submitted">
-          <strong>No submitted history yet</strong>
-          <p>Once you submit a reviewed document, it will appear here with its approval status.</p>
-        </div>
-      } @else {
-        <div class="documents-page__list">
-          @for (item of mySubmitted(); track trackByDocumentId($index, item)) {
-            <article class="documents-page__card documents-page__card--submitted">
-              <div class="documents-page__card-topline">
-                <div>
-                  <h3>{{ item.reference }}</h3>
-                  <p>{{ item.vendorName }}</p>
-                </div>
-                <span class="documents-page__status-pill documents-page__status-pill--submitted">{{ item.status }}</span>
-              </div>
-
-              <dl class="documents-page__meta-grid">
-                <div>
-                  <dt>Total</dt>
-                  <dd>{{ formatCurrency(item.totalAmount) }}</dd>
-                </div>
-                <div>
-                  <dt>Submitted by</dt>
-                  <dd>{{ item.submittedByEmail }}</dd>
-                </div>
-                <div>
-                  <dt>Submitted</dt>
-                  <dd>{{ formatDateTime(item.submittedAt) }}</dd>
-                </div>
-                <div>
-                  <dt>Last updated</dt>
-                  <dd>{{ formatDateTime(item.lastUpdatedAt) }}</dd>
-                </div>
-              </dl>
-
-              <p class="documents-page__card-copy">Read-only status tracking for your submitted document.</p>
-
-              @if (item.rejectionReason) {
-                <div class="documents-page__rejection-note">
-                  <strong>Rejection reason</strong>
-                  <p>{{ item.rejectionReason }}</p>
-                </div>
-              }
-            </article>
-          }
-        </div>
-      }
-    </article>
-  </section>
-
-  @if (reviewDraft(); as draft) {
-    @if (isReviewOpen()) {
-      <div class="documents-page__overlay" role="dialog" aria-modal="true" data-testid="documents-review-surface">
-        <article class="documents-page__modal">
-          <div class="documents-page__review-header">
-            <div class="documents-page__review-title">
-              <div class="documents-page__review-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-                  <path d="M8 8h8"></path>
-                  <path d="M8 12h8"></path>
-                  <path d="M8 16h4"></path>
-                </svg>
-              </div>
-              <div>
-                <h2 data-testid="documents-review-title">Invoice Intelligence</h2>
-                <p>{{ reviewPresentation()?.helper }}</p>
-                <span class="documents-page__review-note">Staff can correct any OCR suggestion before submission.</span>
-              </div>
-            </div>
-
-            <div class="documents-page__review-header-actions">
-              <div class="documents-page__precision-badge">{{ reviewPresentation()?.precision }}</div>
-              <button type="button" class="documents-page__close" aria-label="Close review surface" (click)="closeReview()">×</button>
-            </div>
-          </div>
-
-          @if (reviewError()) {
-            <article class="documents-page__submit-banner documents-page__submit-banner--error" data-testid="documents-review-error">
-              {{ reviewError() }}
-            </article>
-          }
-
-          <div class="documents-page__review-workspace">
-            <div class="documents-page__preview">
-              <div class="documents-page__preview-canvas">
-                @if (uploadedFileName()) {
-                  @switch (uploadedPreviewKind()) {
-                    @case ('image') {
-                      <div class="documents-page__uploaded-preview documents-page__uploaded-preview--media" data-testid="documents-uploaded-preview">
-                        <div class="documents-page__uploaded-file-meta">
-                          <div class="documents-page__uploaded-file-type">Image</div>
-                          <strong>{{ uploadedFileName() }}</strong>
-                        </div>
-                        <img
-                          class="documents-page__uploaded-media documents-page__uploaded-media--image"
-                          [src]="uploadedPreviewUrl()"
-                          [alt]="uploadedFileName() ?? 'Uploaded document preview'"
-                        />
-                      </div>
-                    }
-                    @case ('pdf') {
-                      <div class="documents-page__uploaded-preview documents-page__uploaded-preview--media" data-testid="documents-uploaded-preview">
-                        <div class="documents-page__uploaded-file-meta">
-                          <div class="documents-page__uploaded-file-type">PDF</div>
-                          <strong>{{ uploadedFileName() }}</strong>
-                        </div>
-                        <iframe
-                          class="documents-page__uploaded-media documents-page__uploaded-media--pdf"
-                          [src]="uploadedPreviewUrl()"
-                          title="Uploaded PDF preview"
-                        ></iframe>
-                      </div>
-                    }
-                    @default {
-                      <div class="documents-page__uploaded-preview" data-testid="documents-uploaded-preview">
-                        <div class="documents-page__uploaded-file-type">
-                          {{ uploadedFileType()?.includes('pdf') ? 'PDF' : 'FILE' }}
-                        </div>
-                        <strong>{{ uploadedFileName() }}</strong>
-                        <p>OCR result returned from the uploaded source file.</p>
-                      </div>
-                    }
-                  }
-                } @else {
-                  <div class="documents-page__paper">
-                    <div class="documents-page__paper-header"></div>
-                    <div class="documents-page__paper-row documents-page__paper-row--long"></div>
-                    <div class="documents-page__paper-row"></div>
-                    <div class="documents-page__paper-row documents-page__paper-row--short"></div>
-                    <div class="documents-page__paper-table">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                    <div class="documents-page__paper-line"></div>
-                    <div class="documents-page__paper-line documents-page__paper-line--faint"></div>
-                    <div class="documents-page__paper-line"></div>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <div class="documents-page__extracted">
-              <div class="documents-page__field-group">
-                <label for="review-vendor">Vendor name</label>
-                <input
-                  id="review-vendor"
-                  data-testid="review-vendor-input"
-                  class="documents-page__field documents-page__field--input"
-                  [value]="draft.vendor"
-                  (input)="updateDraft('vendor', $any($event.target).value)"
-                />
-              </div>
-
-              <div class="documents-page__field-row">
-                <div class="documents-page__field-group">
-                  <label for="review-reference">Invoice number</label>
-                  <input
-                    id="review-reference"
-                    class="documents-page__field documents-page__field--input"
-                    [value]="draft.reference"
-                    (input)="updateDraft('reference', $any($event.target).value)"
-                  />
-                </div>
-
-                <div class="documents-page__field-group">
-                  <label for="review-document-date">Document date</label>
-                  <input
-                    id="review-document-date"
-                    class="documents-page__field documents-page__field--input"
-                    [value]="draft.documentDate"
-                    (input)="updateDraft('documentDate', $any($event.target).value)"
-                  />
-                </div>
-
-                <div class="documents-page__field-group">
-                  <label for="review-due-date">Due date</label>
-                  <input
-                    id="review-due-date"
-                    class="documents-page__field documents-page__field--input"
-                    [value]="draft.dueDate"
-                    (input)="updateDraft('dueDate', $any($event.target).value)"
-                  />
-                </div>
-              </div>
-
-              <div class="documents-page__field-row">
-                <div class="documents-page__field-group">
-                  <label for="review-category">Expense category</label>
-                  <input
-                    id="review-category"
-                    class="documents-page__field documents-page__field--input"
-                    [value]="draft.category"
-                    (input)="updateDraft('category', $any($event.target).value)"
-                  />
-                </div>
-
-                <div class="documents-page__field-group">
-                  <label for="review-vendor-tax-id">Vendor tax ID</label>
-                  <input
-                    id="review-vendor-tax-id"
-                    class="documents-page__field documents-page__field--input"
-                    [value]="draft.vendorTaxId"
-                    (input)="updateDraft('vendorTaxId', $any($event.target).value)"
-                  />
-                </div>
-              </div>
-
-              <div class="documents-page__amount-card">
-                <div class="documents-page__field-row">
-                  <div class="documents-page__field-group">
-                    <label for="review-subtotal">Subtotal</label>
-                    <input
-                      id="review-subtotal"
-                      class="documents-page__field documents-page__field--input documents-page__field--compact"
-                      [value]="draft.subtotal"
-                      (input)="updateDraft('subtotal', $any($event.target).value)"
-                    />
-                  </div>
-
-                  <div class="documents-page__field-group">
-                    <label for="review-vat">Tax (VAT)</label>
-                    <input
-                      id="review-vat"
-                      class="documents-page__field documents-page__field--input documents-page__field--compact"
-                      [value]="draft.vat"
-                      (input)="updateDraft('vat', $any($event.target).value)"
-                    />
-                  </div>
-                </div>
-
-                <div class="documents-page__field-group">
-                  <label for="review-total-amount">Total amount (USD)</label>
-                  <input
-                    id="review-total-amount"
-                    class="documents-page__field documents-page__field--input documents-page__field--total"
-                    [value]="draft.totalAmount"
-                    (input)="updateDraft('totalAmount', $any($event.target).value)"
-                  />
-                </div>
-              </div>
-
-              <div class="documents-page__line-items">
-                <div class="documents-page__line-items-header">
-                  <h3>Line items</h3>
-                  <span>{{ reviewPresentation()?.source }}</span>
-                </div>
-
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Item name</th>
-                      <th>Qty</th>
-                      <th>Unit price</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (item of draft.lineItems; track $index; let i = $index) {
-                      <tr>
-                        <td>
-                          <input
-                            class="documents-page__line-item-input"
-                            [value]="item.name"
-                            (input)="updateDraftLineItem(i, 'name', $any($event.target).value)"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            class="documents-page__line-item-input"
-                            [value]="item.qty"
-                            (input)="updateDraftLineItem(i, 'qty', $any($event.target).value)"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            class="documents-page__line-item-input"
-                            [value]="item.unitPrice"
-                            (input)="updateDraftLineItem(i, 'unitPrice', $any($event.target).value)"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            class="documents-page__line-item-input"
-                            [value]="item.total"
-                            (input)="updateDraftLineItem(i, 'total', $any($event.target).value)"
-                          />
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="documents-page__review-actions">
-            <button type="button" class="documents-page__cta documents-page__cta--secondary" (click)="closeReview()">Discard</button>
+  <app-document-surface-card>
+    <div class="space-y-4">
+      <div class="flex flex-col gap-4 border-b border-slate-100 pb-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="flex flex-wrap items-center gap-2">
+          @for (tab of tabs(); track tab.id) {
             <button
               type="button"
-              class="documents-page__cta documents-page__cta--primary"
-              data-testid="documents-submit-review"
-              [disabled]="isSubmitting()"
-              (click)="submitReview()"
+              class="rounded-full px-3.5 py-2 text-sm font-medium transition"
+              [ngClass]="activeTab() === tab.id ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+              (click)="setActiveTab(tab.id)"
             >
-              {{ isSubmitting() ? 'Saving…' : 'Submit to manager decision workspace' }}
+              {{ tab.label }}
             </button>
-          </div>
-        </article>
+          }
+        </div>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <input
+            type="search"
+            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 sm:w-72"
+            placeholder="Tìm theo mã chứng từ hoặc nhà cung cấp..."
+            [value]="searchQuery()"
+            (input)="updateSearchQuery($any($event.target).value)"
+          />
+          <select
+            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            [value]="sourceFilter()"
+            (change)="updateSourceFilter($any($event.target).value)"
+          >
+            <option value="">Tất cả nguồn</option>
+            <option value="OCR">OCR</option>
+            <option value="Manual">Thủ công</option>
+          </select>
+          <select
+            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            [value]="statusFilter()"
+            (change)="updateStatusFilter($any($event.target).value)"
+          >
+            <option value="">Tất cả trạng thái</option>
+            @for (s of statusOptions(); track s) {
+              <option [value]="s">{{ s }}</option>
+            }
+          </select>
+          <select
+            class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            [value]="categoryFilter()"
+            (change)="updateCategoryFilter($any($event.target).value)"
+          >
+            <option value="">Tất cả hạng mục</option>
+            @for (c of categoryOptions(); track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </div>
       </div>
-    }
-  }
-</section>
+
+      @if (submittedWarning()) {
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {{ submittedWarning() }}
+        </div>
+      }
+
+      @if (activeError()) {
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {{ activeError() }}
+        </div>
+      }
+
+      @if (activeLoading()) {
+        <div class="flex min-h-[24rem] items-center justify-center rounded-[24px] bg-slate-50 text-sm text-slate-500">
+          Đang tải chứng từ...
+        </div>
+      } @else if (!rows().length) {
+        <div class="flex min-h-[24rem] items-center justify-center rounded-[24px] bg-slate-50 px-6 text-center">
+          <p class="max-w-md text-sm font-medium text-slate-600">{{ emptyStateCopy() }}</p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto rounded-[24px] border border-slate-100">
+          <table class="w-full min-w-[1080px] table-fixed text-sm">
+            <colgroup>
+              <col class="w-[220px]" />
+              <col class="w-[210px]" />
+              <col class="w-[150px]" />
+              <col class="w-[115px]" />
+              <col class="w-[150px]" />
+              <col class="w-[135px]" />
+              <col class="w-[125px]" />
+              <col class="w-[95px]" />
+            </colgroup>
+            <thead class="bg-slate-50/90 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              <tr>
+                <th class="px-5 py-3">Mã chứng từ</th>
+                <th class="px-4 py-3">Nhà cung cấp</th>
+                <th class="px-4 py-3">Hạng mục</th>
+                <th class="px-4 py-3">Nguồn</th>
+                <th class="px-4 py-3 text-right">Số tiền</th>
+                <th class="px-4 py-3">Trạng thái</th>
+                <th class="px-4 py-3">Cập nhật</th>
+                <th class="px-5 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              @for (row of rows(); track row.documentId) {
+                <tr class="group transition hover:bg-slate-50/80 focus-within:bg-slate-50/80">
+                  <td class="w-[220px] px-5 py-4 align-top" data-testid="document-reference-cell">
+                    <div class="min-w-0 space-y-1">
+                      <p
+                        class="truncate font-mono text-xs font-semibold text-slate-800"
+                        [title]="row.reference"
+                        data-testid="document-reference-value"
+                      >
+                        {{ row.reference }}
+                      </p>
+                      <p
+                        class="truncate text-[11px] leading-4 text-slate-400"
+                        [title]="row.documentId"
+                        data-testid="document-reference-id"
+                      >
+                        {{ row.documentId }}
+                      </p>
+                    </div>
+                  </td>
+                  <td class="px-4 py-4 align-top">
+                    <p class="truncate font-medium text-slate-900" [title]="row.vendor">{{ row.vendor }}</p>
+                  </td>
+                  <td class="px-4 py-4 align-top text-slate-600">
+                    <p class="line-clamp-2" [title]="row.category">{{ row.category }}</p>
+                  </td>
+                  <td class="px-4 py-4 align-top">
+                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset" [class]="sourceBadgeClass(row.source)">
+                      {{ row.source === 'OCR' ? 'OCR' : 'Thủ công' }}
+                    </span>
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-4 text-right align-top font-semibold text-slate-950">{{ row.amount }}</td>
+                  <td class="px-4 py-4 align-top">
+                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset" [class]="badgeClass(row.statusTone)">
+                      {{ row.status }}
+                    </span>
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-4 align-top text-sm text-slate-500">{{ row.updated }}</td>
+                  <td class="px-5 py-4 text-right align-top">
+                    <button
+                      type="button"
+                      class="translate-x-1 rounded-xl border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-indigo-600 opacity-0 shadow-sm shadow-indigo-100/60 transition duration-150 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus:translate-x-0 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-100 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100"
+                      (click)="handleRowAction(row, $event)"
+                      [attr.aria-label]="(row.actionMode === 'resume' ? 'Tiếp tục chỉnh sửa ' : 'Xem chi tiết ') + row.reference"
+                      data-testid="document-row-action"
+                    >
+                      {{ row.actionMode === 'resume' ? 'Tiếp tục' : 'Xem chi tiết' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </app-document-surface-card>
+</div>
