@@ -1,13 +1,13 @@
-import { finalize } from 'rxjs';
+﻿import { finalize } from 'rxjs';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { BrandMarkComponent } from '../../../../shared/ui/brand-mark/brand-mark.component';
 
 @Component({
   selector: 'app-forgot-password-page',
-  imports: [ReactiveFormsModule, RouterLink, BrandMarkComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './forgot-password-page.component.html',
   styleUrl: './forgot-password-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

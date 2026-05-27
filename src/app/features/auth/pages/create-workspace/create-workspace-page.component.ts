@@ -1,12 +1,12 @@
-import { finalize } from 'rxjs';
+﻿import { finalize } from 'rxjs';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { BrandMarkComponent } from '../../../../shared/ui/brand-mark/brand-mark.component';
 
 @Component({
   selector: 'app-create-workspace-page',
-  imports: [ReactiveFormsModule, BrandMarkComponent],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './create-workspace-page.component.html',
   styleUrl: './create-workspace-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
