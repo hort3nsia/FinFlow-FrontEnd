@@ -1,0 +1,21 @@
+<article class="overflow-hidden rounded-[22px] border border-slate-200 bg-white">
+  @if (title() || eyebrow()) {
+    <header class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5" [class.py-3]="compact()">
+      <div class="space-y-1">
+        @if (eyebrow()) {
+          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ eyebrow() }}</p>
+        }
+        @if (title()) {
+          <h3 class="text-sm font-semibold text-slate-950">{{ title() }}</h3>
+        }
+      </div>
+      <ng-content select="[card-actions]"></ng-content>
+    </header>
+  }
+
+  <div class="px-4 py-4" [class.py-4]="compact()">
+    <ng-content></ng-content>
+  </div>
+
+  <ng-content select="[card-footer]"></ng-content>
+</article>

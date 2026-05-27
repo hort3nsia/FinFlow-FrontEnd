@@ -1,0 +1,112 @@
+<div
+  class="grid min-w-[820px] grid-cols-[36px_minmax(220px,1fr)_72px_112px_112px_112px_60px] items-center gap-2 rounded-lg border border-slate-100 bg-white px-2 py-2 text-sm transition"
+  [ngClass]="{
+    'opacity-60': dragging(),
+    'bg-rose-50/40 border-rose-100': item().kind === 'discount',
+    'bg-amber-50/40 border-amber-100': item().kind === 'adjustment'
+  }"
+  draggable="true"
+  (dragstart)="dragStarted.emit()"
+  (dragend)="dragEnded.emit()"
+  (dragover)="allowDrop($event)"
+  (drop)="rowDropped.emit()"
+>
+  <!-- Drag handle / row number -->
+  <div class="flex flex-col items-center gap-1 text-[10px] text-slate-500">
+    <span class="cursor-grab text-slate-400">⋮⋮</span>
+    <span class="font-mono">{{ rowNumber }}</span>
+  </div>
+
+  <!-- Item name -->
+  <div class="min-w-0">
+    <input
+      type="text"
+      class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+      [value]="item().itemName"
+      placeholder="Mô tả khoản chi"
+      (input)="emitFieldChange('itemName', $any($event.target).value)"
+    />
+    @if (kindLabel) {
+      <span
+        class="mt-1 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+        [ngClass]="{
+          'bg-rose-100 text-rose-700': item().kind === 'discount',
+          'bg-amber-100 text-amber-700': item().kind === 'adjustment'
+        }"
+      >{{ kindLabel === 'Discount line' ? 'Giảm giá' : 'Điều chỉnh' }}</span>
+    }
+  </div>
+
+  <!-- Quantity -->
+  <input
+    type="number"
+    class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+    [value]="item().quantity"
+    aria-label="Số lượng"
+    step="0.01"
+    (input)="emitFieldChange('quantity', $any($event.target).value)"
+  />
+
+  <!-- Unit price -->
+  <input
+    type="number"
+    class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+    [value]="item().unitPrice"
+    aria-label="Đơn giá trước giảm"
+    placeholder="Đơn giá"
+    step="0.01"
+    (input)="emitFieldChange('unitPrice', $any($event.target).value)"
+  />
+
+  <!-- Discount amount -->
+  <input
+    type="number"
+    class="w-full rounded-md border border-rose-200 bg-rose-50 px-2 py-1.5 text-right text-sm text-rose-700 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+    [value]="item().discountAmount"
+    aria-label="Giảm giá trên dòng"
+    placeholder="Giảm giá"
+    step="0.01"
+    (input)="emitFieldChange('discountAmount', normalizeDiscountInput($any($event.target).value))"
+  />
+
+  <!-- Final amount after any row-level discount. -->
+  <div class="text-right text-sm font-semibold text-slate-900">{{ formatMoney(netAmount(item())) }}</div>
+
+  <!-- Actions -->
+  <div class="flex items-center justify-end gap-0.5">
+    <button
+      type="button"
+      class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+      [disabled]="isFirstRow"
+      title="Lên"
+      (click)="moveUp.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-3 w-3">
+        <path d="m18 15-6-6-6 6"></path>
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+      [disabled]="isLastRow"
+      title="Xuống"
+      (click)="moveDown.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-3 w-3">
+        <path d="m6 9 6 6 6-6"></path>
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="rounded-md p-1 text-rose-400 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30"
+      [disabled]="isFirstRow"
+      title="Xoá"
+      (click)="remove.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-3 w-3">
+        <path d="m6 6 12 12"></path>
+        <path d="m18 6-12 12"></path>
+      </svg>
+    </button>
+  </div>
+</div>

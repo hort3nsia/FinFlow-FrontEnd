@@ -1,542 +1,411 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  ElementRef,
-  computed,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { DocumentSurfaceCardComponent } from '../components/workspace/document-surface-card.component';
+import { DocumentWorkspaceHeaderComponent } from '../components/workspace/document-workspace-header.component';
 import {
-  DocumentReviewDraftResponse,
   DocumentsApiService,
   MyDocumentDraftResponse,
   MySubmittedDocumentResponse,
-  OcrLineItem,
-  SubmitReviewedDocumentDraft,
 } from '../data/documents-api.service';
-import { ReviewedDocumentDraft, ReviewedLineItem } from '../data/documents-review.models';
+import { CurrentWorkspaceFacade } from '../../dashboard/data/current-workspace.facade';
+import { CurrentSubscriptionFacade } from '../../subscription/data/current-subscription.facade';
 
-interface DocumentsKpi {
+interface DocumentsTab {
+  id: 'drafts' | 'submitted';
   label: string;
-  value: string;
-  accent?: string;
 }
 
-interface ReviewPresentation {
-  helper: string;
-  precision: string;
-  source: string;
+interface DocumentsRow {
+  documentId: string;
+  reference: string;
+  vendor: string;
+  category: string;
+  source: 'Manual' | 'OCR';
+  amount: string;
+  status: string;
+  statusTone: 'draft' | 'review' | 'approved' | 'rejected' | 'correction' | 'default';
+  updated: string;
+  actionMode: 'resume' | 'view' | null;
 }
 
 @Component({
   selector: 'app-documents-page',
   standalone: true,
+  imports: [CommonModule, RouterLink, DocumentWorkspaceHeaderComponent, DocumentSurfaceCardComponent],
   templateUrl: './documents-page.component.html',
   styleUrl: './documents-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DocumentsPageComponent {
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly sanitizer = inject(DomSanitizer);
   private readonly documentsApi = inject(DocumentsApiService);
+  private readonly currentWorkspaceFacade = inject(CurrentWorkspaceFacade);
+  private readonly currentSubscriptionFacade = inject(CurrentSubscriptionFacade);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
-  protected readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
   protected readonly pageCopy =
-    'Your personal OCR workspace for uploading documents, correcting AI suggestions, and tracking manager decisions after submission.';
-
-  protected readonly myDrafts = signal<MyDocumentDraftResponse[]>([]);
-  protected readonly mySubmitted = signal<MySubmittedDocumentResponse[]>([]);
-  protected readonly isDraftsLoading = signal(true);
-  protected readonly isSubmittedLoading = signal(true);
-  protected readonly draftsLoadError = signal<string | null>(null);
-  protected readonly submittedLoadError = signal<string | null>(null);
-  protected readonly isWorkspaceLoading = computed(
-    () => this.isDraftsLoading() || this.isSubmittedLoading(),
+    'Theo dõi các chứng từ chi phí, bản nháp đang xử lý và hồ sơ đã gửi phê duyệt trong cùng một workspace.';
+  protected readonly activeTab = signal<'drafts' | 'submitted'>('drafts');
+  protected readonly searchQuery = signal('');
+  protected readonly sourceFilter = signal('');
+  protected readonly statusFilter = signal('');
+  protected readonly categoryFilter = signal('');
+  protected readonly workspaceState = this.currentWorkspaceFacade.state;
+  protected readonly subscriptionState = this.currentSubscriptionFacade.state;
+  protected readonly draftRows = signal<DocumentsRow[]>([]);
+  protected readonly submittedRows = signal<DocumentsRow[]>([]);
+  protected readonly draftsLoading = signal(true);
+  protected readonly submittedLoading = signal(true);
+  protected readonly draftsError = signal<string | null>(null);
+  protected readonly submittedError = signal<string | null>(null);
+  protected readonly tabs = computed<DocumentsTab[]>(() => [
+    { id: 'drafts', label: `Bản nháp (${this.draftRows().length})` },
+    { id: 'submitted', label: `Đã trình (${this.submittedRows().length})` },
+  ]);
+  protected readonly totalDocumentCount = computed(
+    () => this.draftRows().length + this.submittedRows().length,
   );
-  protected readonly workspaceError = computed(() => {
-    const messages = [this.draftsLoadError(), this.submittedLoadError()].filter(
-      (message): message is string => Boolean(message),
+  protected readonly baseRows = computed(() =>
+    this.activeTab() === 'drafts' ? this.draftRows() : this.submittedRows(),
+  );
+  protected readonly rows = computed(() => {
+    const searchQuery = this.searchQuery().trim().toLowerCase();
+    const sourceFilter = this.sourceFilter();
+    const statusFilter = this.statusFilter();
+    const categoryFilter = this.categoryFilter();
+
+    return this.baseRows().filter((row) => {
+      const matchesSearch =
+        !searchQuery ||
+        row.reference.toLowerCase().includes(searchQuery) ||
+        row.vendor.toLowerCase().includes(searchQuery);
+      const matchesSource = !sourceFilter || row.source === sourceFilter;
+      const matchesStatus = !statusFilter || row.status === statusFilter;
+      const matchesCategory = !categoryFilter || row.category === categoryFilter;
+
+      return matchesSearch && matchesSource && matchesStatus && matchesCategory;
+    });
+  });
+  protected readonly statusBanner = computed(() =>
+    this.activeTab() === 'drafts'
+      ? 'Giai đoạn 1/3: Tạo và hoàn thiện chứng từ chi phí. Khi sẵn sàng, hồ sơ sẽ chuyển sang hàng chờ phê duyệt.'
+      : 'Giai đoạn 2/3: Theo dõi hồ sơ đã gửi, phản hồi từ quản lý và các trường hợp cần bổ sung thông tin.',
+  );
+  protected readonly activeError = computed(() =>
+    this.activeTab() === 'drafts' ? this.draftsError() : this.submittedError(),
+  );
+  protected readonly activeLoading = computed(() =>
+    this.activeTab() === 'drafts' ? this.draftsLoading() : this.submittedLoading(),
+  );
+  protected readonly categoryOptions = computed(() =>
+    Array.from(new Set([...this.draftRows(), ...this.submittedRows()].map((row) => row.category))).sort(),
+  );
+  protected readonly statusOptions = computed(() =>
+    Array.from(new Set(this.baseRows().map((row) => row.status))).sort(),
+  );
+  protected readonly hasActiveFilters = computed(
+    () =>
+      !!this.searchQuery().trim() ||
+      !!this.sourceFilter() ||
+      !!this.statusFilter() ||
+      !!this.categoryFilter(),
+  );
+  protected readonly emptyStateCopy = computed(() =>
+    this.hasActiveFilters() && this.baseRows().length
+      ? 'Không có chứng từ nào khớp với bộ lọc hiện tại.'
+      : this.activeTab() === 'drafts'
+        ? 'Chưa có bản nháp nào.'
+        : 'Chưa có chứng từ nào được gửi.',
+  );
+  protected readonly submittedWarning = computed(() => {
+    if (this.activeTab() !== 'submitted') {
+      return null;
+    }
+
+    const needsAttention = this.rows().some(
+      (row) => row.statusTone === 'rejected' || row.statusTone === 'correction',
     );
-    return messages.length > 0 ? messages.join(' ') : null;
-  });
-  protected readonly isReviewOpen = signal(false);
-  protected readonly isUploading = signal(false);
-  protected readonly openingDraftId = signal<string | null>(null);
-  protected readonly isSubmitting = signal(false);
-  protected readonly reviewError = signal<string | null>(null);
-  protected readonly reviewDraft = signal<ReviewedDocumentDraft | null>(null);
-  protected readonly reviewPresentation = signal<ReviewPresentation | null>(null);
-  protected readonly lastSubmittedReference = signal<string | null>(null);
-  protected readonly uploadedFileName = signal<string | null>(null);
-  protected readonly uploadedFileType = signal<string | null>(null);
-  protected readonly uploadedPreviewKind = signal<'pdf' | 'image' | 'other' | null>(null);
-  protected readonly uploadedPreviewUrl = signal<SafeResourceUrl | string | null>(null);
-  protected readonly kpis = computed<DocumentsKpi[]>(() => {
-    const drafts = this.myDrafts();
-    const submitted = this.mySubmitted();
-    const rejected = submitted.filter((item) => item.status === 'Rejected').length;
-    const approved = submitted.filter((item) => item.status === 'Approved').length;
 
-    return [
-      { label: 'My drafts', value: String(drafts.length), accent: 'Server-backed OCR items' },
-      { label: 'Submitted history', value: String(submitted.length), accent: 'Read-only tracking' },
-      { label: 'Needs attention', value: String(rejected), accent: rejected > 0 ? 'Review rejection notes' : 'No returned items' },
-      { label: 'Approved', value: String(approved), accent: approved > 0 ? 'Completed decisions' : 'Awaiting manager action' },
-    ];
+    return needsAttention
+      ? 'Cần chú ý: Có chứng từ bị từ chối hoặc yêu cầu bổ sung. Mở chi tiết để kiểm tra và gửi lại.'
+      : null;
   });
+  protected readonly canUploadWithOcr = computed(() => {
+    const subscription = this.subscriptionState().subscription;
+    if (!subscription?.entitlements.documentsOcrEnabled) {
+      return false;
+    }
 
-  private uploadedObjectUrl: string | null = null;
+    return subscription.currentMemberUsage.remainingOcrPages > 0 ||
+      subscription.entitlements.memberMonthlyOcrPages <= 0;
+  });
+  protected readonly canCreateManualDocument = computed(
+    () => this.subscriptionState().subscription?.entitlements.documentsManualEntryEnabled ?? true,
+  );
 
   constructor() {
-    this.loadWorkspace();
-  }
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const tab = params.get('tab');
+      if (tab === 'drafts' || tab === 'submitted') {
+        this.activeTab.set(tab);
+      }
 
-  protected triggerUploadPicker(): void {
-    if (this.isUploading()) {
-      return;
-    }
+      this.searchQuery.set(params.get('q') ?? '');
+      this.sourceFilter.set(params.get('source') ?? '');
+      this.statusFilter.set(params.get('status') ?? '');
+      this.categoryFilter.set(params.get('category') ?? '');
+    });
 
-    this.fileInput()?.nativeElement.click();
-  }
-
-  protected handleFileSelection(event: Event): void {
-    const input = event.target as HTMLInputElement | null;
-    const file = input?.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    this.reviewError.set(null);
-    this.clearWorkspaceLoadErrors();
-    this.lastSubmittedReference.set(null);
-    this.openingDraftId.set(null);
-    this.prepareUploadedPreview(file);
-    this.isUploading.set(true);
-
-    this.readFileAsBase64(file)
-      .then((base64Content) => {
-        this.documentsApi
-          .uploadDocumentForReview(file.name, file.type || 'application/octet-stream', base64Content)
-          .subscribe({
-            next: (draft) => {
-              this.reviewDraft.set(this.mapUploadResponseToDraft(draft));
-              this.reviewPresentation.set(this.createPresentation(draft, false));
-              this.isReviewOpen.set(true);
-              this.isUploading.set(false);
-              this.loadWorkspace();
-            },
-            error: (error: Error) => {
-              this.reviewError.set(error.message);
-              this.clearUploadedFileState();
-              this.isUploading.set(false);
-            },
-          });
-      })
-      .catch(() => {
-        this.reviewError.set('Unable to read the selected file for OCR review.');
-        this.clearUploadedFileState();
-        this.isUploading.set(false);
-      })
-      .finally(() => {
-        if (input) {
-          input.value = '';
-        }
-      });
-  }
-
-  protected closeReview(): void {
-    this.isReviewOpen.set(false);
-    this.isSubmitting.set(false);
-    this.openingDraftId.set(null);
-    this.reviewError.set(null);
-    this.reviewDraft.set(null);
-    this.reviewPresentation.set(null);
-    this.clearUploadedFileState();
-  }
-
-  protected updateDraft<K extends keyof ReviewedDocumentDraft>(
-    key: K,
-    value: ReviewedDocumentDraft[K],
-  ): void {
-    const draft = this.reviewDraft();
-    if (!draft) {
-      return;
-    }
-
-    this.reviewDraft.set({
-      ...draft,
-      [key]: value,
+    this.loadDrafts();
+    this.loadSubmittedDocuments();
+    effect(() => {
+      this.currentSubscriptionFacade.ensureLoaded(
+        this.workspaceState().workspace?.tenantId ?? null,
+      );
     });
   }
 
-  protected updateDraftLineItem(index: number, key: keyof ReviewedLineItem, value: string): void {
-    const draft = this.reviewDraft();
-    if (!draft) {
+  protected setActiveTab(tabId: 'drafts' | 'submitted'): void {
+    this.activeTab.set(tabId);
+    this.syncQueryParams();
+  }
+
+  protected updateSearchQuery(value: string): void {
+    this.searchQuery.set(value);
+    this.syncQueryParams();
+  }
+
+  protected updateSourceFilter(value: string): void {
+    this.sourceFilter.set(value);
+    this.syncQueryParams();
+  }
+
+  protected updateStatusFilter(value: string): void {
+    this.statusFilter.set(value);
+    this.syncQueryParams();
+  }
+
+  protected updateCategoryFilter(value: string): void {
+    this.categoryFilter.set(value);
+    this.syncQueryParams();
+  }
+
+  protected handleRowAction(row: DocumentsRow, event?: Event): void {
+    event?.stopPropagation();
+
+    if (row.actionMode === 'view') {
+      void this.router.navigate(['/app/documents/submitted', row.documentId]);
       return;
     }
 
-    this.reviewDraft.set({
-      ...draft,
-      lineItems: draft.lineItems.map((item, currentIndex) =>
-        currentIndex === index
-          ? {
-              ...item,
-              [key]: value,
-            }
-          : item,
-      ),
+    if (row.actionMode !== 'resume') {
+      return;
+    }
+
+    void this.router.navigate(['/app/documents', row.documentId]);
+  }
+
+  protected badgeClass(tone: DocumentsRow['statusTone']): string {
+    switch (tone) {
+      case 'review':
+      case 'correction':
+        return 'bg-amber-50 text-amber-700 ring-amber-100';
+      case 'approved':
+        return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+      case 'rejected':
+        return 'bg-rose-50 text-rose-700 ring-rose-100';
+      default:
+        return 'bg-slate-100 text-slate-700 ring-slate-200';
+    }
+  }
+
+  protected sourceBadgeClass(source: DocumentsRow['source']): string {
+    return source === 'OCR'
+      ? 'bg-violet-50 text-violet-700 ring-violet-100'
+      : 'bg-slate-100 text-slate-700 ring-slate-200';
+  }
+
+  private syncQueryParams(): void {
+    const queryParams: Record<string, string> = {
+      tab: this.activeTab(),
+    };
+
+    if (this.searchQuery().trim()) {
+      queryParams['q'] = this.searchQuery().trim();
+    }
+
+    if (this.sourceFilter()) {
+      queryParams['source'] = this.sourceFilter();
+    }
+
+    if (this.statusFilter()) {
+      queryParams['status'] = this.statusFilter();
+    }
+
+    if (this.categoryFilter()) {
+      queryParams['category'] = this.categoryFilter();
+    }
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      replaceUrl: true,
     });
   }
 
-  protected submitReview(): void {
-    const draft = this.reviewDraft();
-    if (!draft) {
-      return;
-    }
-
-    const numericError = this.validateNumericFields(draft);
-    if (numericError) {
-      this.reviewError.set(numericError);
-      return;
-    }
-
-    this.reviewError.set(null);
-    this.isSubmitting.set(true);
-
-    this.documentsApi.submitReviewedDocument(this.mapDraftToSubmitInput(draft)).subscribe({
-      next: (submitted) => {
-        this.lastSubmittedReference.set(submitted.reference);
-        this.closeReview();
-        this.loadWorkspace();
-      },
-      error: (error: Error) => {
-        this.reviewError.set(error.message);
-        this.isSubmitting.set(false);
-      },
-      complete: () => {
-        this.isSubmitting.set(false);
-      },
-    });
-  }
-
-  protected resumeDraft(documentId: string): void {
-    if (this.openingDraftId()) {
-      return;
-    }
-
-    this.reviewError.set(null);
-    this.clearWorkspaceLoadErrors();
-    this.lastSubmittedReference.set(null);
-    this.isSubmitting.set(false);
-    this.openingDraftId.set(documentId);
+  private loadDrafts(): void {
+    this.draftsLoading.set(true);
+    this.draftsError.set(null);
 
     this.documentsApi
-      .getMyDocumentDraft(documentId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .getMyDocumentDrafts()
+      .pipe(takeUntilDestroyed())
       .subscribe({
-        next: (draft) => {
-          this.clearUploadedFileState();
-          this.reviewDraft.set(this.mapUploadResponseToDraft(draft));
-          this.reviewPresentation.set(this.createPresentation(draft, true));
-          this.isReviewOpen.set(true);
-          this.openingDraftId.set(null);
+        next: (drafts) => {
+          this.draftRows.set(drafts.map((draft) => this.mapDraftRow(draft)));
+          this.draftsLoading.set(false);
         },
         error: (error: Error) => {
-          this.reviewError.set(error.message);
-          this.isReviewOpen.set(false);
-          this.openingDraftId.set(null);
+          this.draftRows.set([]);
+          this.draftsError.set(error.message);
+          this.draftsLoading.set(false);
         },
       });
   }
 
-  protected trackByDocumentId(_: number, item: { documentId: string }): string {
-    return item.documentId;
+  private loadSubmittedDocuments(): void {
+    this.submittedLoading.set(true);
+    this.submittedError.set(null);
+
+    this.documentsApi
+      .getMySubmittedDocuments()
+      .pipe(takeUntilDestroyed())
+      .subscribe({
+        next: (items) => {
+          this.submittedRows.set(items.map((item) => this.mapSubmittedRow(item)));
+          this.submittedLoading.set(false);
+        },
+        error: (error: Error) => {
+          this.submittedRows.set([]);
+          this.submittedError.set(error.message);
+          this.submittedLoading.set(false);
+        },
+      });
   }
 
-  protected formatCurrency(value: number): string {
+  private mapDraftRow(draft: MyDocumentDraftResponse): DocumentsRow {
+    return {
+      documentId: draft.documentId,
+      reference: draft.reference,
+      vendor: draft.vendorName,
+      category: draft.category,
+      source: this.normalizeSource(draft.source),
+      amount: this.formatAmount(draft.totalAmount),
+      status: 'Bản nháp',
+      statusTone: 'draft',
+      updated: this.formatUpdatedAt(draft.uploadedAt),
+      actionMode: 'resume',
+    };
+  }
+
+  private mapSubmittedRow(item: MySubmittedDocumentResponse): DocumentsRow {
+    return {
+      documentId: item.documentId,
+      reference: item.reference,
+      vendor: item.vendorName,
+      category: item.category,
+      source: this.normalizeSource(item.source),
+      amount: this.formatAmount(item.totalAmount),
+      status: item.status,
+      statusTone: this.normalizeStatusTone(item.status),
+      updated: this.formatSubmittedAt(item.submittedAt),
+      actionMode: 'view',
+    };
+  }
+
+  private normalizeSource(source: string): 'Manual' | 'OCR' {
+    return source.toLowerCase().includes('manual') ? 'Manual' : 'OCR';
+  }
+
+  private formatAmount(value: number): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(value);
   }
 
-  protected formatDateTime(value: string): string {
+  private formatUpdatedAt(value: string): string {
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
-      return value;
+      return 'Vừa cập nhật';
     }
 
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(parsed);
-  }
-
-  private loadWorkspace(): void {
-    this.loadDrafts();
-    this.loadSubmittedHistory();
-  }
-
-  private loadDrafts(): void {
-    this.isDraftsLoading.set(true);
-    this.draftsLoadError.set(null);
-
-    this.documentsApi
-      .getMyDocumentDrafts()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (drafts) => {
-          this.myDrafts.set(drafts);
-          this.isDraftsLoading.set(false);
-        },
-        error: (error: Error) => {
-          this.myDrafts.set([]);
-          this.draftsLoadError.set(error.message);
-          this.isDraftsLoading.set(false);
-        },
-      });
-  }
-
-  private loadSubmittedHistory(): void {
-    this.isSubmittedLoading.set(true);
-    this.submittedLoadError.set(null);
-
-    this.documentsApi
-      .getMySubmittedDocuments()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (submitted) => {
-          this.mySubmitted.set(submitted);
-          this.isSubmittedLoading.set(false);
-        },
-        error: (error: Error) => {
-          this.mySubmitted.set([]);
-          this.submittedLoadError.set(error.message);
-          this.isSubmittedLoading.set(false);
-        },
-      });
-  }
-
-  private mapUploadResponseToDraft(draft: DocumentReviewDraftResponse): ReviewedDocumentDraft {
-    return {
-      documentId: draft.documentId,
-      vendor: draft.vendorName,
-      reference: draft.reference,
-      documentDate: draft.documentDate,
-      dueDate: draft.dueDate,
-      category: draft.category,
-      vendorTaxId: draft.vendorTaxId,
-      subtotal: this.formatCurrency(draft.subtotal),
-      vat: this.formatCurrency(draft.vat),
-      totalAmount: this.formatCurrency(draft.totalAmount),
-      source: draft.source,
-      originalFileName: draft.originalFileName,
-      contentType: draft.contentType,
-      ocrPrecision: draft.confidenceLabel,
-      lineItems: draft.lineItems.map((item) => this.mapLineItemFromApi(item)),
-      reviewedByStaffEmail: draft.reviewedByStaff,
-    };
-  }
-
-  private mapLineItemFromApi(item: OcrLineItem): ReviewedLineItem {
-    return {
-      name: item.itemName,
-      qty: String(item.quantity),
-      unitPrice: this.formatCurrency(item.unitPrice),
-      total: this.formatCurrency(item.total),
-    };
-  }
-
-  private mapDraftToSubmitInput(draft: ReviewedDocumentDraft): SubmitReviewedDocumentDraft {
-    return {
-      documentId: draft.documentId,
-      originalFileName: draft.originalFileName,
-      contentType: draft.contentType,
-      vendorName: draft.vendor,
-      reference: draft.reference,
-      documentDate: draft.documentDate,
-      dueDate: draft.dueDate,
-      category: draft.category,
-      vendorTaxId: draft.vendorTaxId,
-      subtotal: this.requireNumericValue(draft.subtotal, 'Subtotal'),
-      vat: this.requireNumericValue(draft.vat, 'Tax (VAT)'),
-      totalAmount: this.requireNumericValue(draft.totalAmount, 'Total amount (USD)'),
-      source: draft.source,
-      confidenceLabel: draft.ocrPrecision,
-      lineItems: draft.lineItems.map((item, index) => ({
-        itemName: item.name,
-        quantity: this.requireNumericValue(item.qty, `line item ${index + 1} Qty`),
-        unitPrice: this.requireNumericValue(item.unitPrice, `line item ${index + 1} Unit price`),
-        total: this.requireNumericValue(item.total, `line item ${index + 1} Total`),
-      })),
-    };
-  }
-
-  private createPresentation(
-    draft: DocumentReviewDraftResponse,
-    isResumedDraft: boolean,
-  ): ReviewPresentation {
-    return {
-      helper: isResumedDraft
-        ? 'Resume your personal draft from the server and finish correcting OCR fields before submission.'
-        : 'AI extracted fields from the uploaded source file. Staff can correct any field before submission.',
-      precision: draft.confidenceLabel,
-      source: draft.source,
-    };
-  }
-
-  private prepareUploadedPreview(file: File): void {
-    this.releaseUploadedPreview();
-    this.uploadedFileName.set(file.name);
-    this.uploadedFileType.set(file.type || null);
-    this.setUploadedPreview(file);
-  }
-
-  private setUploadedPreview(file: File): void {
-    const lowerName = file.name.toLowerCase();
-    const isPdf = file.type.includes('pdf') || lowerName.endsWith('.pdf');
-    const isImage = file.type.startsWith('image/');
-
-    if (!isPdf && !isImage) {
-      this.uploadedPreviewKind.set('other');
-      return;
+    const diffMs = Date.now() - parsed.getTime();
+    if (diffMs <= 0) {
+      return 'Vừa xong';
     }
 
-    this.uploadedObjectUrl = URL.createObjectURL(file);
-    this.uploadedPreviewKind.set(isPdf ? 'pdf' : 'image');
-    this.uploadedPreviewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.uploadedObjectUrl));
-  }
-
-  private clearUploadedFileState(): void {
-    this.uploadedFileName.set(null);
-    this.uploadedFileType.set(null);
-    this.uploadedPreviewKind.set(null);
-    this.uploadedPreviewUrl.set(null);
-    this.releaseUploadedPreview();
-  }
-
-  private releaseUploadedPreview(): void {
-    if (this.uploadedObjectUrl) {
-      URL.revokeObjectURL(this.uploadedObjectUrl);
-      this.uploadedObjectUrl = null;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours < 1) {
+      return 'Vừa xong';
     }
+
+    if (diffHours < 24) {
+      return `${diffHours} giờ trước`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) {
+      return 'Hôm qua';
+    }
+
+    if (diffDays < 7) {
+      return `${diffDays} ngày trước`;
+    }
+
+    return parsed.toLocaleDateString('vi-VN');
   }
 
-  private readFileAsBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = typeof reader.result === 'string' ? reader.result : '';
-        const base64 = result.includes(',') ? result.split(',')[1] : result;
-        if (!base64) {
-          reject(new Error('Unable to read selected file.'));
-          return;
-        }
+  private formatSubmittedAt(value: string): string {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return 'Vừa gửi';
+    }
 
-        resolve(base64);
-      };
-      reader.onerror = () => reject(reader.error ?? new Error('Unable to read selected file.'));
-      reader.readAsDataURL(file);
+    return parsed.toLocaleDateString('vi-VN', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
     });
   }
 
-  private validateNumericFields(draft: ReviewedDocumentDraft): string | null {
-    const fieldChecks = [
-      { label: 'Subtotal', value: draft.subtotal, requiresPositive: true },
-      { label: 'Tax (VAT)', value: draft.vat, requiresPositive: false },
-      { label: 'Total amount (USD)', value: draft.totalAmount, requiresPositive: true },
-    ];
+  private normalizeStatusTone(status: string): DocumentsRow['statusTone'] {
+    const normalized = status.trim().toLowerCase();
 
-    for (const field of fieldChecks) {
-      const parsed = this.parseNumericValue(field.value);
-      if (parsed === null) {
-        return `Enter a valid number for ${field.label} before submitting.`;
-      }
-
-      if (field.requiresPositive && parsed <= 0) {
-        return `Enter a value greater than 0 for ${field.label} before submitting.`;
-      }
+    if (normalized.includes('review')) {
+      return 'review';
     }
 
-    for (const [index, item] of draft.lineItems.entries()) {
-      const lineItemChecks = [
-        { label: `line item ${index + 1} Qty`, value: item.qty },
-        { label: `line item ${index + 1} Unit price`, value: item.unitPrice },
-        { label: `line item ${index + 1} Total`, value: item.total },
-      ];
-
-      for (const field of lineItemChecks) {
-        const parsed = this.parseNumericValue(field.value);
-        if (parsed === null) {
-          return `Enter a valid number for ${field.label} before submitting.`;
-        }
-
-        if (parsed <= 0) {
-          return `Enter a value greater than 0 for ${field.label} before submitting.`;
-        }
-      }
+    if (normalized.includes('approved')) {
+      return 'approved';
     }
 
-    const subtotal = this.parseNumericValue(draft.subtotal);
-    const vat = this.parseNumericValue(draft.vat);
-    const totalAmount = this.parseNumericValue(draft.totalAmount);
-    if (subtotal === null || vat === null || totalAmount === null) {
-      return 'Enter valid totals before submitting.';
+    if (normalized.includes('reject')) {
+      return 'rejected';
     }
 
-    if (!this.areCurrencyValuesEqual(subtotal + vat, totalAmount)) {
-      return 'Subtotal plus Tax (VAT) must match Total amount (USD) before submitting.';
+    if (normalized.includes('correction')) {
+      return 'correction';
     }
 
-    const lineItemTotal = draft.lineItems.reduce((sum, item) => {
-      const parsed = this.parseNumericValue(item.total);
-      return sum + (parsed ?? 0);
-    }, 0);
-
-    if (!this.areCurrencyValuesEqual(lineItemTotal, totalAmount)) {
-      return 'Line item totals must match Total amount (USD) before submitting.';
+    if (normalized.includes('draft')) {
+      return 'draft';
     }
 
-    return null;
-  }
-
-  private requireNumericValue(value: string, label: string): number {
-    const parsed = this.parseNumericValue(value);
-    if (parsed === null) {
-      throw new Error(`Enter a valid number for ${label} before submitting.`);
-    }
-
-    return parsed;
-  }
-
-  private parseNumericValue(value: string): number | null {
-    const normalized = value.trim();
-    if (!normalized) {
-      return null;
-    }
-
-    const strictNumericPattern = /^\$?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/;
-    if (!strictNumericPattern.test(normalized)) {
-      return null;
-    }
-
-    const parsed = Number(normalized.replace('$', '').replaceAll(',', ''));
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  private areCurrencyValuesEqual(left: number, right: number): boolean {
-    return Math.abs(left - right) < 0.005;
-  }
-
-  private clearWorkspaceLoadErrors(): void {
-    this.draftsLoadError.set(null);
-    this.submittedLoadError.set(null);
+    return 'default';
   }
 }
