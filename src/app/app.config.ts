@@ -6,7 +6,7 @@ import {
   provideZoneChangeDetection,
 } from '@angular/core';
 import { InMemoryCache } from '@apollo/client';
-import { provideRouter } from '@angular/router';
+import { PreloadAllModules, provideRouter, withPreloading, withViewTransitions } from '@angular/router';
 import { provideApollo } from 'apollo-angular';
 import { HttpLink } from 'apollo-angular/http';
 
@@ -18,7 +18,11 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
+    provideRouter(
+      routes,
+      withPreloading(PreloadAllModules),
+      withViewTransitions(),
+    ),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideApollo(() => {
       const httpLink = inject(HttpLink);
