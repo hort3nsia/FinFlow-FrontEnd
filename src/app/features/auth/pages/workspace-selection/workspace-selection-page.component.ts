@@ -1,14 +1,13 @@
-import { finalize, tap } from 'rxjs';
+﻿import { finalize, tap } from 'rxjs';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { WorkspaceInfo } from '../../../../core/auth/auth.models';
-import { BrandMarkComponent } from '../../../../shared/ui/brand-mark/brand-mark.component';
 
 @Component({
   selector: 'app-workspace-selection-page',
   standalone: true,
-  imports: [BrandMarkComponent, RouterLink],
+  imports: [CommonModule],
   templateUrl: './workspace-selection-page.component.html',
   styleUrl: './workspace-selection-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

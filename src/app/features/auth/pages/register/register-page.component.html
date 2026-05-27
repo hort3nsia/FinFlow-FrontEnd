@@ -1,266 +1,168 @@
-<section class="register-page">
-  <div class="register-page__shell">
-    <aside class="register-page__rail" aria-labelledby="register-rail-heading">
-      <a class="register-page__back-link" routerLink="/">Quay lại trang chủ</a>
+<div class="grid min-h-screen lg:grid-cols-2">
+  <section class="flex items-center justify-center bg-white px-6 py-12 lg:px-16">
+    <div class="w-full max-w-md">
+      <a routerLink="/" class="inline-flex items-center gap-2.5">
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+            <path d="M4.5 9.25 12 5l7.5 4.25L12 13.5 4.5 9.25Z"></path>
+            <path d="M4.5 13.1 12 17.35l7.5-4.25"></path>
+            <path d="M4.5 16.95 12 21.2l7.5-4.25"></path>
+          </svg>
+        </span>
+        <span class="text-base font-semibold text-slate-900">FinFlow</span>
+      </a>
 
-      <div class="register-page__brand">
-        <app-brand-mark />
-      </div>
+      <h1 class="mt-10 text-3xl font-semibold text-slate-900">Tạo tài khoản</h1>
+      <p class="mt-2 text-sm text-slate-500">
+        Bắt đầu miễn phí. Sau khi đăng ký, bạn sẽ tạo workspace cho tổ chức.
+      </p>
 
-      <div class="register-page__rail-copy">
-        <h1 id="register-rail-heading">
-          Tạo tài khoản để bắt đầu làm việc trên FinFlow.
-        </h1>
-        <p class="register-page__copy">
-          Đăng ký một lần để truy cập workspace, xác thực email và tiếp tục với quy trình tài chính của bạn.
-        </p>
-      </div>
-
-      <ul class="register-page__points" aria-label="Lợi ích chính">
-        <li>Xác thực email an toàn ngay sau khi đăng ký</li>
-        <li>Quản lý phê duyệt và chứng từ trong cùng một luồng</li>
-        <li>Sẵn sàng kết nối đúng workspace của doanh nghiệp</li>
-      </ul>
-    </aside>
-
-    <div class="register-page__panel">
-      <div class="register-page__panel-copy">
-        <p class="register-page__eyebrow">Đăng ký</p>
-        <h2>Tạo tài khoản</h2>
-        <p class="register-page__copy">
-          Điền thông tin của bạn để bắt đầu. Chúng tôi sẽ gửi email xác thực ngay sau bước này.
-        </p>
-      </div>
-
-      <form class="register-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-        <div class="register-form__field">
-          <label for="register-name"><span>Họ và tên</span></label>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="mt-8 space-y-4">
+        <label class="block">
+          <span class="mb-1 block text-sm font-medium text-slate-700">Họ tên</span>
           <input
-            id="register-name"
             type="text"
             formControlName="name"
             autocomplete="name"
-            placeholder="Nhập họ và tên"
-            [attr.aria-invalid]="
-              form.controls.name.invalid && form.controls.name.touched ? 'true' : 'false'
-            "
-            [attr.aria-describedby]="
-              form.controls.name.invalid && form.controls.name.touched
-                ? 'register-name-error'
-                : null
-            "
+            placeholder="Nguyễn Văn A"
+            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
           />
-        </div>
-        @if (form.controls.name.invalid && form.controls.name.touched) {
-          <p class="register-form__error" id="register-name-error">
-            {{
-              form.controls.name.hasError('required')
-                ? 'Họ và tên là bắt buộc.'
-                : 'Họ và tên phải có ít nhất 2 ký tự.'
-            }}
-          </p>
-        }
+          @if (form.controls.name.invalid && form.controls.name.touched) {
+            <span class="mt-1 block text-xs text-rose-600">
+              @if (form.controls.name.errors?.['required']) { Vui lòng nhập họ tên. }
+              @else { Họ tên cần ít nhất 2 ký tự. }
+            </span>
+          }
+        </label>
 
-        <div class="register-form__field">
-          <label for="register-email"><span>Email</span></label>
+        <label class="block">
+          <span class="mb-1 block text-sm font-medium text-slate-700">Email</span>
           <input
-            id="register-email"
             type="email"
             formControlName="email"
             autocomplete="email"
-            placeholder="Nhập địa chỉ email"
-            [attr.aria-invalid]="
-              form.controls.email.invalid && form.controls.email.touched ? 'true' : 'false'
-            "
-            [attr.aria-describedby]="
-              form.controls.email.invalid && form.controls.email.touched
-                ? 'register-email-error'
-                : null
-            "
+            placeholder="ban@congty.vn"
+            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
           />
-        </div>
-        @if (form.controls.email.invalid && form.controls.email.touched) {
-          <p class="register-form__error" id="register-email-error">
-            {{
-              form.controls.email.hasError('required')
-                ? 'Email là bắt buộc.'
-                : 'Vui lòng nhập đúng định dạng email.'
-            }}
-          </p>
-        }
+          @if (form.controls.email.invalid && form.controls.email.touched) {
+            <span class="mt-1 block text-xs text-rose-600">
+              @if (form.controls.email.errors?.['required']) { Vui lòng nhập email. }
+              @else { Email không hợp lệ. }
+            </span>
+          }
+        </label>
 
-        <div class="register-form__field">
-          <label for="register-password"><span>Mật khẩu</span></label>
-          <div class="register-form__password-field">
+        <label class="block">
+          <span class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu</span>
+          <div class="relative">
             <input
-              id="register-password"
               [type]="isPasswordVisible() ? 'text' : 'password'"
               formControlName="password"
               autocomplete="new-password"
-              placeholder="Tạo mật khẩu"
-              [attr.aria-invalid]="
-                form.controls.password.invalid && form.controls.password.touched ? 'true' : 'false'
-              "
-              [attr.aria-describedby]="
-                form.controls.password.invalid && form.controls.password.touched
-                  ? 'register-password-error'
-                  : null
-              "
+              placeholder="Tối thiểu 8 ký tự"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 pr-10 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             />
             <button
               type="button"
-              class="register-form__password-toggle"
-              [attr.aria-label]="isPasswordVisible() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
-              [attr.aria-pressed]="isPasswordVisible()"
+              class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
               (click)="togglePasswordVisibility()"
+              [attr.aria-label]="isPasswordVisible() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
             >
               @if (isPasswordVisible()) {
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M3 3l18 18M10.6 10.6a2 2 0 102.8 2.8M9.9 5.2A10.9 10.9 0 0112 5c5 0 8.3 3.4 9.5 5-1 1.4-3.6 4.2-7.4 4.8M6.7 6.7C4.8 7.8 3.5 9.3 2.5 10 3.7 11.6 7 15 12 15c1 0 2-.1 2.8-.4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.8"
-                  />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                  <path d="m1 1 22 22"></path>
                 </svg>
               } @else {
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M2.5 12S5.8 7 12 7s9.5 5 9.5 5-3.3 5-9.5 5S2.5 12 2.5 12z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.8"
-                  />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="2.7"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                  />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
                 </svg>
               }
             </button>
           </div>
-        </div>
-        @if (form.controls.password.invalid && form.controls.password.touched) {
-          <p class="register-form__error" id="register-password-error">
-            {{
-              form.controls.password.hasError('required')
-                ? 'Mật khẩu là bắt buộc.'
-                : 'Mật khẩu phải có ít nhất 8 ký tự.'
-            }}
-          </p>
-        }
+          @if (form.controls.password.invalid && form.controls.password.touched) {
+            <span class="mt-1 block text-xs text-rose-600">
+              @if (form.controls.password.errors?.['required']) { Vui lòng nhập mật khẩu. }
+              @else { Mật khẩu cần ít nhất 8 ký tự. }
+            </span>
+          }
+        </label>
 
-        <div class="register-form__field">
-          <label for="register-confirm-password"><span>Xác nhận mật khẩu</span></label>
-          <div class="register-form__password-field">
+        <label class="block">
+          <span class="mb-1 block text-sm font-medium text-slate-700">Nhập lại mật khẩu</span>
+          <div class="relative">
             <input
-              id="register-confirm-password"
               [type]="isConfirmPasswordVisible() ? 'text' : 'password'"
               formControlName="confirmPassword"
               autocomplete="new-password"
-              placeholder="Nhập lại mật khẩu"
-              [attr.aria-invalid]="
-                (
-                  form.controls.confirmPassword.invalid && form.controls.confirmPassword.touched
-                ) || (
-                  form.hasError('passwordMismatch') &&
-                  form.controls.confirmPassword.touched
-                )
-                  ? 'true'
-                  : 'false'
-              "
-              [attr.aria-describedby]="
-                (
-                  form.controls.confirmPassword.invalid && form.controls.confirmPassword.touched
-                ) || (
-                  form.hasError('passwordMismatch') &&
-                  form.controls.confirmPassword.touched
-                )
-                  ? 'register-confirm-password-error'
-                  : null
-              "
+              placeholder="••••••••"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 pr-10 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             />
             <button
               type="button"
-              class="register-form__password-toggle"
-              [attr.aria-label]="isConfirmPasswordVisible() ? 'Ẩn xác nhận mật khẩu' : 'Hiện xác nhận mật khẩu'"
-              [attr.aria-pressed]="isConfirmPasswordVisible()"
+              class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
               (click)="toggleConfirmPasswordVisibility()"
             >
               @if (isConfirmPasswordVisible()) {
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M3 3l18 18M10.6 10.6a2 2 0 102.8 2.8M9.9 5.2A10.9 10.9 0 0112 5c5 0 8.3 3.4 9.5 5-1 1.4-3.6 4.2-7.4 4.8M6.7 6.7C4.8 7.8 3.5 9.3 2.5 10 3.7 11.6 7 15 12 15c1 0 2-.1 2.8-.4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.8"
-                  />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                  <path d="m1 1 22 22"></path>
                 </svg>
               } @else {
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M2.5 12S5.8 7 12 7s9.5 5 9.5 5-3.3 5-9.5 5S2.5 12 2.5 12z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.8"
-                  />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="2.7"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                  />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
                 </svg>
               }
             </button>
           </div>
-        </div>
-        @if (
-          (form.controls.confirmPassword.invalid && form.controls.confirmPassword.touched) ||
-          (form.hasError('passwordMismatch') && form.controls.confirmPassword.touched)
-        ) {
-          <p class="register-form__error" id="register-confirm-password-error">
-            {{
-              form.controls.confirmPassword.hasError('required')
-                ? 'Vui lòng xác nhận lại mật khẩu.'
-                : 'Mật khẩu xác nhận không khớp.'
-            }}
-          </p>
+          @if (form.errors?.['passwordMismatch'] && form.controls.confirmPassword.touched) {
+            <span class="mt-1 block text-xs text-rose-600">Mật khẩu nhập lại không khớp.</span>
+          }
+        </label>
+
+        @if (errorMessage()) {
+          <div class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+            {{ errorMessage() }}
+          </div>
         }
 
-        <p class="register-form__hint">
-          Sau khi tạo tài khoản, bạn sẽ được chuyển sang bước xác thực email.
-        </p>
-
-        @if (errorMessage(); as errorMessage) {
-          <p class="register-form__error register-form__error--banner" role="alert">
-            {{ errorMessage }}
-          </p>
-        }
-
-        <button type="submit" class="register-form__submit" [disabled]="isSubmitting()">
-          {{ isSubmitting() ? 'Đang tạo tài khoản...' : 'Tạo tài khoản' }}
+        <button
+          type="submit"
+          class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="isSubmitting()"
+        >
+          @if (isSubmitting()) { Đang tạo tài khoản… } @else { Tạo tài khoản }
         </button>
+
+        <p class="text-center text-[11px] text-slate-500">
+          Khi tiếp tục, bạn đồng ý với
+          <span class="font-medium text-indigo-600">Điều khoản</span> và
+          <span class="font-medium text-indigo-600">Chính sách bảo mật</span> của FinFlow.
+        </p>
       </form>
 
-      <p class="register-page__footer">
+      <p class="mt-6 text-center text-sm text-slate-600">
         Đã có tài khoản?
-        <a routerLink="/login">Đăng nhập</a>
+        <a routerLink="/login" class="font-medium text-indigo-600 hover:underline">Đăng nhập</a>
       </p>
     </div>
-  </div>
-</section>
+  </section>
+
+  <section class="relative hidden overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 lg:block">
+    <div class="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10 blur-3xl"></div>
+    <div class="absolute -bottom-20 -left-12 h-72 w-72 rounded-full bg-fuchsia-300/20 blur-3xl"></div>
+    <div class="relative flex h-full flex-col justify-center p-12 text-white">
+      <span class="inline-block w-fit rounded-full bg-white/15 px-3 py-1 text-xs font-medium uppercase tracking-wide backdrop-blur">
+        Miễn phí cho doanh nghiệp khởi nghiệp
+      </span>
+      <h2 class="mt-6 text-4xl font-semibold leading-tight">
+        Tổ chức của bạn — quản lý tài chính trong vài phút
+      </h2>
+      <p class="mt-4 max-w-md text-lg text-white/80">
+        Đăng ký miễn phí, mời thành viên, và bắt đầu xử lý hoá đơn bằng OCR ngay.
+      </p>
+    </div>
+  </section>
+</div>

@@ -1,14 +1,14 @@
-import { finalize } from 'rxjs';
+﻿import { finalize } from 'rxjs';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { BrandMarkComponent } from '../../../../shared/ui/brand-mark/brand-mark.component';
 
 @Component({
   selector: 'app-reset-password-page',
-  imports: [ReactiveFormsModule, RouterLink, BrandMarkComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './reset-password-page.component.html',
   styleUrl: './reset-password-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,180 +1,121 @@
-<section class="verify-email-page">
-  <div class="verify-email-page__frame" [class.verify-email-page__frame--handoff]="status() === 'handoff'">
-    <header class="verify-email-page__header">
-      @if (status() === 'handoff') {
-        <div class="verify-email-page__handoff-hero">
-          <div class="verify-email-page__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M7 12.5l3.1 3.1L17.5 8.2M12 22a10 10 0 110-20 10 10 0 010 20z"
-                fill="none"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.7"
-              />
-            </svg>
-          </div>
-          <h1>Đang quay lại tab trước</h1>
-          <p class="verify-email-page__copy">
-            Liên kết đã được chuyển sang tab xác thực email bạn đang mở.
-          </p>
-        </div>
-      } @else {
-        <app-brand-mark />
-        <h1>Mã xác thực đã được gửi.</h1>
+<div class="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+  <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
+    <a routerLink="/" class="inline-flex items-center gap-2.5">
+      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+          <path d="M4.5 9.25 12 5l7.5 4.25L12 13.5 4.5 9.25Z"></path>
+          <path d="M4.5 13.1 12 17.35l7.5-4.25"></path>
+          <path d="M4.5 16.95 12 21.2l7.5-4.25"></path>
+        </svg>
+      </span>
+      <span class="text-base font-semibold text-slate-900">FinFlow</span>
+    </a>
 
-        @if (emailAddress()) {
-          <p class="verify-email-page__copy">
-            Chúng tôi đã gửi email đến <strong>{{ emailAddress() }}</strong>. Hãy nhập mã xác thực tại đây hoặc bấm vào
-            liên kết trong email để tiếp tục. Nếu bạn không thấy email, hãy kiểm tra thư mục spam.
-          </p>
-        } @else {
-          <p class="verify-email-page__copy">
-            Hãy nhập mã xác thực tại đây hoặc bấm vào liên kết trong email để tiếp tục. Nếu bạn không thấy email, hãy
-            kiểm tra thư mục spam.
-          </p>
+    <h1 class="mt-6 text-2xl font-semibold text-slate-900">Xác thực email</h1>
+
+    @if (infoMessage()) {
+      <div class="mt-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-700">
+        {{ infoMessage() }}
+      </div>
+    }
+    @if (errorMessage()) {
+      <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    @switch (status()) {
+      @case ('verifying') {
+        <div class="mt-6 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-5 w-5 animate-spin text-indigo-600">
+            <path d="M21 12a9 9 0 1 1-6.2-8.55"></path>
+          </svg>
+          <p class="text-sm text-slate-600">Đang xác thực email…</p>
+        </div>
+      }
+
+      @case ('handoff') {
+        <p class="mt-2 text-sm text-slate-500">Liên kết đã được chuyển sang tab khác. Bạn có thể tiếp tục ở đó hoặc bấm tiếp tục bên dưới.</p>
+        @if (handoffCloseFailed()) {
+          <button
+            type="button"
+            class="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            (click)="continueInThisTab()"
+          >Tiếp tục ngay tại tab này</button>
         }
       }
-    </header>
 
-    @if (status() === 'verifying') {
-      <div class="verify-email-page__notice verify-email-page__notice--verifying">
-        Đang xác thực email của bạn...
-      </div>
-    }
-
-    @if (status() === 'success') {
-      <section class="verify-email-page__success">
-        <p class="verify-email-page__success-mark">Xong</p>
-        <h2>Email đã được xác thực</h2>
-        <p>{{ infoMessage() }}</p>
-        <button type="button" class="verify-email-page__primary" (click)="goToLogin()">
-          Đến trang đăng nhập
-        </button>
-      </section>
-    } @else if (status() === 'handoff' && isClosingHandoffTab()) {
-      <section class="verify-email-page__handoff-state">
-        <div class="verify-email-page__handoff-spinner" aria-hidden="true"></div>
-        <p>Đang đóng tab này...</p>
-      </section>
-    } @else if (status() === 'handoff' && handoffCloseFailed()) {
-      <section class="verify-email-page__handoff-state">
-        <button type="button" class="verify-email-page__primary" (click)="continueInThisTab()">
-          Tiếp tục tại tab này
-        </button>
-        <p>Bạn có thể đóng tab này và tiếp tục ở tab trước.</p>
-      </section>
-    } @else {
-      @if (errorMessage(); as errorMessage) {
-        <div class="verify-email-page__notice verify-email-page__notice--error" role="alert">
-          {{ errorMessage }}
+      @case ('success') {
+        <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+          ✅ Email đã được xác thực. Đang chuyển về trang đăng nhập…
         </div>
+        <button
+          type="button"
+          class="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+          (click)="goToLogin()"
+        >Về trang đăng nhập</button>
       }
 
-      @if (infoMessage(); as infoMessage) {
-        <div class="verify-email-page__notice verify-email-page__notice--info">
-          {{ infoMessage }}
-        </div>
+      @default {
+        <p class="mt-2 text-sm text-slate-500">
+          Nhập email và mã OTP 6 chữ số đã gửi tới hộp thư của bạn để hoàn tất xác thực.
+        </p>
+        <form [formGroup]="otpForm" (ngSubmit)="submitOtp()" class="mt-6 space-y-4">
+          <label class="block">
+            <span class="mb-1 block text-sm font-medium text-slate-700">Email</span>
+            <input
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            />
+            @if (otpForm.controls.email.invalid && otpForm.controls.email.touched) {
+              <span class="mt-1 block text-xs text-rose-600">Email không hợp lệ.</span>
+            }
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-sm font-medium text-slate-700">Mã OTP</span>
+            <input
+              type="text"
+              formControlName="otp"
+              maxlength="6"
+              inputmode="numeric"
+              placeholder="••••••"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-center text-lg tracking-[0.5em] focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              (input)="normalizeOtpInput()"
+            />
+            @if (otpForm.controls.otp.invalid && otpForm.controls.otp.touched) {
+              <span class="mt-1 block text-xs text-rose-600">OTP phải đủ 6 chữ số.</span>
+            }
+          </label>
+          <div class="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="submit"
+              class="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
+              [disabled]="isOtpSubmitting()"
+            >
+              @if (isOtpSubmitting()) { Đang xác thực… } @else { Xác thực }
+            </button>
+            <button
+              type="button"
+              class="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              [disabled]="isResending()"
+              (click)="resendVerification()"
+            >
+              @if (isResending()) { Đang gửi… } @else { Gửi lại }
+            </button>
+          </div>
+          <div class="flex justify-center gap-3 text-xs">
+            <button type="button" class="text-indigo-600 hover:underline" (click)="openInbox('gmail')">Mở Gmail</button>
+            <span class="text-slate-300">·</span>
+            <button type="button" class="text-indigo-600 hover:underline" (click)="openInbox('outlook')">Mở Outlook</button>
+          </div>
+        </form>
       }
-
-      <form class="verify-email-form" [formGroup]="otpForm" (ngSubmit)="submitOtp()" novalidate>
-        <div class="verify-email-form__field verify-email-form__field--hidden">
-          <label for="verify-email-email"><span>Email</span></label>
-          <input id="verify-email-email" type="email" formControlName="email" placeholder="Nhập email đăng ký" />
-        </div>
-
-        <div class="verify-email-form__lead">
-          <span class="verify-email-form__label">Nhập mã OTP</span>
-        </div>
-
-        <div class="verify-email-form__field verify-email-form__field--otp">
-          <label class="visually-hidden" for="verify-email-otp">Nhập mã OTP</label>
-          <input
-            id="verify-email-otp"
-            class="verify-email-form__otp-field"
-            type="text"
-            formControlName="otp"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            placeholder="123456"
-            maxlength="6"
-            (input)="normalizeOtpInput()"
-          />
-        </div>
-
-        <div class="verify-email-page__mail-actions">
-          <button type="button" class="verify-email-page__mail-button" (click)="openInbox('gmail')">
-            <span class="verify-email-page__mail-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path
-                  d="M4 6.5h16A1.5 1.5 0 0 1 21.5 8v8A1.5 1.5 0 0 1 20 17.5H4A1.5 1.5 0 0 1 2.5 16V8A1.5 1.5 0 0 1 4 6.5Z"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-linejoin="round"
-                  stroke-width="1.6"
-                />
-                <path
-                  d="m4 8 8 5 8-5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.6"
-                />
-              </svg>
-            </span>
-            <span>Mở Gmail</span>
-          </button>
-          <button type="button" class="verify-email-page__mail-button" (click)="openInbox('outlook')">
-            <span class="verify-email-page__mail-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path
-                  d="M9 5.5h10a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 18.5H9"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-linejoin="round"
-                  stroke-width="1.6"
-                />
-                <path
-                  d="M9 7 3.5 8.2v7.6L9 17Z"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-linejoin="round"
-                  stroke-width="1.6"
-                />
-                <path
-                  d="M10.2 12c0 1.8-1.02 3.2-2.4 3.2-1.37 0-2.4-1.4-2.4-3.2 0-1.8 1.03-3.2 2.4-3.2 1.38 0 2.4 1.4 2.4 3.2Z"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                />
-              </svg>
-            </span>
-            <span>Mở Outlook</span>
-          </button>
-        </div>
-
-        <button type="submit" class="verify-email-page__primary" [disabled]="isOtpSubmitting()">
-          {{ isOtpSubmitting() ? 'Đang xác thực...' : 'Xác thực bằng OTP' }}
-        </button>
-      </form>
-
-      <div class="verify-email-page__meta">
-        <p class="verify-email-page__footer">
-          Không tìm thấy mã?
-          <button type="button" class="verify-email-page__text-button" (click)="resendVerification()">
-            {{ isResending() ? 'Đang gửi lại...' : 'Gửi lại mã mới' }}
-          </button>
-        </p>
-
-        <p class="verify-email-page__footer">
-          Đã xác thực xong?
-          <a routerLink="/login">Đăng nhập ngay</a>
-        </p>
-
-        <a class="verify-email-page__back-link" routerLink="/">Quay lại trang chủ</a>
-      </div>
     }
+
+    <p class="mt-6 text-center text-sm text-slate-600">
+      <a routerLink="/login" class="font-medium text-indigo-600 hover:underline">← Quay lại đăng nhập</a>
+    </p>
   </div>
-</section>
+</div>
