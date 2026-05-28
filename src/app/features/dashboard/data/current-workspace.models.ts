@@ -6,4 +6,5 @@ export interface CurrentWorkspace {
   tenantId: string;
   tenantCode: string;
   tenantName: string;
+  departmentId: string | null;
 }

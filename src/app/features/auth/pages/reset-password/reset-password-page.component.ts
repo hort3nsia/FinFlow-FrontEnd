@@ -169,11 +169,28 @@ export class ResetPasswordPageComponent implements OnInit {
       return;
     }
 
+    if (this.otpPasswordForm.invalid) {
+      this.otpPasswordForm.markAllAsTouched();
+      return;
+    }
+
     this.errorMessage.set(null);
     this.infoMessage.set(null);
-    this.verifiedOtp.set(this.otpResetForm.controls.otp.getRawValue());
-    this.verifiedOtpEmail.set(this.otpResetForm.controls.email.getRawValue());
-    this.status.set('otp-password');
+    this.isSubmitting.set(true);
+
+    const email = this.otpResetForm.controls.email.getRawValue();
+    const otp = this.otpResetForm.controls.otp.getRawValue();
+    const newPassword = this.otpPasswordForm.controls.newPassword.getRawValue();
+
+    this.authService
+      .resetPasswordByOtp({ email, otp, newPassword })
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: () => this.markSuccess(),
+        error: (error: Error) => {
+          this.errorMessage.set(error.message);
+        },
+      });
   }
 
   protected submitOtpPasswordReset(): void {

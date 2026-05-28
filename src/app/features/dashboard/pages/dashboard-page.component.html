@@ -161,7 +161,7 @@
                 <div class="min-w-0">
                   <p class="truncate text-sm font-semibold text-slate-900">{{ approval.title }}</p>
                   <p class="mt-0.5 truncate text-xs text-slate-500">
-                    {{ approval.vendorName || 'Chưa có nhà cung cấp' }} · {{ approval.department || 'Chưa có phòng ban' }}
+                    Phòng ban: {{ approval.department || 'Chưa có phòng ban' }}
                   </p>
                 </div>
                 <div class="min-w-0 text-xs text-slate-500">
@@ -188,7 +188,7 @@
       </section>
     }
 
-    <!-- Trend + Top vendors -->
+    <!-- Trend + Top departments -->
     @if (canViewReports()) {
       <section class="grid gap-6 lg:grid-cols-3">
         <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
@@ -226,23 +226,23 @@
 
         <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <header class="mb-3 flex items-center justify-between">
-            <h2 class="text-base font-semibold text-slate-900">Top nhà cung cấp</h2>
-            <a routerLink="/app/vendors" class="text-xs font-medium text-indigo-600 hover:underline">Xem tất cả →</a>
+            <h2 class="text-base font-semibold text-slate-900">Top phòng ban chi tiêu</h2>
+            <a routerLink="/app/reports" class="text-xs font-medium text-indigo-600 hover:underline">Xem báo cáo →</a>
           </header>
-          @if (!topVendors().length) {
+          @if (!topDepartments().length) {
             <div class="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-              Chưa có dữ liệu nhà cung cấp.
+              Chưa có dữ liệu phòng ban.
             </div>
           } @else {
             <ol class="space-y-2">
-              @for (v of topVendors(); track v.vendorId; let i = $index) {
+              @for (department of topDepartments(); track department.keyId ?? department.keyName; let i = $index) {
                 <li class="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2 hover:bg-slate-50">
                   <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700">{{ i + 1 }}</span>
                   <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-medium text-slate-800">{{ v.vendorName }}</p>
-                    <p class="truncate text-[11px] text-slate-500">{{ v.documentCount }} chứng từ</p>
+                    <p class="truncate text-sm font-medium text-slate-800">{{ department.keyName || 'Chưa có phòng ban' }}</p>
+                    <p class="truncate text-[11px] text-slate-500">{{ department.expenseCount }} chứng từ</p>
                   </div>
-                  <span class="text-xs font-semibold text-slate-900">{{ formatMoney(v.totalAmountInBaseCurrency) }}</span>
+                  <span class="text-xs font-semibold text-slate-900">{{ formatMoney(department.amountInBaseCurrency) }}</span>
                 </li>
               }
             </ol>

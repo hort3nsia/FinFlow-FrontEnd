@@ -4,8 +4,10 @@ import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../../core/auth/auth.service';
+import { TenantBrandingDocumentService } from '../../core/branding/tenant-branding-document.service';
 import { CurrentWorkspaceFacade } from '../../features/dashboard/data/current-workspace.facade';
 import { NotificationsApiService } from '../../features/notifications/data/notifications-api.service';
+import { TenantBrandingFacade } from '../../features/settings/data/tenant-branding.facade';
 import { CurrentSubscriptionFacade } from '../../features/subscription/data/current-subscription.facade';
 import { AppShellComponent } from './app-shell.component';
 
@@ -69,6 +71,25 @@ describe('AppShellComponent', () => {
     state: () => subscriptionState,
     ensureLoaded: vi.fn(),
   };
+  const tenantBrandingFacade = {
+    state: () => ({
+      branding: {
+        logoUrl: 'https://cdn.example.com/meridian-logo.svg',
+        faviconUrl: 'https://cdn.example.com/meridian.ico',
+        primaryColor: '#0f766e',
+        companyDisplayName: 'Meridian Finance',
+        locale: 'vi-VN',
+        timezone: 'Asia/Ho_Chi_Minh',
+      },
+      loading: false,
+      error: null,
+      tenantId: 'tenant-1',
+    }),
+    ensureLoaded: vi.fn(),
+  };
+  const tenantBrandingDocument = {
+    apply: vi.fn(),
+  };
 
   const createComponent = async (
     url: string,
@@ -93,12 +114,16 @@ describe('AppShellComponent', () => {
         { provide: NotificationsApiService, useValue: notificationsApi },
         { provide: CurrentWorkspaceFacade, useValue: currentWorkspaceFacade },
         { provide: CurrentSubscriptionFacade, useValue: currentSubscriptionFacade },
+        { provide: TenantBrandingFacade, useValue: tenantBrandingFacade },
+        { provide: TenantBrandingDocumentService, useValue: tenantBrandingDocument },
       ],
     });
 
     notificationsApi.getUnreadCount.mockReturnValue(of(0));
     currentWorkspaceFacade.refresh.mockClear();
     currentSubscriptionFacade.ensureLoaded.mockClear();
+    tenantBrandingFacade.ensureLoaded.mockClear();
+    tenantBrandingDocument.apply.mockClear();
 
     const router = TestBed.inject(Router);
     await router.navigateByUrl(url);
@@ -148,6 +173,23 @@ describe('AppShellComponent', () => {
     expect(mainColumn?.className).toContain('overflow-hidden');
   });
 
+  it('applies tenant branding to the workspace identity and browser chrome', async () => {
+    const fixture = await createComponent('/app/documents/list');
+    const root = fixture.nativeElement as HTMLElement;
+
+    const logo = root.querySelector<HTMLImageElement>('[data-testid="workspace-brand-logo"]');
+
+    expect(root.textContent).toContain('Meridian Finance');
+    expect(root.textContent).not.toContain('Meridian Corp');
+    expect(logo?.getAttribute('src')).toBe('https://cdn.example.com/meridian-logo.svg');
+    expect(logo?.getAttribute('alt')).toBe('Meridian Finance logo');
+    expect(tenantBrandingFacade.ensureLoaded).toHaveBeenCalledWith('tenant-1');
+    expect(tenantBrandingDocument.apply).toHaveBeenCalledWith(
+      tenantBrandingFacade.state().branding,
+      'Meridian Corp',
+    );
+  });
+
   it('keeps core workspace modules visible and hides add-on modules on a Free plan', async () => {
     const freeSubscriptionState = {
       subscription: {
@@ -189,7 +231,7 @@ describe('AppShellComponent', () => {
     expect(text).toContain('Phê duyệt');
     expect(text).toContain('Thanh toán');
     expect(text).toContain('Thành viên');
-    expect(text).toContain('Nhà cung cấp');
+    expect(text).not.toContain('Nhà cung cấp');
     expect(text).toContain('Ngân sách');
     expect(text).toContain('Phòng ban');
     expect(text).toContain('Tổng quan');

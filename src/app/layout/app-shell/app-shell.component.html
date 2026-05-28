@@ -22,12 +22,26 @@
       routerLink="/app/dashboard"
       aria-label="Mở Tổng quan"
     >
-      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-          <path d="M4.5 9.25 12 5l7.5 4.25L12 13.5 4.5 9.25Z"></path>
-          <path d="M4.5 13.1 12 17.35l7.5-4.25"></path>
-          <path d="M4.5 16.95 12 21.2l7.5-4.25"></path>
-        </svg>
+      <span
+        class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg text-white shadow-sm"
+        [ngClass]="workspaceBrandColor() ? '' : 'bg-gradient-to-br from-indigo-600 to-violet-600'"
+        [style.background-color]="workspaceBrandColor()"
+      >
+        @if (workspaceLogoUrl()) {
+          <img
+            class="h-full w-full object-contain"
+            data-testid="workspace-brand-logo"
+            [src]="workspaceLogoUrl()!"
+            [alt]="workspaceBrandName() + ' logo'"
+            (error)="onLogoError($event)"
+          />
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+            <path d="M4.5 9.25 12 5l7.5 4.25L12 13.5 4.5 9.25Z"></path>
+            <path d="M4.5 13.1 12 17.35l7.5-4.25"></path>
+            <path d="M4.5 16.95 12 21.2l7.5-4.25"></path>
+          </svg>
+        }
       </span>
       <div class="min-w-0 flex-1">
         <p class="truncate text-sm font-semibold text-slate-900">{{ workspaceBrandName() }}</p>
@@ -103,10 +117,6 @@
                     <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                     <path d="M16 4.13a4 4 0 0 1 0 7.75"></path>
                   }
-                  @case ('vendors') {
-                    <path d="M3 7.5 12 3l9 4.5-9 4.5L3 7.5Z"></path>
-                    <path d="M7 10v4.5c0 1.8 2.2 3.5 5 3.5s5-1.7 5-3.5V10"></path>
-                  }
                   @case ('budgets') {
                     <path d="M4 7h16"></path>
                     <path d="M6 3v18"></path>
@@ -154,19 +164,21 @@
 
     <!-- Footer -->
     <div class="space-y-1 border-t border-slate-100 p-3">
-      <button
-        type="button"
-        class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        [routerLink]="['/app/settings']"
-        data-testid="shell-settings-button"
-        (click)="closeSidebar()"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-400">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"></path>
-        </svg>
-        <span>Cấu hình</span>
-      </button>
+      @if (canAccessSettings()) {
+        <button
+          type="button"
+          class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          [routerLink]="['/app/settings']"
+          data-testid="shell-settings-button"
+          (click)="closeSidebar()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-400">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"></path>
+          </svg>
+          <span>Cấu hình</span>
+        </button>
+      }
 
       <button
         type="button"

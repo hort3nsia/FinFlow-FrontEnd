@@ -1,168 +1,108 @@
-<div class="grid min-h-screen lg:grid-cols-2">
-  <section class="flex items-center justify-center bg-white px-6 py-12 lg:px-16">
-    <div class="w-full max-w-md">
-      <a routerLink="/" class="inline-flex items-center gap-2.5">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-            <path d="M4.5 9.25 12 5l7.5 4.25L12 13.5 4.5 9.25Z"></path>
-            <path d="M4.5 13.1 12 17.35l7.5-4.25"></path>
-            <path d="M4.5 16.95 12 21.2l7.5-4.25"></path>
-          </svg>
-        </span>
-        <span class="text-base font-semibold text-slate-900">FinFlow</span>
-      </a>
+<app-auth-layout>
+  <header class="mb-6">
+    <h1 class="text-[24px] font-bold leading-tight text-slate-900">Tạo tài khoản</h1>
+    <p class="mt-1 text-[14px] text-slate-500">Không cần thẻ tín dụng</p>
+  </header>
 
-      <h1 class="mt-10 text-3xl font-semibold text-slate-900">Tạo tài khoản</h1>
-      <p class="mt-2 text-sm text-slate-500">
-        Bắt đầu miễn phí. Sau khi đăng ký, bạn sẽ tạo workspace cho tổ chức.
-      </p>
+  <div class="mb-4 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-blue-500"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    <p class="text-[12px] leading-relaxed text-slate-600">
+      Sau khi tạo tài khoản, bạn sẽ xác thực email rồi tạo hoặc chọn workspace.
+    </p>
+  </div>
 
-      <form [formGroup]="form" (ngSubmit)="submit()" class="mt-8 space-y-4">
-        <label class="block">
-          <span class="mb-1 block text-sm font-medium text-slate-700">Họ tên</span>
-          <input
-            type="text"
-            formControlName="name"
-            autocomplete="name"
-            placeholder="Nguyễn Văn A"
-            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-          />
-          @if (form.controls.name.invalid && form.controls.name.touched) {
-            <span class="mt-1 block text-xs text-rose-600">
-              @if (form.controls.name.errors?.['required']) { Vui lòng nhập họ tên. }
-              @else { Họ tên cần ít nhất 2 ký tự. }
-            </span>
-          }
-        </label>
+  @if (errorMessage()) {
+    <div class="mb-4 flex items-start gap-2 rounded-r-lg border-l-4 border-red-500 bg-red-50 px-4 py-3" role="alert">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-red-500"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      <span class="text-[13px] leading-relaxed text-red-700">{{ errorMessage() }}</span>
+    </div>
+  }
 
-        <label class="block">
-          <span class="mb-1 block text-sm font-medium text-slate-700">Email</span>
-          <input
-            type="email"
-            formControlName="email"
-            autocomplete="email"
-            placeholder="ban@congty.vn"
-            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-          />
-          @if (form.controls.email.invalid && form.controls.email.touched) {
-            <span class="mt-1 block text-xs text-rose-600">
-              @if (form.controls.email.errors?.['required']) { Vui lòng nhập email. }
-              @else { Email không hợp lệ. }
-            </span>
-          }
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu</span>
-          <div class="relative">
-            <input
-              [type]="isPasswordVisible() ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="new-password"
-              placeholder="Tối thiểu 8 ký tự"
-              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 pr-10 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-            />
-            <button
-              type="button"
-              class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
-              (click)="togglePasswordVisibility()"
-              [attr.aria-label]="isPasswordVisible() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
-            >
-              @if (isPasswordVisible()) {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
-                  <path d="m1 1 22 22"></path>
-                </svg>
-              } @else {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              }
-            </button>
-          </div>
-          @if (form.controls.password.invalid && form.controls.password.touched) {
-            <span class="mt-1 block text-xs text-rose-600">
-              @if (form.controls.password.errors?.['required']) { Vui lòng nhập mật khẩu. }
-              @else { Mật khẩu cần ít nhất 8 ký tự. }
-            </span>
-          }
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-sm font-medium text-slate-700">Nhập lại mật khẩu</span>
-          <div class="relative">
-            <input
-              [type]="isConfirmPasswordVisible() ? 'text' : 'password'"
-              formControlName="confirmPassword"
-              autocomplete="new-password"
-              placeholder="••••••••"
-              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 pr-10 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-            />
-            <button
-              type="button"
-              class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
-              (click)="toggleConfirmPasswordVisibility()"
-            >
-              @if (isConfirmPasswordVisible()) {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
-                  <path d="m1 1 22 22"></path>
-                </svg>
-              } @else {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              }
-            </button>
-          </div>
-          @if (form.errors?.['passwordMismatch'] && form.controls.confirmPassword.touched) {
-            <span class="mt-1 block text-xs text-rose-600">Mật khẩu nhập lại không khớp.</span>
-          }
-        </label>
-
-        @if (errorMessage()) {
-          <div class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-            {{ errorMessage() }}
-          </div>
-        }
-
-        <button
-          type="submit"
-          class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-          [disabled]="isSubmitting()"
-        >
-          @if (isSubmitting()) { Đang tạo tài khoản… } @else { Tạo tài khoản }
-        </button>
-
-        <p class="text-center text-[11px] text-slate-500">
-          Khi tiếp tục, bạn đồng ý với
-          <span class="font-medium text-indigo-600">Điều khoản</span> và
-          <span class="font-medium text-indigo-600">Chính sách bảo mật</span> của FinFlow.
+  <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+    <!-- Name -->
+    <div class="w-full">
+      <label for="reg-name" class="mb-1.5 block text-[13px] font-medium text-slate-700">Họ tên</label>
+      <input id="reg-name" type="text" formControlName="name" autocomplete="name" placeholder="Nguyễn Thị Hồng"
+        class="h-[42px] w-full rounded-lg border border-gray-300 bg-white px-3 text-[14px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100"
+        [class.border-red-400]="form.controls.name.invalid && form.controls.name.touched" />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <p class="mt-1 text-[12px] text-red-600">
+          @if (form.controls.name.errors?.['required']) { Vui lòng nhập họ tên. }
+          @else { Họ tên cần ít nhất 2 ký tự. }
         </p>
-      </form>
-
-      <p class="mt-6 text-center text-sm text-slate-600">
-        Đã có tài khoản?
-        <a routerLink="/login" class="font-medium text-indigo-600 hover:underline">Đăng nhập</a>
-      </p>
+      }
     </div>
-  </section>
 
-  <section class="relative hidden overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 lg:block">
-    <div class="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10 blur-3xl"></div>
-    <div class="absolute -bottom-20 -left-12 h-72 w-72 rounded-full bg-fuchsia-300/20 blur-3xl"></div>
-    <div class="relative flex h-full flex-col justify-center p-12 text-white">
-      <span class="inline-block w-fit rounded-full bg-white/15 px-3 py-1 text-xs font-medium uppercase tracking-wide backdrop-blur">
-        Miễn phí cho doanh nghiệp khởi nghiệp
-      </span>
-      <h2 class="mt-6 text-4xl font-semibold leading-tight">
-        Tổ chức của bạn — quản lý tài chính trong vài phút
-      </h2>
-      <p class="mt-4 max-w-md text-lg text-white/80">
-        Đăng ký miễn phí, mời thành viên, và bắt đầu xử lý hoá đơn bằng OCR ngay.
-      </p>
+    <!-- Email -->
+    <div class="w-full">
+      <label for="reg-email" class="mb-1.5 block text-[13px] font-medium text-slate-700">Email</label>
+      <input id="reg-email" type="email" formControlName="email" autocomplete="email" placeholder="hong@congty.vn"
+        class="h-[42px] w-full rounded-lg border border-gray-300 bg-white px-3 text-[14px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100"
+        [class.border-red-400]="form.controls.email.invalid && form.controls.email.touched" />
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <p class="mt-1 text-[12px] text-red-600">
+          @if (form.controls.email.errors?.['required']) { Vui lòng nhập email. }
+          @else { Email không hợp lệ. }
+        </p>
+      }
     </div>
-  </section>
-</div>
+
+    <!-- Password -->
+    <div class="w-full">
+      <label for="reg-password" class="mb-1.5 block text-[13px] font-medium text-slate-700">Mật khẩu</label>
+      <div class="relative">
+        <input id="reg-password" [type]="isPasswordVisible() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" placeholder="••••••••"
+          class="h-[42px] w-full rounded-lg border border-gray-300 bg-white px-3 pr-10 text-[14px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100"
+          [class.border-red-400]="form.controls.password.invalid && form.controls.password.touched" />
+        <button type="button" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600" (click)="togglePasswordVisibility()" [attr.aria-label]="isPasswordVisible() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">
+          @if (isPasswordVisible()) {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="m1 1 22 22"/></svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          }
+        </button>
+      </div>
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <p class="mt-1 text-[12px] text-red-600">
+          @if (form.controls.password.errors?.['required']) { Vui lòng nhập mật khẩu. }
+          @else { Mật khẩu cần ít nhất 8 ký tự. }
+        </p>
+      }
+    </div>
+
+    <!-- Confirm Password -->
+    <div class="w-full">
+      <label for="reg-confirm" class="mb-1.5 block text-[13px] font-medium text-slate-700">Nhập lại mật khẩu</label>
+      <div class="relative">
+        <input id="reg-confirm" [type]="isConfirmPasswordVisible() ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password" placeholder="••••••••"
+          class="h-[42px] w-full rounded-lg border border-gray-300 bg-white px-3 pr-10 text-[14px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100"
+          [class.border-red-400]="form.errors?.['passwordMismatch'] && form.controls.confirmPassword.touched" />
+        <button type="button" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600" (click)="toggleConfirmPasswordVisibility()" [attr.aria-label]="isConfirmPasswordVisible() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">
+          @if (isConfirmPasswordVisible()) {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="m1 1 22 22"/></svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          }
+        </button>
+      </div>
+      @if (form.errors?.['passwordMismatch'] && form.controls.confirmPassword.touched) {
+        <p class="mt-1 text-[12px] text-red-600">Mật khẩu không khớp</p>
+      }
+    </div>
+
+    <!-- Submit -->
+    <button type="submit"
+      class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-70"
+      [disabled]="isSubmitting()">
+      @if (isSubmitting()) {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-4 w-4 animate-spin"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
+        <span>Đang tạo tài khoản...</span>
+      } @else { Tạo tài khoản }
+    </button>
+  </form>
+
+  <p class="mt-8 text-center text-[12px] text-slate-500">
+    Đã có tài khoản?
+    <a routerLink="/login" class="font-semibold text-blue-600 hover:underline">Đăng nhập</a>
+  </p>
+</app-auth-layout>
