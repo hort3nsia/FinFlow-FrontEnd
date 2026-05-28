@@ -1,6 +1,8 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, map, Observable, throwError } from 'rxjs';
+import { catchError, defer, map, Observable, switchMap, throwError } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
+import { isAuthInvalidMessage } from '../../../core/auth/auth-error.utils';
 import { API_BASE_URL } from '../../../core/config/api-base-url.token';
 
 interface GraphQlError {
@@ -18,6 +20,12 @@ export interface BrandingResponse {
   companyDisplayName: string | null;
   locale: string;
   timezone: string;
+}
+
+export type BrandingAssetKind = 'logo' | 'favicon';
+
+export interface BrandingAssetUploadResponse {
+  url: string;
 }
 
 export interface ApprovalPolicyResponse {
@@ -126,8 +134,21 @@ const SETTINGS_FIELDS = `
   updatedAt
 `;
 
+const BRANDING_FIELDS = `
+  logoUrl
+  faviconUrl
+  primaryColor
+  companyDisplayName
+  locale
+  timezone
+`;
+
 const GET_SETTINGS_QUERY = `
   query GetTenantSettings { getTenantSettings {${SETTINGS_FIELDS}} }
+`;
+
+const GET_BRANDING_QUERY = `
+  query TenantBranding { tenantBranding {${BRANDING_FIELDS}} }
 `;
 
 const UPDATE_BRANDING = `
@@ -166,12 +187,39 @@ const extractGraphQlMessage = (errors?: GraphQlError[]): string | null =>
 @Injectable({ providedIn: 'root' })
 export class SettingsApiService {
   private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
   private readonly endpoint = inject(API_BASE_URL);
 
   getSettings(): Observable<TenantSettingsResponse> {
     return this.callQuery<{ getTenantSettings: TenantSettingsResponse }>(GET_SETTINGS_QUERY).pipe(
       map((r) => r.getTenantSettings),
     );
+  }
+
+  getBranding(): Observable<BrandingResponse> {
+    return this.callQuery<{ tenantBranding: BrandingResponse }>(GET_BRANDING_QUERY).pipe(
+      map((r) => r.tenantBranding),
+    );
+  }
+
+  uploadBrandingAsset(
+    kind: BrandingAssetKind,
+    file: File,
+  ): Observable<BrandingAssetUploadResponse> {
+    const form = new FormData();
+    form.append('kind', kind);
+    form.append('file', file);
+
+    const token = this.authService.getAccessToken();
+    const options = token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
+
+    return this.http
+      .post<BrandingAssetUploadResponse>(
+        this.toApiEndpoint('/api/tenant-settings/branding-assets'),
+        form,
+        options,
+      )
+      .pipe(catchError((error: unknown) => this.mapTransportError(error)));
   }
 
   updateBranding(input: UpdateBrandingInput): Observable<TenantSettingsResponse> {
@@ -214,21 +262,19 @@ export class SettingsApiService {
   }
 
   private callQuery<T>(query: string): Observable<T> {
-    return this.http
-      .post<GraphQlResponse<T>>(this.endpoint, { query })
-      .pipe(
-        map((response) => this.extractData(response, 'GraphQL did not return data.')),
-        catchError((error: unknown) => this.mapTransportError(error)),
-      );
+    return this.withRefreshRetry(
+      () => this.http.post<GraphQlResponse<T>>(this.endpoint, { query }),
+      'GraphQL did not return data.',
+      (data) => data,
+    );
   }
 
   private callMutation<T>(query: string, input: unknown): Observable<T> {
-    return this.http
-      .post<GraphQlResponse<T>>(this.endpoint, { query, variables: { input } })
-      .pipe(
-        map((response) => this.extractData(response, 'GraphQL did not return data.')),
-        catchError((error: unknown) => this.mapTransportError(error)),
-      );
+    return this.withRefreshRetry(
+      () => this.http.post<GraphQlResponse<T>>(this.endpoint, { query, variables: { input } }),
+      'GraphQL did not return data.',
+      (data) => data,
+    );
   }
 
   private extractData<T>(response: GraphQlResponse<T>, missingMessage: string): T {
@@ -247,5 +293,47 @@ export class SettingsApiService {
     }
     if (error instanceof Error) return throwError(() => error);
     return throwError(() => new Error('Unable to complete the request.'));
+  }
+
+  private toApiEndpoint(path: string): string {
+    const normalizedEndpoint = this.endpoint.replace(/\/+$/, '');
+    if (normalizedEndpoint.endsWith('/graphql')) {
+      return `${normalizedEndpoint.slice(0, -'/graphql'.length)}${path}`;
+    }
+
+    return path;
+  }
+
+  private isAuthInvalidError(error: unknown): boolean {
+    if (error instanceof HttpErrorResponse) {
+      return isAuthInvalidMessage(extractGraphQlMessage(error.error?.errors) ?? error.message);
+    }
+
+    if (error instanceof Error) {
+      return isAuthInvalidMessage(error.message);
+    }
+
+    return false;
+  }
+
+  private withRefreshRetry<TData, TResult>(
+    requestFactory: () => Observable<GraphQlResponse<TData>>,
+    missingMessage: string,
+    select: (data: TData) => TResult,
+    hasRetried = false,
+  ): Observable<TResult> {
+    return defer(requestFactory).pipe(
+      map((response) => select(this.extractData(response, missingMessage))),
+      catchError((error: unknown) => {
+        if (hasRetried || !this.isAuthInvalidError(error)) {
+          return this.mapTransportError(error);
+        }
+
+        return this.authService.refreshToken().pipe(
+          switchMap(() => this.withRefreshRetry(requestFactory, missingMessage, select, true)),
+          catchError((refreshError: unknown) => this.mapTransportError(refreshError)),
+        );
+      }),
+    );
   }
 }

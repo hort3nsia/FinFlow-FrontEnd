@@ -86,7 +86,7 @@ describe('SettingsPageComponent', () => {
     },
     notificationPreferences: {
       emailDigestEnabled: true,
-      emailDigestFrequency: 'Weekly',
+      emailDigestFrequency: 'weekly',
     },
     updatedAt: '2026-05-24T09:30:00Z',
   };
@@ -98,6 +98,7 @@ describe('SettingsPageComponent', () => {
     updateBudgetPolicy: vi.fn(),
     updateReimbursementPolicy: vi.fn(),
     updateNotificationPreferences: vi.fn(),
+    uploadBrandingAsset: vi.fn(),
   };
 
   const currentSubscriptionFacade = {
@@ -119,6 +120,7 @@ describe('SettingsPageComponent', () => {
     settingsApi.updateBudgetPolicy.mockReset();
     settingsApi.updateReimbursementPolicy.mockReset();
     settingsApi.updateNotificationPreferences.mockReset();
+    settingsApi.uploadBrandingAsset.mockReset();
     currentSubscriptionFacade.ensureLoaded.mockReset();
     currentSubscriptionFacade.refresh.mockReset();
     settingsApi.getSettings.mockReturnValue(of(settings));
@@ -157,5 +159,78 @@ describe('SettingsPageComponent', () => {
     expect(text).toContain('Pro');
     expect(text).toContain('847 / 2.000 trang');
     expect(text).toContain('234 / 1.000 tin');
+    expect(text).toContain('Tải logo');
+    expect(text).toContain('Tải favicon');
+    expect(text).not.toContain('URL logo');
+    expect(text).not.toContain('URL favicon');
+  });
+
+  it('uploads a selected logo image and persists the returned asset url on save', () => {
+    const uploadedLogoUrl = '/uploads/tenant-branding/tenant-1/logo-123.png';
+    settingsApi.uploadBrandingAsset.mockReturnValue(of({ url: uploadedLogoUrl }));
+    settingsApi.updateBranding.mockReturnValue(
+      of({
+        ...settings,
+        branding: {
+          ...settings.branding,
+          logoUrl: uploadedLogoUrl,
+        },
+      }),
+    );
+    const fixture = createComponent();
+    const component = fixture.componentInstance as unknown as {
+      uploadBrandingAsset(kind: 'logo' | 'favicon', event: Event): void;
+      saveBranding(): void;
+    };
+    const file = new File(['logo'], 'logo.png', { type: 'image/png' });
+    const input = document.createElement('input');
+    Object.defineProperty(input, 'files', { value: [file] });
+
+    component.uploadBrandingAsset('logo', { target: input } as unknown as Event);
+    component.saveBranding();
+
+    expect(settingsApi.uploadBrandingAsset).toHaveBeenCalledWith('logo', file);
+    expect(settingsApi.updateBranding).toHaveBeenCalledWith(
+      expect.objectContaining({ logoUrl: uploadedLogoUrl }),
+    );
+  });
+
+  it('only renders settings options accepted by the backend contract', () => {
+    const fixture = createComponent();
+    const component = fixture.componentInstance as unknown as {
+      setActiveTab(tab: 'approval' | 'notifications'): void;
+    };
+
+    component.setActiveTab('approval');
+    fixture.detectChanges();
+    let text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Tenant Admin');
+    expect(text).toContain('Accountant');
+    expect(text).not.toContain('Manager');
+
+    component.setActiveTab('notifications');
+    fixture.detectChanges();
+    text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Hằng ngày');
+    expect(text).toContain('Hằng tuần');
+    expect(text).toContain('Tắt');
+    expect(text).not.toContain('Hằng tháng');
+  });
+
+  it('saves notification preferences with backend-accepted digest codes', () => {
+    settingsApi.updateNotificationPreferences.mockReturnValue(of(settings));
+    const fixture = createComponent();
+    const component = fixture.componentInstance as unknown as {
+      saveNotifications(): void;
+    };
+
+    component.saveNotifications();
+
+    expect(settingsApi.updateNotificationPreferences).toHaveBeenCalledWith({
+      emailDigestEnabled: true,
+      emailDigestFrequency: 'weekly',
+    });
   });
 });

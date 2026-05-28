@@ -14,6 +14,7 @@ import { RouterLink } from '@angular/router';
 import { CurrentWorkspaceFacade } from '../../dashboard/data/current-workspace.facade';
 import { CurrentSubscriptionFacade } from '../../subscription/data/current-subscription.facade';
 import {
+  BrandingAssetKind,
   SettingsApiService,
   TenantSettingsResponse,
   UpdateApprovalPolicyInput,
@@ -22,6 +23,7 @@ import {
   UpdateNotificationPreferencesInput,
   UpdateReimbursementPolicyInput,
 } from '../data/settings-api.service';
+import { TenantBrandingFacade } from '../data/tenant-branding.facade';
 
 type SettingsTab =
   | 'branding'
@@ -54,16 +56,14 @@ const ENFORCEMENT_MODES = [
 ];
 
 const APPROVER_ROLES = [
-  { code: 'Manager', label: 'Manager' },
   { code: 'Accountant', label: 'Accountant' },
   { code: 'TenantAdmin', label: 'Tenant Admin' },
 ];
 
 const DIGEST_FREQUENCIES = [
-  { code: 'Daily', label: 'Hằng ngày' },
-  { code: 'Weekly', label: 'Hằng tuần' },
-  { code: 'Monthly', label: 'Hằng tháng' },
-  { code: 'Disabled', label: 'Tắt' },
+  { code: 'daily', label: 'Hằng ngày' },
+  { code: 'weekly', label: 'Hằng tuần' },
+  { code: 'off', label: 'Tắt' },
 ];
 
 const LOCALES = [
@@ -89,6 +89,7 @@ const TIMEZONES = [
 })
 export class SettingsPageComponent {
   private readonly settingsApi = inject(SettingsApiService);
+  private readonly tenantBrandingFacade = inject(TenantBrandingFacade);
   private readonly currentSubscriptionFacade = inject(CurrentSubscriptionFacade);
   private readonly currentWorkspaceFacade = inject(CurrentWorkspaceFacade);
   private readonly destroyRef = inject(DestroyRef);
@@ -121,7 +122,7 @@ export class SettingsPageComponent {
   });
 
   protected readonly canEdit = computed(
-    () => this.currentRole() === 'TenantAdmin' || this.currentRole() === 'SuperAdmin',
+    () => this.currentRole() === 'TenantAdmin',
   );
 
   // ─── Per-tab form state (signals) ──────────────────────────────
@@ -153,12 +154,13 @@ export class SettingsPageComponent {
 
   // Notifications
   protected readonly emailDigestEnabled = signal(true);
-  protected readonly emailDigestFrequency = signal<string>('Weekly');
+  protected readonly emailDigestFrequency = signal<string>('weekly');
 
   // Per-tab save signals
   protected readonly savingTab = signal<SettingsTab | null>(null);
   protected readonly tabError = signal<{ tab: SettingsTab; message: string } | null>(null);
   protected readonly tabSuccess = signal<{ tab: SettingsTab; message: string } | null>(null);
+  protected readonly uploadingBrandingAsset = signal<BrandingAssetKind | null>(null);
 
   protected readonly tabs: SettingsTabConfig[] = [
     {
@@ -362,7 +364,7 @@ export class SettingsPageComponent {
 
   // ─── Save actions per tab ──────────────────────────────────────
   protected saveBranding(): void {
-    if (!this.canEdit() || this.savingTab()) return;
+    if (!this.canEdit() || this.savingTab() || this.uploadingBrandingAsset()) return;
     const input: UpdateBrandingInput = {
       logoUrl: this.logoUrl().trim() || null,
       faviconUrl: this.faviconUrl().trim() || null,
@@ -372,6 +374,43 @@ export class SettingsPageComponent {
       timezone: this.timezone() || null,
     };
     this.runSave('branding', this.settingsApi.updateBranding(input));
+  }
+
+  protected uploadBrandingAsset(kind: BrandingAssetKind, event: Event): void {
+    if (!this.canEdit() || this.uploadingBrandingAsset()) return;
+
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    this.uploadingBrandingAsset.set(kind);
+    this.tabError.set(null);
+    this.tabSuccess.set(null);
+
+    this.settingsApi
+      .uploadBrandingAsset(kind, file)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ url }) => {
+          if (kind === 'logo') {
+            this.logoUrl.set(url);
+          } else {
+            this.faviconUrl.set(url);
+          }
+
+          if (input) input.value = '';
+          this.uploadingBrandingAsset.set(null);
+          this.tabSuccess.set({
+            tab: 'branding',
+            message: `Đã tải ${kind === 'logo' ? 'logo' : 'favicon'}. Bấm lưu thương hiệu để áp dụng.`,
+          });
+        },
+        error: (err: Error) => {
+          if (input) input.value = '';
+          this.uploadingBrandingAsset.set(null);
+          this.tabError.set({ tab: 'branding', message: err.message });
+        },
+      });
   }
 
   protected saveApproval(): void {
@@ -428,6 +467,12 @@ export class SettingsPageComponent {
       next: (s) => {
         this.settings.set(s);
         this.hydrateForms(s);
+        if (tab === 'branding') {
+          this.tenantBrandingFacade.setBranding(
+            s.branding,
+            this.workspaceState().workspace?.tenantId ?? null,
+          );
+        }
         this.savingTab.set(null);
         this.tabSuccess.set({ tab, message: 'Đã lưu cấu hình.' });
       },

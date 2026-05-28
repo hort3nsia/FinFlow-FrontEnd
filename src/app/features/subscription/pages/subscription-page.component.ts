@@ -20,6 +20,7 @@ import {
   SubscriptionApiService,
 } from '../data/subscription-api.service';
 import { CurrentSubscriptionFacade } from '../data/current-subscription.facade';
+import { createPagination } from '../../../shared/utils/pagination';
 
 type RoleType =
   | 'TenantAdmin'
@@ -435,6 +436,9 @@ export class SubscriptionPageComponent {
   protected readonly hasMemberTelemetryGap = computed(() =>
     this.memberQuotaRows().some((row) => !row.isCurrentUser),
   );
+
+  // ─── Pagination for member table ─────────────────────────────────
+  protected readonly memberPagination = createPagination(this.memberQuotaRows, 20);
 
   constructor() {
     effect(() => {

@@ -29,7 +29,6 @@ describe('ReportingPageComponent', () => {
   const reportingApi = {
     expenseSummary: vi.fn(),
     budgetUtilization: vi.fn(),
-    topVendors: vi.fn(),
     topEmployees: vi.fn(),
     pendingPaymentQueue: vi.fn(),
     monthlyTrend: vi.fn(),
@@ -49,7 +48,6 @@ describe('ReportingPageComponent', () => {
     printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined);
     reportingApi.expenseSummary.mockReset();
     reportingApi.budgetUtilization.mockReset();
-    reportingApi.topVendors.mockReset();
     reportingApi.topEmployees.mockReset();
     reportingApi.pendingPaymentQueue.mockReset();
     reportingApi.monthlyTrend.mockReset();
@@ -66,7 +64,6 @@ describe('ReportingPageComponent', () => {
       }),
     );
     reportingApi.budgetUtilization.mockReturnValue(of([]));
-    reportingApi.topVendors.mockReturnValue(of([]));
     reportingApi.topEmployees.mockReturnValue(of([]));
     reportingApi.pendingPaymentQueue.mockReturnValue(of([]));
     reportingApi.monthlyTrend.mockReturnValue(of([]));
@@ -153,13 +150,14 @@ describe('ReportingPageComponent', () => {
     expect(text).toContain('375.908 ₫');
     expect(text).toContain('3 chứng từ');
     expect(text).toContain('Thời gian duyệt TB');
-    expect(text).toContain('Top 10 Nhà cung cấp');
-    expect(text).toContain('Xác minh');
-    expect(text).toContain('BÁCH HÓA XANH');
+    expect(text).toContain('Top phòng ban chi tiêu');
+    expect(text).toContain('Nguồn');
+    expect(text).toContain('Finance');
     expect(text).toContain('Hàng đợi hoàn tiền');
     expect(text).toContain('Hóa đơn đã duyệt, đang chờ Accountant xử lý');
     expect(text).toContain('Nhân viên');
     expect(text).toContain('Mã hóa đơn');
+    expect(text).toContain('Phòng ban');
     expect(text).toContain('Duyệt vào');
     expect(text).toContain('Tuổi');
     expect(text).toContain('Hành động');
