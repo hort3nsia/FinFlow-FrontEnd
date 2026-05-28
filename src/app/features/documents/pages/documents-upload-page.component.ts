@@ -21,6 +21,7 @@ import { DocumentSurfaceCardComponent } from '../components/workspace/document-s
 import { DocumentUploadZoneComponent } from '../components/workspace/document-upload-zone.component';
 import { DocumentWorkspaceHeaderComponent } from '../components/workspace/document-workspace-header.component';
 import { DocumentReviewDraftResponse, DocumentsApiService } from '../data/documents-api.service';
+import { EXPENSE_CATEGORIES, matchOcrCategory } from '../data/expense-categories';
 
 interface ProcessingItem {
   id: 1 | 2 | 3 | 4;
@@ -112,7 +113,14 @@ export class DocumentsUploadPageComponent {
     this.lineItems().reduce((sum, item) => sum + item.discountAmount, 0),
   );
   protected readonly subtotal = computed(() => this.grossSubtotal() - this.totalDiscount());
-  protected readonly totalAmount = computed(() => this.subtotal() + this.taxAmount());
+  protected readonly hasLineVat = computed(() => this.lineItems().some((item) => this.hasLineTax(item)));
+  protected readonly groupedLineTaxLines = computed(() => this.groupLineTaxLines(this.lineItems()));
+  protected readonly effectiveTaxAmount = computed(() =>
+    this.hasLineVat()
+      ? this.groupedLineTaxLines().reduce((sum, line) => sum + line.taxAmount, 0)
+      : this.taxAmount(),
+  );
+  protected readonly totalAmount = computed(() => this.subtotal() + this.effectiveTaxAmount());
   protected readonly hasPdfPreview = computed(
     () => this.selectedFileType() === 'application/pdf' && !!this.selectedPdfPreviewUrl(),
   );
@@ -176,16 +184,11 @@ export class DocumentsUploadPageComponent {
           };
         }
 
-        const normalized = Number(value);
-        const nextValue = Number.isFinite(normalized) ? Math.max(0, normalized) : 0;
-        const nextItem = {
-          ...item,
-          [field]: nextValue,
-        };
+        const nextItem = this.updateNumericLineItemField(item, field, value);
 
         return {
           ...nextItem,
-          total: this.calculateLineNet(nextItem),
+          ...this.calculateLineTaxFields(nextItem),
           kind: this.inferOcrLineItemKind(nextItem),
         };
       }),
@@ -200,6 +203,9 @@ export class DocumentsUploadPageComponent {
         quantity: 1,
         unitPrice: 0,
         discountAmount: 0,
+        taxRate: null,
+        taxableAmount: 0,
+        taxAmount: 0,
         total: 0,
         kind: 'standard',
       },
@@ -404,22 +410,7 @@ export class DocumentsUploadPageComponent {
   }
 
   private loadCategories(): void {
-    this.documentsApi
-      .getMyCategories()
-      .pipe(takeUntilDestroyed())
-      .subscribe({
-        next: (categories) => {
-          this.categoryOptions.set(
-            categories
-              .filter((category) => category.isActive)
-              .sort((left, right) => left.displayOrder - right.displayOrder)
-              .map((category) => category.name),
-          );
-        },
-        error: () => {
-          this.categoryOptions.set([]);
-        },
-      });
+    this.categoryOptions.set([...EXPENSE_CATEGORIES]);
   }
 
   private applyDraft(draft: DocumentReviewDraftResponse): void {
@@ -429,25 +420,21 @@ export class DocumentsUploadPageComponent {
       vendorName: draft.vendorName,
       reference: draft.reference,
       documentDate: draft.documentDate,
-      category: draft.category,
+      category: matchOcrCategory(draft.category),
       vendorTaxId: draft.vendorTaxId,
     });
     this.lineItems.set(
       draft.lineItems.length
-        ? draft.lineItems.map((item) => ({
-            itemName: item.itemName,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            discountAmount: 0,
-            total: item.total,
-            kind: this.inferOcrLineItemKind(item),
-          }))
+        ? this.mapReviewLineItems(draft)
         : [
             {
               itemName: '',
               quantity: 1,
               unitPrice: 0,
               discountAmount: 0,
+              taxRate: null,
+              taxableAmount: 0,
+              taxAmount: 0,
               total: 0,
               kind: 'standard',
             },
@@ -495,7 +482,7 @@ export class DocumentsUploadPageComponent {
       category: state.category,
       vendorTaxId: state.vendorTaxId,
       subtotal: this.subtotal(),
-      vat: this.taxAmount(),
+      vat: this.effectiveTaxAmount(),
       totalAmount: this.totalAmount(),
       confidenceLabel,
       taxLines: this.buildTaxLines(),
@@ -503,12 +490,64 @@ export class DocumentsUploadPageComponent {
         itemName: item.itemName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        discountPercent: null,
+        discountAmount: item.discountAmount,
+        taxRate: item.taxRate ?? null,
+        taxableAmount: item.taxableAmount ?? 0,
+        taxAmount: item.taxAmount ?? 0,
         total: this.calculateLineNet(item),
       })),
     };
   }
 
+  private mapReviewLineItems(draft: DocumentReviewDraftResponse): OcrReviewLineItem[] {
+    const itemGrossTotal = draft.lineItems.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0,
+    );
+    const existingDiscountTotal = draft.lineItems.reduce(
+      (sum, item) => sum + (item.discountAmount ?? 0),
+      0,
+    );
+    const targetNetSubtotal = draft.totalAmount - draft.vat;
+    let residualDiscount = Math.max(
+      0,
+      this.roundMoney(itemGrossTotal - existingDiscountTotal - targetNetSubtotal),
+    );
+
+    return draft.lineItems.map((item) => {
+      const grossAmount = item.quantity * item.unitPrice;
+      const existingDiscount = item.discountAmount ?? 0;
+      const additionalDiscount = Math.min(
+        Math.max(0, grossAmount - existingDiscount),
+        residualDiscount,
+      );
+      const discountAmount = this.roundMoney(existingDiscount + additionalDiscount);
+      residualDiscount = this.roundMoney(residualDiscount - additionalDiscount);
+      const nextItem = {
+        itemName: item.itemName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discountAmount,
+        taxRate: item.taxRate ?? null,
+        taxableAmount: item.taxableAmount ?? this.roundMoney(grossAmount - discountAmount),
+        taxAmount: item.taxAmount ?? this.calculateTaxAmount(item.taxableAmount ?? grossAmount - discountAmount, item.taxRate ?? null),
+        total: this.roundMoney(grossAmount - discountAmount),
+      };
+
+      return {
+        ...nextItem,
+        kind: this.inferOcrLineItemKind(nextItem),
+      };
+    });
+  }
+
   private buildTaxLines() {
+    const groupedTaxLines = this.groupedLineTaxLines();
+    if (groupedTaxLines.length) {
+      return groupedTaxLines;
+    }
+
     const taxAmount = this.taxAmount();
     if (taxAmount <= 0 && this.taxRate() === null) {
       return [];
@@ -527,7 +566,78 @@ export class DocumentsUploadPageComponent {
   private calculateLineNet(
     item: Pick<OcrReviewLineItem, 'quantity' | 'unitPrice' | 'discountAmount'>,
   ): number {
-    return item.quantity * item.unitPrice - item.discountAmount;
+    return this.roundMoney(item.quantity * item.unitPrice - item.discountAmount);
+  }
+
+  private updateNumericLineItemField(
+    item: OcrReviewLineItem,
+    field: ReviewLineItemField,
+    value: string,
+  ): OcrReviewLineItem {
+    if (field === 'taxRate' && !value.trim()) {
+      return {
+        ...item,
+        taxRate: null,
+        taxableAmount: 0,
+        taxAmount: 0,
+      };
+    }
+
+    const normalized = Number(value);
+    const nextValue = Number.isFinite(normalized) ? Math.max(0, normalized) : 0;
+
+    return {
+      ...item,
+      [field]: field === 'taxRate' ? Math.min(100, nextValue) : nextValue,
+    };
+  }
+
+  private calculateLineTaxFields(item: OcrReviewLineItem): Pick<OcrReviewLineItem, 'total' | 'taxableAmount' | 'taxAmount'> {
+    const total = this.calculateLineNet(item);
+    const taxRate = item.taxRate ?? null;
+    const taxableAmount = taxRate === null ? 0 : total;
+    const taxAmount = this.calculateTaxAmount(taxableAmount, taxRate);
+
+    return {
+      total,
+      taxableAmount,
+      taxAmount,
+    };
+  }
+
+  private calculateTaxAmount(taxableAmount: number, taxRate: number | null): number {
+    return taxRate === null ? 0 : this.roundMoney((taxableAmount * taxRate) / 100);
+  }
+
+  private groupLineTaxLines(items: OcrReviewLineItem[]) {
+    const groups = new Map<string, { taxType: string; rate: number | null; taxableAmount: number; taxAmount: number }>();
+
+    for (const item of items) {
+      if (!this.hasLineTax(item)) {
+        continue;
+      }
+
+      const taxRate = item.taxRate ?? null;
+      const taxableAmount = item.taxableAmount ?? 0;
+      const taxAmount = item.taxAmount ?? 0;
+      const key = taxRate === null ? 'null' : taxRate.toFixed(2);
+      const current = groups.get(key) ?? {
+        taxType: 'VAT',
+        rate: taxRate,
+        taxableAmount: 0,
+        taxAmount: 0,
+      };
+
+      current.taxableAmount = this.roundMoney(current.taxableAmount + taxableAmount);
+      current.taxAmount = this.roundMoney(current.taxAmount + taxAmount);
+      groups.set(key, current);
+    }
+
+    return Array.from(groups.values()).filter((line) => line.taxAmount > 0 || line.rate !== null);
+  }
+
+  private hasLineTax(item: Pick<OcrReviewLineItem, 'taxRate' | 'taxableAmount' | 'taxAmount'>): boolean {
+    return (item.taxRate ?? null) !== null || (item.taxableAmount ?? 0) > 0 || (item.taxAmount ?? 0) > 0;
   }
 
   private roundMoney(value: number): number {

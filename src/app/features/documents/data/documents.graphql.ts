@@ -39,10 +39,15 @@ export const MY_DOCUMENT_DRAFT_QUERY = gql`
       reviewedByStaff
       confidenceLabel
       hasImage
+      hasPreviewImage
+      previewImageDataUrl
       lineItems {
         itemName
         quantity
         unitPrice
+        taxRate
+        taxableAmount
+        taxAmount
         total
       }
     }
@@ -92,6 +97,9 @@ const DOCUMENT_DRAFT_DETAIL_SELECTION = `
     itemName
     quantity
     unitPrice
+    taxRate
+    taxableAmount
+    taxAmount
     total
   }
 `;

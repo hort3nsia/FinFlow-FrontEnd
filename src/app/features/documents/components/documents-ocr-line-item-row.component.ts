@@ -11,6 +11,9 @@ export interface OcrReviewLineItem {
   quantity: number;
   unitPrice: number;
   discountAmount: number;
+  taxRate?: number | null;
+  taxableAmount?: number;
+  taxAmount?: number;
   total: number;
   kind: OcrLineItemKind;
 }
@@ -82,6 +85,14 @@ export class DocumentsOcrLineItemRowComponent {
 
   protected netAmount(item: OcrReviewLineItem): number {
     return item.quantity * item.unitPrice - item.discountAmount;
+  }
+
+  protected formatTaxRate(value: number | null | undefined): string {
+    return value === null || value === undefined ? '' : String(value);
+  }
+
+  protected taxAmount(item: OcrReviewLineItem): number {
+    return item.taxAmount ?? 0;
   }
 
   protected formatMoney(value: number): string {

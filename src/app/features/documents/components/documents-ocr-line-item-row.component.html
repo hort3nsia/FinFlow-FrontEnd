@@ -1,5 +1,5 @@
 <div
-  class="grid min-w-[820px] grid-cols-[36px_minmax(220px,1fr)_72px_112px_112px_112px_60px] items-center gap-2 rounded-lg border border-slate-100 bg-white px-2 py-2 text-sm transition"
+  class="grid min-w-[940px] grid-cols-[36px_minmax(220px,1fr)_72px_112px_112px_112px_88px_112px_60px] items-center gap-2 rounded-lg border border-slate-100 bg-white px-2 py-2 text-sm transition"
   [ngClass]="{
     'opacity-60': dragging(),
     'bg-rose-50/40 border-rose-100': item().kind === 'discount',
@@ -71,6 +71,18 @@
 
   <!-- Final amount after any row-level discount. -->
   <div class="text-right text-sm font-semibold text-slate-900">{{ formatMoney(netAmount(item())) }}</div>
+
+  <input
+    type="number"
+    class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+    [value]="formatTaxRate(item().taxRate)"
+    aria-label="VAT trên dòng"
+    placeholder="% VAT"
+    step="0.01"
+    (input)="emitFieldChange('taxRate', $any($event.target).value)"
+  />
+
+  <div class="text-right text-sm font-semibold text-slate-900">{{ formatMoney(taxAmount(item())) }}</div>
 
   <!-- Actions -->
   <div class="flex items-center justify-end gap-0.5">

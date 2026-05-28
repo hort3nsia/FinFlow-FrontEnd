@@ -68,6 +68,14 @@ export class DocumentsManualLineItemRowComponent {
     return item.grossAmount - item.discountAmount;
   }
 
+  protected formatTaxRate(value: number | null | undefined): string {
+    return value === null || value === undefined ? '' : String(value);
+  }
+
+  protected taxAmount(item: LineItem): number {
+    return item.taxAmount ?? 0;
+  }
+
   protected formatSignedDiscount(value: number): string {
     return value === 0 ? '-0.00' : `-${Math.abs(value).toFixed(2)}`;
   }

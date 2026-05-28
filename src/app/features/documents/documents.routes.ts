@@ -1,8 +1,4 @@
 import { Routes } from '@angular/router';
-import { DocumentDetailPageComponent } from './pages/document-detail-page/document-detail-page.component';
-import { DocumentManualEntryPageComponent } from './pages/document-manual-entry-page/document-manual-entry-page.component';
-import { DocumentUploadPageComponent } from './pages/document-upload-page/document-upload-page.component';
-import { DocumentsListPageComponent } from './pages/documents-list-page/documents-list-page.component';
 
 export const documentsRoutes: Routes = [
   {
@@ -12,18 +8,37 @@ export const documentsRoutes: Routes = [
   },
   {
     path: 'list',
-    component: DocumentsListPageComponent,
+    loadComponent: () =>
+      import('./pages/documents-page.component').then(
+        (module) => module.DocumentsPageComponent,
+      ),
   },
   {
     path: 'upload',
-    component: DocumentUploadPageComponent,
+    loadComponent: () =>
+      import('./pages/documents-upload-page.component').then(
+        (module) => module.DocumentsUploadPageComponent,
+      ),
   },
   {
     path: 'manual',
-    component: DocumentManualEntryPageComponent,
+    loadComponent: () =>
+      import('./pages/documents-manual-page.component').then(
+        (module) => module.DocumentsManualPageComponent,
+      ),
+  },
+  {
+    path: 'submitted/:id',
+    loadComponent: () =>
+      import('./pages/documents-submitted-detail-page.component').then(
+        (module) => module.DocumentsSubmittedDetailPageComponent,
+      ),
   },
   {
     path: ':id',
-    component: DocumentDetailPageComponent,
+    loadComponent: () =>
+      import('./pages/documents-draft-detail-page.component').then(
+        (module) => module.DocumentsDraftDetailPageComponent,
+      ),
   },
 ];
