@@ -29,6 +29,9 @@ describe('DocumentsApiService', () => {
     const request = httpTesting.expectOne('/graphql');
     expect(request.request.body.query).toContain('uploadDocumentForReview');
     expect(request.request.body.query).toContain('taxLines');
+    expect(request.request.body.query).toContain('taxRate');
+    expect(request.request.body.query).toContain('taxableAmount');
+    expect(request.request.body.query).toContain('taxAmount');
     expect(request.request.body.variables).toEqual({
       input: {
         fileName: 'invoice.pdf',
@@ -60,6 +63,9 @@ describe('DocumentsApiService', () => {
               itemName: 'Cloud Compute Instance',
               quantity: 1,
               unitPrice: 850,
+              taxRate: 10,
+              taxableAmount: 850,
+              taxAmount: 85,
               total: 850,
             },
           ],
@@ -96,6 +102,9 @@ describe('DocumentsApiService', () => {
           itemName: 'Cloud Compute Instance',
           quantity: 1,
           unitPrice: 850,
+          taxRate: 10,
+          taxableAmount: 850,
+          taxAmount: 85,
           total: 850,
         },
       ],
@@ -170,6 +179,9 @@ describe('DocumentsApiService', () => {
     const request = httpTesting.expectOne('/graphql');
     expect(request.request.body.query).toContain('myDocumentDraft');
     expect(request.request.body.query).toContain('taxLines');
+    expect(request.request.body.query).toContain('taxRate');
+    expect(request.request.body.query).toContain('taxableAmount');
+    expect(request.request.body.query).toContain('taxAmount');
     expect(request.request.body.variables).toEqual({ documentId: 'draft-1' });
     request.flush({
       data: {
@@ -193,6 +205,9 @@ describe('DocumentsApiService', () => {
               itemName: 'Cloud Compute Instance',
               quantity: 1,
               unitPrice: 850,
+              taxRate: 10,
+              taxableAmount: 850,
+              taxAmount: 85,
               total: 850,
             },
           ],
@@ -228,6 +243,9 @@ describe('DocumentsApiService', () => {
           itemName: 'Cloud Compute Instance',
           quantity: 1,
           unitPrice: 850,
+          taxRate: 10,
+          taxableAmount: 850,
+          taxAmount: 85,
           total: 850,
         },
       ],
@@ -416,6 +434,9 @@ describe('DocumentsApiService', () => {
     const request = httpTesting.expectOne('/graphql');
     expect(request.request.body.query).toContain('mySubmittedDocument');
     expect(request.request.body.query).toContain('taxLines');
+    expect(request.request.body.query).toContain('taxRate');
+    expect(request.request.body.query).toContain('taxableAmount');
+    expect(request.request.body.query).toContain('taxAmount');
     expect(request.request.body.variables).toEqual({ documentId: 'submitted-1' });
     request.flush({
       data: {
@@ -442,6 +463,9 @@ describe('DocumentsApiService', () => {
               itemName: 'Office Chair Pro',
               quantity: 5,
               unitPrice: 600,
+              taxRate: 8,
+              taxableAmount: 3000,
+              taxAmount: 240,
               total: 3000,
             },
           ],
@@ -480,6 +504,9 @@ describe('DocumentsApiService', () => {
           itemName: 'Office Chair Pro',
           quantity: 5,
           unitPrice: 600,
+          taxRate: 8,
+          taxableAmount: 3000,
+          taxAmount: 240,
           total: 3000,
         },
       ],
@@ -863,6 +890,24 @@ describe('DocumentsApiService', () => {
       'Submitted history failed.',
       'Submitted detail failed.',
     ]);
+    httpTesting.verify();
+  });
+
+  it('handles null graphql responses without reading errors from null', () => {
+    const service = TestBed.inject(DocumentsApiService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    let message = '';
+
+    service.getMyDocumentDrafts().subscribe({
+      error: (error: Error) => {
+        message = error.message;
+      },
+    });
+
+    const request = httpTesting.expectOne('/graphql');
+    request.flush(null);
+
+    expect(message).toBe('MyDocumentDrafts response did not include draft data.');
     httpTesting.verify();
   });
 });

@@ -79,6 +79,9 @@ const isDocumentLineItem = (value: unknown): value is DocumentDraftDetail['lineI
     isString(value['itemName']) &&
     isNumber(value['quantity']) &&
     isNumber(value['unitPrice']) &&
+    (value['taxRate'] === undefined || value['taxRate'] === null || isNumber(value['taxRate'])) &&
+    (value['taxableAmount'] === undefined || isNumber(value['taxableAmount'])) &&
+    (value['taxAmount'] === undefined || isNumber(value['taxAmount'])) &&
     isNumber(value['total'])
   );
 };
@@ -141,6 +144,7 @@ const isDocumentDraftDetail = (value: unknown): value is DocumentDraftDetail => 
     isString(value['reviewedByStaff']) &&
     isString(value['confidenceLabel']) &&
     isBoolean(value['hasImage']) &&
+    (value['previewImageDataUrl'] === null || value['previewImageDataUrl'] === undefined || isString(value['previewImageDataUrl'])) &&
     Array.isArray(value['lineItems']) &&
     value['lineItems'].every((lineItem) => isDocumentLineItem(lineItem))
   );
@@ -205,7 +209,9 @@ export class DocumentsApiService {
 
           return drafts;
         }),
-        catchError((error: unknown) => this.handleError(error)),
+        catchError((error: unknown) =>
+          this.handleError(error, 'MyDocumentDrafts query did not include data.'),
+        ),
       );
   }
 
@@ -229,7 +235,9 @@ export class DocumentsApiService {
 
           return draft;
         }),
-        catchError((error: unknown) => this.handleError(error)),
+        catchError((error: unknown) =>
+          this.handleError(error, 'MyDocumentDraft query did not include data.'),
+        ),
       );
   }
 
@@ -253,7 +261,9 @@ export class DocumentsApiService {
 
           return submitted;
         }),
-        catchError((error: unknown) => this.handleError(error)),
+        catchError((error: unknown) =>
+          this.handleError(error, 'MySubmittedDocuments query did not include data.'),
+        ),
       );
   }
 
@@ -277,7 +287,9 @@ export class DocumentsApiService {
 
           return draft;
         }),
-        catchError((error: unknown) => this.handleError(error)),
+        catchError((error: unknown) =>
+          this.handleError(error, 'UploadDocumentForReview mutation did not include data.'),
+        ),
       );
   }
 
@@ -301,7 +313,9 @@ export class DocumentsApiService {
 
           return draft;
         }),
-        catchError((error: unknown) => this.handleError(error)),
+        catchError((error: unknown) =>
+          this.handleError(error, 'CreateManualDocumentDraft mutation did not include data.'),
+        ),
       );
   }
 
@@ -329,7 +343,9 @@ export class DocumentsApiService {
 
           return submitted;
         }),
-        catchError((error: unknown) => this.handleError(error)),
+        catchError((error: unknown) =>
+          this.handleError(error, 'SubmitReviewedDocument mutation did not include data.'),
+        ),
       );
   }
 
@@ -353,14 +369,20 @@ export class DocumentsApiService {
 
           return deleted;
         }),
-        catchError((error: unknown) => this.handleError(error)),
+        catchError((error: unknown) =>
+          this.handleError(error, 'DeleteDocumentDraft mutation did not include data.'),
+        ),
       );
   }
 
   private extractData<TData>(
-    response: QueryResultWithErrors<TData>,
+    response: QueryResultWithErrors<TData> | null | undefined,
     missingMessage: string,
   ): TData {
+    if (!response) {
+      throw new Error(missingMessage);
+    }
+
     const graphQlMessage =
       response.errors?.[0]?.message ??
       response.error?.errors?.[0]?.message ??
@@ -376,8 +398,16 @@ export class DocumentsApiService {
 
     return response.data;
   }
-  private normalizeError(error: unknown): Error {
+  private normalizeError(error: unknown, nullResponseMessage?: string): Error {
     if (error instanceof Error) {
+      if (
+        nullResponseMessage &&
+        error instanceof TypeError &&
+        error.message.includes("Cannot read properties of null (reading 'errors')")
+      ) {
+        return new Error(nullResponseMessage);
+      }
+
       return error;
     }
 
@@ -395,7 +425,7 @@ export class DocumentsApiService {
     return new Error('Unable to complete the request.');
   }
 
-  private handleError(error: unknown): Observable<never> {
-    return throwError(() => this.normalizeError(error));
+  private handleError(error: unknown, nullResponseMessage?: string): Observable<never> {
+    return throwError(() => this.normalizeError(error, nullResponseMessage));
   }
 }

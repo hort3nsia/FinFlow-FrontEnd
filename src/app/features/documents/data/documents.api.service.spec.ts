@@ -475,6 +475,19 @@ describe('DocumentsApiService', () => {
     });
   });
 
+  it('handles null apollo responses without reading errors from null', async () => {
+    const service = TestBed.inject(DocumentsApiService);
+    const apolloTesting = TestBed.inject(ApolloTestingController);
+    const resultPromise = firstValueFrom(service.getDrafts(0, 10));
+
+    const operation = apolloTesting.expectOne(MY_DOCUMENT_DRAFTS_QUERY);
+    operation.flush(null as never);
+
+    await expect(resultPromise).rejects.toMatchObject({
+      message: 'MyDocumentDrafts query did not include data.',
+    });
+  });
+
   it('rejects malformed draft detail payloads with a clear error', async () => {
     const service = TestBed.inject(DocumentsApiService);
     const apolloTesting = TestBed.inject(ApolloTestingController);

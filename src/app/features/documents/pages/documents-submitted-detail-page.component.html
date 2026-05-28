@@ -136,7 +136,7 @@
               </div>
               <div class="overflow-hidden rounded-lg border border-slate-200">
                 <div class="overflow-x-auto">
-                  <table class="min-w-[760px] text-sm">
+                  <table class="min-w-[920px] text-sm">
                   <thead class="bg-slate-50 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     <tr>
                       <th class="px-4 py-3">Mô tả</th>
@@ -144,6 +144,8 @@
                       <th class="px-4 py-3 text-right">Đơn giá</th>
                       <th class="px-4 py-3 text-right">Tạm tính</th>
                       <th class="px-4 py-3 text-right text-rose-500">Giảm giá</th>
+                      <th class="px-4 py-3 text-right">VAT</th>
+                      <th class="px-4 py-3 text-right">Tiền VAT</th>
                       <th class="px-4 py-3 text-right">Thành tiền</th>
                     </tr>
                   </thead>
@@ -159,6 +161,8 @@
                         <td class="px-4 py-3 text-right font-medium tabular-nums" [class]="hasLineDiscount(li) ? 'text-rose-600' : 'text-slate-300'">
                           {{ formatDiscount(lineDiscount(li)) }}
                         </td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ formatLineTaxRate(li) }}</td>
+                        <td class="px-4 py-3 text-right text-slate-600">{{ formatLineTaxAmount(li) }}</td>
                         <td class="px-4 py-3 text-right font-semibold text-slate-950">{{ formatAmount(lineNet(li)) }}</td>
                       </tr>
                     }

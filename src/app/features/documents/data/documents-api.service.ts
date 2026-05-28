@@ -16,6 +16,11 @@ export interface OcrLineItem {
   itemName: string;
   quantity: number;
   unitPrice: number;
+  discountPercent?: number | null;
+  discountAmount?: number;
+  taxRate?: number | null;
+  taxableAmount?: number;
+  taxAmount?: number;
   total: number;
 }
 
@@ -244,6 +249,11 @@ const UPLOAD_DOCUMENT_FOR_REVIEW_MUTATION = `
         itemName
         quantity
         unitPrice
+        discountPercent
+        discountAmount
+        taxRate
+        taxableAmount
+        taxAmount
         total
       }
       taxLines {
@@ -284,6 +294,11 @@ const UPLOAD_MANUAL_ATTACHMENT_DRAFT_MUTATION = `
         itemName
         quantity
         unitPrice
+        discountPercent
+        discountAmount
+        taxRate
+        taxableAmount
+        taxAmount
         total
       }
       taxLines {
@@ -341,6 +356,11 @@ const MY_DOCUMENT_DRAFT_QUERY = `
         itemName
         quantity
         unitPrice
+        discountPercent
+        discountAmount
+        taxRate
+        taxableAmount
+        taxAmount
         total
       }
       taxLines {
@@ -416,6 +436,9 @@ const MY_SUBMITTED_DOCUMENT_QUERY = `
         itemName
         quantity
         unitPrice
+        taxRate
+        taxableAmount
+        taxAmount
         total
       }
       taxLines {
@@ -466,7 +489,14 @@ export class DocumentsApiService {
   private readonly endpoint = inject(API_BASE_URL);
   private readonly utf8Decoder = new TextDecoder('utf-8', { fatal: true });
 
-  private extractData<TData>(response: GraphQlResponse<TData>, missingMessage: string): TData {
+  private extractData<TData>(
+    response: GraphQlResponse<TData> | null | undefined,
+    missingMessage: string,
+  ): TData {
+    if (!response) {
+      throw new Error(missingMessage);
+    }
+
     const graphQlMessage = extractGraphQlMessage(response.errors);
     if (graphQlMessage) {
       throw new Error(graphQlMessage);

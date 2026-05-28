@@ -118,20 +118,23 @@
               </button>
             </div>
 
-            <div class="hidden grid-cols-[36px_120px_1fr_70px_110px_110px_110px_60px] gap-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 xl:grid">
-              <span></span>
-              <span>Loại dòng</span>
-              <span>Mô tả khoản chi</span>
-              <span class="text-right">SL</span>
-              <span class="text-right">Tạm tính</span>
-              <span class="text-right text-rose-500">Giảm giá</span>
-              <span class="text-right">Thành tiền</span>
-              <span></span>
-            </div>
+            <div class="overflow-x-auto pb-1">
+              <div class="min-w-[940px] space-y-2">
+                <div class="grid grid-cols-[36px_minmax(220px,1fr)_72px_112px_112px_112px_88px_112px_60px] gap-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  <span></span>
+                  <span>Mô tả khoản chi</span>
+                  <span class="text-right">SL</span>
+                  <span class="text-right">Đơn giá</span>
+                  <span class="text-right text-rose-500">Giảm giá</span>
+                  <span class="text-right">Thành tiền</span>
+                  <span class="text-right">VAT %</span>
+                  <span class="text-right">Tiền VAT</span>
+                  <span></span>
+                </div>
 
-            <div class="space-y-2">
-              @for (item of lineItems(); track $index; let i = $index) {
-                <app-documents-manual-line-item-row
+                <div class="space-y-2">
+                  @for (item of lineItems(); track $index; let i = $index) {
+                    <app-documents-manual-line-item-row
                   [item]="item"
                   [index]="i"
                   [rowCount]="lineItems().length"
@@ -146,7 +149,9 @@
                   (rowDragOver)="allowLineItemDrop($event)"
                 ></app-documents-manual-line-item-row>
               }
+              </div>
             </div>
+          </div>
           </section>
 
           <section class="space-y-3 border-t border-slate-100 pt-5">

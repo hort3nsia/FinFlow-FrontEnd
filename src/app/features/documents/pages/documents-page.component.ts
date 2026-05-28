@@ -11,6 +11,7 @@ import {
 } from '../data/documents-api.service';
 import { CurrentWorkspaceFacade } from '../../dashboard/data/current-workspace.facade';
 import { CurrentSubscriptionFacade } from '../../subscription/data/current-subscription.facade';
+import { createPagination } from '../../../shared/utils/pagination';
 
 interface DocumentsTab {
   id: 'drafts' | 'submitted';
@@ -88,6 +89,10 @@ export class DocumentsPageComponent {
       return matchesSearch && matchesSource && matchesStatus && matchesCategory;
     });
   });
+
+  // ─── Pagination ─────────────────────────────────────────────────
+  protected readonly pagination = createPagination(this.rows, 20);
+
   protected readonly statusBanner = computed(() =>
     this.activeTab() === 'drafts'
       ? 'Giai đoạn 1/3: Tạo và hoàn thiện chứng từ chi phí. Khi sẵn sàng, hồ sơ sẽ chuyển sang hàng chờ phê duyệt.'
@@ -330,11 +335,11 @@ export class DocumentsPageComponent {
   }
 
   private formatAmount(value: number): string {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(value);
   }
 

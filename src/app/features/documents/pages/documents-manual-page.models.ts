@@ -6,4 +6,7 @@ export interface LineItem {
   quantity: number;
   grossAmount: number;
   discountAmount: number;
+  taxRate?: number | null;
+  taxableAmount?: number;
+  taxAmount?: number;
 }

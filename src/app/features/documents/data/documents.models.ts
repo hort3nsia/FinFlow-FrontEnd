@@ -2,6 +2,9 @@ export interface DocumentLineItem {
   itemName: string;
   quantity: number;
   unitPrice: number;
+  taxRate?: number | null;
+  taxableAmount?: number;
+  taxAmount?: number;
   total: number;
 }
 
@@ -53,6 +56,8 @@ export interface DocumentDraftDetail {
   reviewedByStaff: string;
   confidenceLabel: string;
   hasImage: boolean;
+  hasPreviewImage: boolean;
+  previewImageDataUrl: string | null;
   lineItems: DocumentLineItem[];
 }
 

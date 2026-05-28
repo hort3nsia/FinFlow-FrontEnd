@@ -1,5 +1,5 @@
 <div
-  class="grid grid-cols-[36px_120px_1fr_70px_110px_110px_110px_60px] items-center gap-2 rounded-lg border border-slate-100 bg-white px-2 py-2 text-sm transition"
+  class="grid min-w-[940px] grid-cols-[36px_minmax(220px,1fr)_72px_112px_112px_112px_88px_112px_60px] items-center gap-2 rounded-lg border border-slate-100 bg-white px-2 py-2 text-sm transition"
   [ngClass]="{
     'opacity-60': dragging(),
     'bg-rose-50/40 border-rose-100': item().type === 'discount',
@@ -15,22 +15,6 @@
     <span class="cursor-grab text-slate-400">⋮⋮</span>
     <span class="font-mono">{{ rowNumber }}</span>
   </div>
-
-  <select
-    class="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-    [value]="item().type"
-    (change)="emitFieldChange('type', $any($event.target).value)"
-  >
-    @for (opt of lineItemTypeOptions; track opt.value) {
-      <option [value]="opt.value">
-        @switch (opt.value) {
-          @case ('standard') { Tiêu chuẩn }
-          @case ('adjustment') { Điều chỉnh }
-          @case ('discount') { Giảm giá }
-        }
-      </option>
-    }
-  </select>
 
   <input
     type="text"
@@ -68,6 +52,19 @@
   />
 
   <div class="text-right text-sm font-semibold text-slate-900">{{ formatMoney(lineItemTotalValue(item())) }}</div>
+
+  <input
+    type="number"
+    class="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+    [value]="formatTaxRate(item().taxRate)"
+    placeholder="% VAT"
+    min="0"
+    max="100"
+    step="0.01"
+    (input)="emitFieldChange('taxRate', $any($event.target).value)"
+  />
+
+  <div class="text-right text-sm font-semibold text-slate-900">{{ formatMoney(taxAmount(item())) }}</div>
 
   <div class="flex items-center justify-end gap-0.5">
     <button

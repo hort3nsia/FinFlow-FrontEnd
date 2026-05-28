@@ -206,12 +206,7 @@ export class DocumentsDraftDetailPageComponent {
         maximumFractionDigits: fractionDigits,
       }).format(value);
     } catch {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(value);
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
     }
   }
 
@@ -241,6 +236,14 @@ export class DocumentsDraftDetailPageComponent {
     }
 
     return `-${this.formatAmount(value)}`;
+  }
+
+  protected formatLineTaxRate(item: OcrLineItem): string {
+    return item.taxRate === null || item.taxRate === undefined ? '—' : `${item.taxRate}%`;
+  }
+
+  protected formatLineTaxAmount(item: OcrLineItem): string {
+    return (item.taxAmount ?? 0) > 0 ? this.formatAmount(item.taxAmount ?? 0) : '—';
   }
 
   protected formatTaxLineLabel(line: DocumentTaxLine): string {

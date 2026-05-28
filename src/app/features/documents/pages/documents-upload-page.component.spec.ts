@@ -231,10 +231,55 @@ describe('DocumentsUploadPageComponent', () => {
             itemName: 'BẦU SAO',
             quantity: 2,
             unitPrice: 42000,
+            discountPercent: null,
+            discountAmount: 1000,
+            taxRate: null,
+            taxableAmount: 0,
+            taxAmount: 0,
             total: 83000,
           },
         ],
       }),
     );
+  });
+
+  it('hiển thị hóa đơn khuyến mãi tổng bằng không với giảm giá được suy ra từ OCR', async () => {
+    documentsApi.uploadDocumentForReview.mockReturnValue(
+      of({
+        documentId: 'draft-promotion',
+        originalFileName: 'promotion-receipt.jpg',
+        contentType: 'image/jpeg',
+        vendorName: 'BIG C DI AN',
+        reference: '025000112',
+        documentDate: '2018-10-02',
+        category: 'Groceries',
+        vendorTaxId: '3702058398',
+        subtotal: 17000,
+        vat: 0,
+        totalAmount: 0,
+        source: 'OCR',
+        reviewedByStaff: 'staff@finflow.test',
+        confidenceLabel: 'High',
+        processedPageCount: 1,
+        lineItems: [
+          {
+            itemName: 'SCU TT NUTI DAU 11',
+            quantity: 1,
+            unitPrice: 17000,
+            total: 17000,
+          },
+        ],
+        taxLines: [],
+      }),
+    );
+
+    const fixture = createComponent();
+    const component = fixture.componentInstance as any;
+    const file = new File(['image'], 'promotion-receipt.jpg', { type: 'image/jpeg' });
+
+    await component.handleSelectedFile(file);
+
+    expect(component.lineItems()[0].discountAmount).toBe(17000);
+    expect(component.totalAmount()).toBe(0);
   });
 });

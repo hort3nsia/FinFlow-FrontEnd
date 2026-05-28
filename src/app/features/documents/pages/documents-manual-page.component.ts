@@ -11,6 +11,7 @@ import { DocumentSplitWorkspaceComponent } from '../components/workspace/documen
 import { DocumentSurfaceCardComponent } from '../components/workspace/document-surface-card.component';
 import { DocumentUploadZoneComponent } from '../components/workspace/document-upload-zone.component';
 import { DocumentReviewDraftResponse, DocumentsApiService } from '../data/documents-api.service';
+import { EXPENSE_CATEGORIES } from '../data/expense-categories';
 import { LineItem, LineItemType } from './documents-manual-page.models';
 
 interface ManualField {
@@ -91,6 +92,9 @@ export class DocumentsManualPageComponent {
       quantity: 1,
       grossAmount: 0,
       discountAmount: 0,
+      taxRate: null,
+      taxableAmount: 0,
+      taxAmount: 0,
     },
   ]);
   protected readonly draggedLineItemIndex = signal<number | null>(null);
@@ -122,7 +126,14 @@ export class DocumentsManualPageComponent {
     this.lineItems().reduce((sum, item) => sum + item.discountAmount, 0),
   );
   protected readonly subtotal = computed(() => this.grossSubtotal() - this.totalDiscount());
-  protected readonly totalAmount = computed(() => this.subtotal() + this.taxAmount());
+  protected readonly hasLineVat = computed(() => this.lineItems().some((item) => this.hasLineTax(item)));
+  protected readonly groupedLineTaxLines = computed(() => this.groupLineTaxLines(this.lineItems()));
+  protected readonly effectiveTaxAmount = computed(() =>
+    this.hasLineVat()
+      ? this.groupedLineTaxLines().reduce((sum, line) => sum + line.taxAmount, 0)
+      : this.taxAmount(),
+  );
+  protected readonly totalAmount = computed(() => this.subtotal() + this.effectiveTaxAmount());
   protected readonly prettyInvoiceDate = computed(() =>
     this.formatDisplayDate(this.formState().invoiceDate),
   );
@@ -177,6 +188,9 @@ export class DocumentsManualPageComponent {
         quantity: 1,
         grossAmount: 0,
         discountAmount: 0,
+        taxRate: null,
+        taxableAmount: 0,
+        taxAmount: 0,
       },
     ]);
   }
@@ -206,6 +220,15 @@ export class DocumentsManualPageComponent {
           return { ...item, type: value as LineItemType };
         }
 
+        if (field === 'taxRate' && !value.trim()) {
+          return {
+            ...item,
+            taxRate: null,
+            taxableAmount: 0,
+            taxAmount: 0,
+          };
+        }
+
         const normalizedNumber = Number(value);
         if (!Number.isFinite(normalizedNumber)) {
           return {
@@ -221,9 +244,16 @@ export class DocumentsManualPageComponent {
           };
         }
 
-        return {
+        const nextItem = {
           ...item,
-          [field]: Math.max(0, normalizedNumber),
+          [field]: field === 'taxRate'
+            ? Math.min(100, Math.max(0, normalizedNumber))
+            : Math.max(0, normalizedNumber),
+        };
+
+        return {
+          ...nextItem,
+          ...this.calculateLineTaxFields(nextItem),
         };
       }),
     );
@@ -416,6 +446,9 @@ export class DocumentsManualPageComponent {
       quantity: item.quantity,
       unitPrice: item.quantity > 0 ? item.grossAmount / item.quantity : item.grossAmount,
       total: item.grossAmount - item.discountAmount,
+      taxRate: item.taxRate ?? null,
+      taxableAmount: item.taxableAmount ?? 0,
+      taxAmount: item.taxAmount ?? 0,
     }));
 
     return {
@@ -425,7 +458,7 @@ export class DocumentsManualPageComponent {
       category: state.category,
       vendorTaxId: state.taxId,
       subtotal: this.subtotal(),
-      vat: this.taxAmount(),
+      vat: this.effectiveTaxAmount(),
       totalAmount: this.totalAmount(),
       taxLines: this.buildTaxLines(),
       lineItems,
@@ -453,22 +486,7 @@ export class DocumentsManualPageComponent {
   }
 
   private loadCategories(): void {
-    this.documentsApi
-      .getMyCategories()
-      .pipe(takeUntilDestroyed())
-      .subscribe({
-        next: (categories) => {
-          this.categoryOptions.set(
-            categories
-              .filter((category) => category.isActive)
-              .sort((left, right) => left.displayOrder - right.displayOrder)
-              .map((category) => category.name),
-          );
-        },
-        error: () => {
-          this.categoryOptions.set([]);
-        },
-      });
+    this.categoryOptions.set([...EXPENSE_CATEGORIES]);
   }
 
   private applyDraft(draft: DocumentReviewDraftResponse): void {
@@ -492,6 +510,9 @@ export class DocumentsManualPageComponent {
             quantity: item.quantity,
             grossAmount: item.total,
             discountAmount: 0,
+            taxRate: item.taxRate ?? null,
+            taxableAmount: item.taxableAmount ?? item.total,
+            taxAmount: item.taxAmount ?? 0,
           }))
         : [
             {
@@ -500,6 +521,9 @@ export class DocumentsManualPageComponent {
               quantity: 1,
               grossAmount: 0,
               discountAmount: 0,
+              taxRate: null,
+              taxableAmount: 0,
+              taxAmount: 0,
             },
           ],
     );
@@ -509,6 +533,11 @@ export class DocumentsManualPageComponent {
   }
 
   private buildTaxLines() {
+    const groupedTaxLines = this.groupedLineTaxLines();
+    if (groupedTaxLines.length) {
+      return groupedTaxLines;
+    }
+
     const taxAmount = this.taxAmount();
     if (taxAmount <= 0 && this.taxRate() === null) {
       return [];
@@ -533,6 +562,54 @@ export class DocumentsManualPageComponent {
 
   private roundMoney(value: number): number {
     return Math.round(value * 100) / 100;
+  }
+
+  private calculateLineTaxFields(item: LineItem): Pick<LineItem, 'taxableAmount' | 'taxAmount'> {
+    const taxRate = item.taxRate ?? null;
+    if (taxRate === null) {
+      return {
+        taxableAmount: 0,
+        taxAmount: 0,
+      };
+    }
+
+    const taxableAmount = this.roundMoney(item.grossAmount - item.discountAmount);
+
+    return {
+      taxableAmount,
+      taxAmount: this.roundMoney((taxableAmount * taxRate) / 100),
+    };
+  }
+
+  private groupLineTaxLines(items: LineItem[]) {
+    const groups = new Map<string, { taxType: string; rate: number | null; taxableAmount: number; taxAmount: number }>();
+
+    for (const item of items) {
+      if (!this.hasLineTax(item)) {
+        continue;
+      }
+
+      const taxRate = item.taxRate ?? null;
+      const taxableAmount = item.taxableAmount ?? 0;
+      const taxAmount = item.taxAmount ?? 0;
+      const key = taxRate === null ? 'null' : taxRate.toFixed(2);
+      const current = groups.get(key) ?? {
+        taxType: 'VAT',
+        rate: taxRate,
+        taxableAmount: 0,
+        taxAmount: 0,
+      };
+
+      current.taxableAmount = this.roundMoney(current.taxableAmount + taxableAmount);
+      current.taxAmount = this.roundMoney(current.taxAmount + taxAmount);
+      groups.set(key, current);
+    }
+
+    return Array.from(groups.values()).filter((line) => line.taxAmount > 0 || line.rate !== null);
+  }
+
+  private hasLineTax(item: Pick<LineItem, 'taxRate' | 'taxableAmount' | 'taxAmount'>): boolean {
+    return (item.taxRate ?? null) !== null || (item.taxableAmount ?? 0) > 0 || (item.taxAmount ?? 0) > 0;
   }
 
   private async resolveDraftForSubmit(file: File | null): Promise<{
