@@ -71,7 +71,6 @@ describe('DashboardPageComponent', () => {
   const reportingApi = {
     expenseSummary: vi.fn(),
     monthlyTrend: vi.fn(),
-    topVendors: vi.fn(),
     pendingPaymentQueue: vi.fn(),
     budgetUtilization: vi.fn(),
   };
@@ -94,7 +93,6 @@ describe('DashboardPageComponent', () => {
     currentWorkspaceFacade.refresh.mockReset();
     reportingApi.expenseSummary.mockReset();
     reportingApi.monthlyTrend.mockReset();
-    reportingApi.topVendors.mockReset();
     reportingApi.pendingPaymentQueue.mockReset();
     reportingApi.budgetUtilization.mockReset();
     approvalsApi.getApprovalQueue.mockReset();
@@ -113,7 +111,6 @@ describe('DashboardPageComponent', () => {
       }),
     );
     reportingApi.monthlyTrend.mockReturnValue(of([]));
-    reportingApi.topVendors.mockReturnValue(of([]));
     reportingApi.pendingPaymentQueue.mockReturnValue(of([]));
     reportingApi.budgetUtilization.mockReturnValue(of([]));
     notificationsApi.getMyNotifications.mockReturnValue(of([]));

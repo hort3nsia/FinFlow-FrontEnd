@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { NotificationsPanelComponent } from '../../features/notifications/components/notifications-panel.component';
 import { NotificationsApiService } from '../../features/notifications/data/notifications-api.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -6,9 +6,12 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { TenantBrandingDocumentService } from '../../core/branding/tenant-branding-document.service';
 import { CurrentWorkspaceFacade } from '../../features/dashboard/data/current-workspace.facade';
+import { TenantBrandingFacade } from '../../features/settings/data/tenant-branding.facade';
 import { CurrentSubscriptionFacade } from '../../features/subscription/data/current-subscription.facade';
 import { filter } from 'rxjs';
+import { normalizeWorkspaceRole, type WorkspaceRole } from '../../core/guards/role.guard';
 
 interface ShellNavItem {
   label: string;
@@ -17,7 +20,6 @@ interface ShellNavItem {
     | 'documents'
     | 'approvals'
     | 'members'
-    | 'vendors'
     | 'budgets'
     | 'payments'
     | 'departments'
@@ -47,12 +49,15 @@ export class AppShellComponent implements OnInit {
   private readonly notificationsApi = inject(NotificationsApiService);
   private readonly currentWorkspaceFacade = inject(CurrentWorkspaceFacade);
   private readonly currentSubscriptionFacade = inject(CurrentSubscriptionFacade);
+  private readonly tenantBrandingFacade = inject(TenantBrandingFacade);
+  private readonly tenantBrandingDocument = inject(TenantBrandingDocumentService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly userEmail = this.authService.userEmail;
   protected readonly workspaceState = this.currentWorkspaceFacade.state;
   protected readonly subscriptionState = this.currentSubscriptionFacade.state;
+  protected readonly brandingState = this.tenantBrandingFacade.state;
   protected readonly currentUrl = signal(this.router.url);
   protected readonly isSidebarOpen = signal(false);
   protected readonly workspaceName = computed(() => {
@@ -84,10 +89,19 @@ export class AppShellComponent implements OnInit {
     return role.includes('superadmin');
   });
   protected readonly workspaceBrandName = computed(() => {
+    const brandedName = this.brandingState().branding?.companyDisplayName?.trim();
+    if (brandedName) return brandedName;
+
     const name = this.workspaceName().trim();
     return name || 'Workspace';
   });
   protected readonly workspaceSubtitle = computed(() => 'FinFlow Workspace');
+  protected readonly workspaceLogoUrl = computed(
+    () => this.brandingState().branding?.logoUrl?.trim() || null,
+  );
+  protected readonly workspaceBrandColor = computed(
+    () => this.brandingState().branding?.primaryColor?.trim() || null,
+  );
   protected readonly userDisplayName = computed(() => {
     const email = this.userEmail()?.trim();
     if (!email) {
@@ -133,7 +147,6 @@ export class AppShellComponent implements OnInit {
   ];
   protected readonly managementItems: ShellNavItem[] = [
     { label: 'Thành viên', icon: 'members', route: '/app/members' },
-    { label: 'Nhà cung cấp', icon: 'vendors', route: '/app/vendors' },
     { label: 'Ngân sách', icon: 'budgets', route: '/app/budgets' },
     { label: 'Phòng ban', icon: 'departments', route: '/app/departments' },
     { label: 'Tổng quan', icon: 'dashboard', route: '/app/dashboard' },
@@ -148,35 +161,67 @@ export class AppShellComponent implements OnInit {
   protected readonly canUseChatbot = computed(
     () => this.subscriptionState().subscription?.entitlements.chatbotEnabled ?? false,
   );
-  protected readonly visibleExpenseWorkflowItems = computed(() =>
-    this.expenseWorkflowItems.filter((item) => {
-      return item.icon === 'documents' || item.icon === 'approvals' || item.icon === 'payments';
-    }),
-  );
-  protected readonly visibleManagementItems = computed(() =>
-    this.managementItems.filter((item) => {
-      if (
-        item.icon === 'members' ||
-        item.icon === 'vendors' ||
-        item.icon === 'budgets' ||
-        item.icon === 'departments' ||
-        item.icon === 'subscription' ||
-        item.icon === 'dashboard'
-      ) {
+  protected readonly currentRole = computed<WorkspaceRole | null>(() => {
+    // Try facade first (most up-to-date after refresh), then fall back to auth session.
+    const facadeRole = this.workspaceState().workspace?.role;
+    if (facadeRole) return normalizeWorkspaceRole(facadeRole);
+    return normalizeWorkspaceRole(this.authService.workspaceSession()?.role);
+  });
+
+  protected readonly canAccessSettings = computed(() => {
+    const role = this.currentRole();
+    return role === 'TenantAdmin' || role === 'SuperAdmin';
+  });
+
+  protected readonly visibleExpenseWorkflowItems = computed(() => {
+    const role = this.currentRole();
+    return this.expenseWorkflowItems.filter((item) => {
+      // Documents: visible to all roles.
+      if (item.icon === 'documents') return true;
+      // Approvals: TenantAdmin + Manager only.
+      if (item.icon === 'approvals') {
+        return role === 'TenantAdmin' || role === 'Manager' || role === 'SuperAdmin';
+      }
+      // Payments: TenantAdmin + Accountant only.
+      if (item.icon === 'payments') {
+        return role === 'TenantAdmin' || role === 'Accountant' || role === 'SuperAdmin';
+      }
+      return true;
+    });
+  });
+  protected readonly visibleManagementItems = computed(() => {
+    const role = this.currentRole();
+    return this.managementItems.filter((item) => {
+      // Members / Departments / Budgets: TenantAdmin, Manager, Accountant.
+      if (item.icon === 'members' || item.icon === 'departments' || item.icon === 'budgets') {
+        return (
+          role === 'TenantAdmin' ||
+          role === 'Manager' ||
+          role === 'Accountant' ||
+          role === 'SuperAdmin'
+        );
+      }
+      // Dashboard + Subscription: visible to all roles.
+      if (item.icon === 'dashboard' || item.icon === 'subscription') {
         return true;
       }
-
+      // Chat: requires chatbot entitlement (any role).
       if (item.icon === 'chat') {
         return this.canUseChatbot();
       }
-
+      // Reports: requires paid plan AND TenantAdmin/Manager/Accountant.
       if (item.icon === 'reports') {
-        return this.hasPaidWorkspacePlan();
+        if (!this.hasPaidWorkspacePlan()) return false;
+        return (
+          role === 'TenantAdmin' ||
+          role === 'Manager' ||
+          role === 'Accountant' ||
+          role === 'SuperAdmin'
+        );
       }
-
       return this.hasPaidWorkspacePlan();
-    }),
-  );
+    });
+  });
   protected readonly shellBreadcrumbs = computed<ShellBreadcrumb[]>(() => {
     const url = this.currentUrl().split('?')[0];
 
@@ -232,10 +277,6 @@ export class AppShellComponent implements OnInit {
       return [{ label: 'Ngân sách' }, { label: 'Quản lý ngân sách' }];
     }
 
-    if (url.startsWith('/app/vendors')) {
-      return [{ label: 'Nhà cung cấp' }, { label: 'Danh bạ nhà cung cấp' }];
-    }
-
     if (url.startsWith('/app/subscription')) {
       return [{ label: 'Gói & Hạn mức' }, { label: 'Quản lý gói' }];
     }
@@ -267,8 +308,17 @@ export class AppShellComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      this.currentSubscriptionFacade.ensureLoaded(
-        this.workspaceState().workspace?.tenantId ?? null,
+      const tenantId = this.workspaceState().workspace?.tenantId ?? null;
+      untracked(() => {
+        this.currentSubscriptionFacade.ensureLoaded(tenantId);
+        this.tenantBrandingFacade.ensureLoaded(tenantId);
+      });
+    });
+
+    effect(() => {
+      this.tenantBrandingDocument.apply(
+        this.brandingState().branding,
+        this.workspaceName(),
       );
     });
   }
@@ -294,6 +344,11 @@ export class AppShellComponent implements OnInit {
 
   protected closeSidebar(): void {
     this.isSidebarOpen.set(false);
+  }
+
+  protected onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.style.display = 'none';
   }
 
   protected readonly isNotificationsPanelOpen = signal(false);

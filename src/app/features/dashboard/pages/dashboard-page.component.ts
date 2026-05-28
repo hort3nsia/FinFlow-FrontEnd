@@ -7,6 +7,7 @@
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -16,11 +17,11 @@ import { catchError } from 'rxjs/operators';
 import { CurrentWorkspaceFacade } from '../data/current-workspace.facade';
 import {
   BudgetUtilizationResponse,
+  ExpenseSummaryGroup,
   ExpenseSummaryResponse,
   MonthlyTrendPointResponse,
   PendingPaymentItemResponse,
   ReportingApiService,
-  TopVendorResponse,
 } from '../../reporting/data/reporting-api.service';
 import {
   NotificationDto,
@@ -80,7 +81,6 @@ export class DashboardPageComponent implements OnInit {
   protected readonly loadWarnings = signal<string[]>([]);
   protected readonly summary = signal<ExpenseSummaryResponse | null>(null);
   protected readonly trend = signal<MonthlyTrendPointResponse[]>([]);
-  protected readonly topVendors = signal<TopVendorResponse[]>([]);
   protected readonly approvalQueue = signal<ApprovalQueuePageResponse | null>(null);
   protected readonly pending = signal<PendingPaymentItemResponse[]>([]);
   protected readonly budgets = signal<BudgetUtilizationResponse[]>([]);
@@ -241,13 +241,20 @@ export class DashboardPageComponent implements OnInit {
   protected readonly topBudgets = computed(() =>
     [...this.budgets()].sort((a, b) => b.utilizationPercent - a.utilizationPercent).slice(0, 5),
   );
+  protected readonly topDepartments = computed<ExpenseSummaryGroup[]>(() =>
+    [...(this.summary()?.byDepartment ?? [])]
+      .sort((left, right) => right.amountInBaseCurrency - left.amountInBaseCurrency)
+      .slice(0, 5),
+  );
 
   constructor() {
     effect(() => {
       const tenantId = this.state().workspace?.tenantId;
       if (tenantId) {
-        this.currentSubscriptionFacade.ensureLoaded(tenantId);
-        this.loadAll();
+        untracked(() => {
+          this.currentSubscriptionFacade.ensureLoaded(tenantId);
+          this.loadAll();
+        });
       }
     });
   }
@@ -286,16 +293,6 @@ export class DashboardPageComponent implements OnInit {
               }),
             )
         : of([] as MonthlyTrendPointResponse[]),
-      vendors: this.canViewReports()
-        ? this.reportingApi
-            .topVendors(fromDate, toDate, 5)
-            .pipe(
-              catchError(() => {
-                this.addLoadWarning('Không tải được top nhà cung cấp.');
-                return of([] as TopVendorResponse[]);
-              }),
-            )
-        : of([] as TopVendorResponse[]),
       approvals: this.canViewApprovalQueue()
         ? this.approvalsApi.getApprovalQueue('PENDING', null, 1, 5).pipe(
             catchError(() => {
@@ -338,7 +335,6 @@ export class DashboardPageComponent implements OnInit {
         next: (data) => {
           this.summary.set(data.summary);
           this.trend.set(data.trend);
-          this.topVendors.set(data.vendors);
           this.approvalQueue.set(data.approvals);
           this.pending.set(data.pending);
           this.budgets.set(data.budgets);

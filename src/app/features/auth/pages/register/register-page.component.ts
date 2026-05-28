@@ -4,10 +4,11 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { AuthLayoutComponent } from '../../components/auth-layout.component';
 
 @Component({
   selector: 'app-register-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, AuthLayoutComponent],
   templateUrl: './register-page.component.html',
   styleUrl: './register-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

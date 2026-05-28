@@ -5,6 +5,7 @@ import { guestGuard } from './core/guards/guest.guard';
 import { noWorkspaceGuard, workspaceGuard } from './core/guards/workspace.guard';
 import { superAdminGuard } from './core/guards/superadmin.guard';
 import { chatbotGuard, paidPlanGuard } from './core/guards/subscription-feature.guard';
+import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -103,6 +104,7 @@ export const routes: Routes = [
       },
       {
         path: 'approvals',
+        canActivate: [roleGuard(['TenantAdmin', 'Manager'])],
         loadComponent: () =>
           import('./features/approvals/pages/approvals-page.component').then(
             (module) => module.ApprovalsPageComponent,
@@ -110,6 +112,7 @@ export const routes: Routes = [
       },
       {
         path: 'payments',
+        canActivate: [roleGuard(['TenantAdmin', 'Accountant'])],
         loadComponent: () =>
           import('./features/payments/pages/payments-page.component').then(
             (module) => module.PaymentsPageComponent,
@@ -117,6 +120,7 @@ export const routes: Routes = [
       },
       {
         path: 'members',
+        canActivate: [roleGuard(['TenantAdmin', 'Manager', 'Accountant'])],
         loadComponent: () =>
           import('./features/members/pages/members-page.component').then(
             (module) => module.MembersPageComponent,
@@ -124,6 +128,7 @@ export const routes: Routes = [
       },
       {
         path: 'departments',
+        canActivate: [roleGuard(['TenantAdmin', 'Manager', 'Accountant'])],
         loadComponent: () =>
           import('./features/departments/pages/departments-page.component').then(
             (module) => module.DepartmentsPageComponent,
@@ -131,6 +136,7 @@ export const routes: Routes = [
       },
       {
         path: 'budgets',
+        canActivate: [roleGuard(['TenantAdmin', 'Manager', 'Accountant'])],
         loadComponent: () =>
           import('./features/budgets/pages/budgets-page.component').then(
             (module) => module.BudgetsPageComponent,
@@ -138,10 +144,8 @@ export const routes: Routes = [
       },
       {
         path: 'vendors',
-        loadComponent: () =>
-          import('./features/vendors/pages/vendors-page.component').then(
-            (module) => module.VendorsPageComponent,
-          ),
+        pathMatch: 'full',
+        redirectTo: 'dashboard',
       },
       {
         path: 'subscription',
@@ -152,7 +156,7 @@ export const routes: Routes = [
       },
       {
         path: 'reports',
-        canActivate: [paidPlanGuard],
+        canActivate: [paidPlanGuard, roleGuard(['TenantAdmin', 'Manager', 'Accountant'])],
         loadComponent: () =>
           import('./features/reporting/pages/reporting-page.component').then(
             (module) => module.ReportingPageComponent,
@@ -167,9 +171,17 @@ export const routes: Routes = [
       },
       {
         path: 'settings',
+        canActivate: [roleGuard(['TenantAdmin'])],
         loadComponent: () =>
           import('./features/settings/pages/settings-page.component').then(
             (module) => module.SettingsPageComponent,
+          ),
+      },
+      {
+        path: 'forbidden',
+        loadComponent: () =>
+          import('./features/forbidden/pages/forbidden-page.component').then(
+            (module) => module.ForbiddenPageComponent,
           ),
       },
       {

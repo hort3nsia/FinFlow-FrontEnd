@@ -1,76 +1,93 @@
-<div class="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
-  <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
-    <div class="inline-flex items-center gap-2.5">
-      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-          <path d="M4.5 9.25 12 5l7.5 4.25L12 13.5 4.5 9.25Z"></path>
-          <path d="M4.5 13.1 12 17.35l7.5-4.25"></path>
-          <path d="M4.5 16.95 12 21.2l7.5-4.25"></path>
-        </svg>
-      </span>
-      <span class="text-base font-semibold text-slate-900">FinFlow</span>
+<div class="min-h-screen bg-slate-50">
+  <!-- Topbar -->
+  <header class="sticky top-0 z-40 border-b border-gray-200 bg-white">
+    <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex h-[18px] w-[18px] items-center justify-center rounded-md bg-blue-600 text-white">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" class="h-[10px] w-[10px]">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="14 2 14 8 20 8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="text-[15px] font-bold tracking-tight text-slate-900">FinFlow</span>
+      </div>
     </div>
+  </header>
 
-    <h1 class="mt-6 text-2xl font-semibold text-slate-900">Tạo Workspace cho tổ chức</h1>
-    <p class="mt-2 text-sm text-slate-500">
-      Đặt tên hiển thị, mã định danh và đơn vị tiền tệ làm việc chính.
-    </p>
+  <!-- Body -->
+  <main class="px-4 pb-16">
+    <div class="mx-auto max-w-lg pt-10">
+      <a routerLink="/workspaces" class="mb-6 inline-flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-slate-700">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Quay lại chọn workspace
+      </a>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="mt-6 space-y-4">
-      <label class="block">
-        <span class="mb-1 block text-sm font-medium text-slate-700">Tên hiển thị</span>
-        <input
-          type="text"
-          formControlName="name"
-          placeholder="VD: Công ty TNHH FinFlow"
-          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-        />
-        @if (form.controls.name.invalid && form.controls.name.touched) {
-          <span class="mt-1 block text-xs text-rose-600">Tên cần ít nhất 2 ký tự.</span>
-        }
-      </label>
-
-      <label class="block">
-        <span class="mb-1 block text-sm font-medium text-slate-700">Mã định danh (URL slug)</span>
-        <input
-          type="text"
-          formControlName="tenantCode"
-          placeholder="finflow-vn"
-          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-        />
-        <span class="mt-1 block text-[11px] text-slate-500">Chỉ chữ thường, số và dấu gạch ngang.</span>
-        @if (form.controls.tenantCode.invalid && form.controls.tenantCode.touched) {
-          <span class="mt-1 block text-xs text-rose-600">Mã không hợp lệ.</span>
-        }
-      </label>
-
-      <label class="block">
-        <span class="mb-1 block text-sm font-medium text-slate-700">Đơn vị tiền tệ chính</span>
-        <select
-          formControlName="currency"
-          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-        >
-          <option value="VND">VND - Đồng Việt Nam</option>
-          <option value="USD">USD - US Dollar</option>
-          <option value="EUR">EUR - Euro</option>
-          <option value="JPY">JPY - Japanese Yen</option>
-          <option value="SGD">SGD - Singapore Dollar</option>
-        </select>
-      </label>
+      <header class="mb-6">
+        <h1 class="text-[24px] font-bold leading-tight text-slate-900">Tạo workspace mới</h1>
+        <p class="mt-1 text-[14px] text-slate-500">
+          Workspace là không gian làm việc riêng cho tổ chức của bạn.
+        </p>
+      </header>
 
       @if (errorMessage()) {
-        <div class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-          {{ errorMessage() }}
+        <div class="mb-4 flex items-start gap-2 rounded-r-lg border-l-4 border-red-500 bg-red-50 px-4 py-3" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-red-500"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span class="text-[13px] leading-relaxed text-red-700">{{ errorMessage() }}</span>
         </div>
       }
 
-      <button
-        type="submit"
-        class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-        [disabled]="isSubmitting()"
-      >
-        @if (isSubmitting()) { Đang tạo workspace… } @else { Tạo workspace }
-      </button>
-    </form>
-  </div>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-5 rounded-xl border border-gray-200 bg-white p-6 md:p-8">
+        <!-- Name -->
+        <div class="w-full">
+          <label for="ws-name" class="mb-1.5 block text-[13px] font-medium text-slate-700">Tên hiển thị *</label>
+          <input id="ws-name" type="text" formControlName="name" placeholder="Meridian Corp"
+            class="h-[42px] w-full rounded-lg border border-gray-300 bg-white px-3 text-[14px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100"
+            [class.border-red-400]="form.controls.name.invalid && form.controls.name.touched" />
+          @if (form.controls.name.invalid && form.controls.name.touched) {
+            <p class="mt-1 text-[12px] text-red-600">Tên hiển thị phải có tối thiểu 2 ký tự</p>
+          }
+        </div>
+
+        <!-- Tenant Code -->
+        <div class="w-full">
+          <label for="ws-code" class="mb-1.5 block text-[13px] font-medium text-slate-700">Mã định danh / URL slug *</label>
+          <input id="ws-code" type="text" formControlName="tenantCode" placeholder="meridian-corp"
+            class="h-[42px] w-full rounded-lg border border-gray-300 bg-white px-3 font-mono text-[14px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100"
+            [class.border-red-400]="form.controls.tenantCode.invalid && form.controls.tenantCode.touched" />
+          @if (form.controls.tenantCode.invalid && form.controls.tenantCode.touched) {
+            <p class="mt-1 text-[12px] text-red-600">Chỉ chứa chữ thường, số và gạch nối</p>
+          } @else {
+            <p class="mt-1 text-[11px] text-slate-400">Chỉ chữ thường, số và gạch nối. Dùng trong URL nội bộ.</p>
+          }
+        </div>
+
+        <!-- Currency -->
+        <div class="w-full">
+          <label for="ws-currency" class="mb-1.5 block text-[13px] font-medium text-slate-700">Đơn vị tiền tệ chính *</label>
+          <div class="relative">
+            <select id="ws-currency" formControlName="currency"
+              class="h-[42px] w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 pr-9 text-[14px] text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100">
+              <option value="VND">VND — Đồng Việt Nam</option>
+              <option value="USD">USD — US Dollar</option>
+              <option value="EUR">EUR — Euro</option>
+              <option value="JPY">JPY — Japanese Yen</option>
+              <option value="SGD">SGD — Singapore Dollar</option>
+            </select>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <p class="mt-1 text-[11px] text-slate-400">Có thể thêm ngoại tệ khác sau khi tạo.</p>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit"
+          class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-70"
+          [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-4 w-4 animate-spin"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
+            <span>Đang tạo workspace...</span>
+          } @else { Tạo workspace }
+        </button>
+      </form>
+    </div>
+  </main>
 </div>

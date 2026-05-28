@@ -29,6 +29,7 @@ const CURRENT_WORKSPACE_QUERY = `
       tenantId
       tenantCode
       tenantName
+      departmentId
     }
   }
 `;
@@ -49,7 +50,8 @@ const isCurrentWorkspace = (value: unknown): value is CurrentWorkspace => {
     typeof candidate['role'] === 'string' &&
     typeof candidate['tenantId'] === 'string' &&
     typeof candidate['tenantCode'] === 'string' &&
-    typeof candidate['tenantName'] === 'string'
+    typeof candidate['tenantName'] === 'string' &&
+    (candidate['departmentId'] === null || typeof candidate['departmentId'] === 'string')
   );
 };
 

@@ -1,155 +1,92 @@
-<div class="grid min-h-screen lg:grid-cols-2">
-  <!-- Left side: form -->
-  <section class="flex items-center justify-center bg-white px-6 py-12 lg:px-16">
-    <div class="w-full max-w-md">
-      <a routerLink="/" class="inline-flex items-center gap-2.5">
-        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-            <path d="M4.5 9.25 12 5l7.5 4.25L12 13.5 4.5 9.25Z"></path>
-            <path d="M4.5 13.1 12 17.35l7.5-4.25"></path>
-            <path d="M4.5 16.95 12 21.2l7.5-4.25"></path>
-          </svg>
-        </span>
-        <span class="text-base font-semibold text-slate-900">FinFlow</span>
-      </a>
+<app-auth-layout>
+  <header class="mb-8">
+    <h1 class="text-[24px] font-bold leading-tight text-slate-900">Chào mừng trở lại</h1>
+    <p class="mt-1 text-[14px] text-slate-500">Đăng nhập vào tài khoản của bạn</p>
+  </header>
 
-      <h1 class="mt-10 text-3xl font-semibold text-slate-900">Đăng nhập</h1>
-      <p class="mt-2 text-sm text-slate-500">
-        Tiếp tục quản lý chi phí và tài chính cho tổ chức của bạn.
-      </p>
-
-      <form [formGroup]="form" (ngSubmit)="submit()" class="mt-8 space-y-4">
-        <label class="block">
-          <span class="mb-1 block text-sm font-medium text-slate-700">Email</span>
-          <input
-            type="email"
-            formControlName="email"
-            autocomplete="email"
-            placeholder="ban@congty.vn"
-            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-          />
-          @if (form.controls.email.invalid && form.controls.email.touched) {
-            <span class="mt-1 block text-xs text-rose-600">
-              @if (form.controls.email.errors?.['required']) { Vui lòng nhập email. }
-              @else { Email không hợp lệ. }
-            </span>
-          }
-        </label>
-
-        <label class="block">
-          <div class="mb-1 flex items-center justify-between">
-            <span class="text-sm font-medium text-slate-700">Mật khẩu</span>
-            <a routerLink="/forgot-password" class="text-xs font-medium text-indigo-600 hover:underline">
-              Quên mật khẩu?
-            </a>
-          </div>
-          <div class="relative">
-            <input
-              [type]="isPasswordVisible() ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="current-password"
-              placeholder="••••••••"
-              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 pr-10 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-            />
-            <button
-              type="button"
-              class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
-              (click)="togglePasswordVisibility()"
-              [attr.aria-label]="isPasswordVisible() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
-            >
-              @if (isPasswordVisible()) {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
-                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
-                  <path d="m1 1 22 22"></path>
-                </svg>
-              } @else {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              }
-            </button>
-          </div>
-          @if (form.controls.password.invalid && form.controls.password.touched) {
-            <span class="mt-1 block text-xs text-rose-600">Vui lòng nhập mật khẩu.</span>
-          }
-        </label>
-
-        @if (errorMessage()) {
-          <div class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-            {{ errorMessage() }}
-          </div>
-        }
-
-        <button
-          type="submit"
-          class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-          [disabled]="isSubmitting()"
-        >
-          @if (isSubmitting()) { Đang đăng nhập… } @else { Đăng nhập }
-        </button>
-      </form>
-
-      <p class="mt-6 text-center text-sm text-slate-600">
-        Chưa có tài khoản?
-        <a routerLink="/register" class="font-medium text-indigo-600 hover:underline">Đăng ký miễn phí</a>
-      </p>
+  @if (errorMessage()) {
+    <div class="mb-4 flex items-start gap-2 rounded-r-lg border-l-4 border-red-500 bg-red-50 px-4 py-3" role="alert">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-red-500"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      <span class="text-[13px] leading-relaxed text-red-700">{{ errorMessage() }}</span>
     </div>
-  </section>
+  }
 
-  <!-- Right side: hero -->
-  <section class="relative hidden overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 lg:block">
-    <div class="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10 blur-3xl"></div>
-    <div class="absolute -bottom-20 -left-12 h-72 w-72 rounded-full bg-fuchsia-300/20 blur-3xl"></div>
-    <div class="relative flex h-full flex-col justify-between p-12 text-white">
-      <div>
-        <span class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-medium uppercase tracking-wide backdrop-blur">
-          Quản lý tài chính doanh nghiệp
-        </span>
-        <h2 class="mt-6 text-4xl font-semibold leading-tight">
-          Tự động hoá quy trình hoá đơn — phê duyệt — thanh toán
-        </h2>
-        <p class="mt-4 text-lg text-white/80">
-          OCR tài liệu, phê duyệt theo chính sách, theo dõi ngân sách thời gian thực.
-          Mọi thứ bạn cần để vận hành tài chính dưới một mái nhà.
+  <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+    <!-- Email -->
+    <div class="w-full">
+      <label for="login-email" class="mb-1.5 block text-[13px] font-medium text-slate-700">Email</label>
+      <input
+        id="login-email"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+        placeholder="ten@congty.vn"
+        class="h-[42px] w-full rounded-lg border border-gray-300 bg-white px-3 text-[14px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100"
+        [class.border-red-400]="form.controls.email.invalid && form.controls.email.touched"
+      />
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <p class="mt-1 flex items-center gap-1 text-[12px] text-red-600">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          @if (form.controls.email.errors?.['required']) { <span>Vui lòng nhập email</span> }
+          @else { <span>Email không hợp lệ</span> }
         </p>
-      </div>
-
-      <ul class="space-y-3 text-sm">
-        <li class="flex items-center gap-3">
-          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 backdrop-blur">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </span>
-          <span>OCR hoá đơn tự động + RAG AI</span>
-        </li>
-        <li class="flex items-center gap-3">
-          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 backdrop-blur">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </span>
-          <span>Workflow phê duyệt theo chính sách</span>
-        </li>
-        <li class="flex items-center gap-3">
-          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 backdrop-blur">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </span>
-          <span>Theo dõi ngân sách phòng ban thời gian thực</span>
-        </li>
-        <li class="flex items-center gap-3">
-          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 backdrop-blur">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </span>
-          <span>Bank CSV export cho thanh toán hàng loạt</span>
-        </li>
-      </ul>
+      }
     </div>
-  </section>
-</div>
+
+    <!-- Password -->
+    <div class="w-full">
+      <div class="mb-1.5 flex items-center justify-between">
+        <label for="login-password" class="text-[13px] font-medium text-slate-700">Mật khẩu</label>
+        <a routerLink="/forgot-password" class="text-[13px] font-medium text-blue-600 hover:underline">Quên mật khẩu?</a>
+      </div>
+      <div class="relative">
+        <input
+          id="login-password"
+          [type]="isPasswordVisible() ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="current-password"
+          placeholder="••••••••"
+          class="h-[42px] w-full rounded-lg border border-gray-300 bg-white px-3 pr-10 text-[14px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-100"
+          [class.border-red-400]="form.controls.password.invalid && form.controls.password.touched"
+        />
+        <button
+          type="button"
+          class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
+          (click)="togglePasswordVisibility()"
+          [attr.aria-label]="isPasswordVisible() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
+        >
+          @if (isPasswordVisible()) {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="m1 1 22 22"/></svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          }
+        </button>
+      </div>
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <p class="mt-1 flex items-center gap-1 text-[12px] text-red-600">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Vui lòng nhập mật khẩu</span>
+        </p>
+      }
+    </div>
+
+    <!-- Submit -->
+    <button
+      type="submit"
+      class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-70"
+      [disabled]="isSubmitting()"
+    >
+      @if (isSubmitting()) {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-4 w-4 animate-spin"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
+        <span>Đang đăng nhập...</span>
+      } @else {
+        Đăng nhập
+      }
+    </button>
+  </form>
+
+  <p class="mt-8 text-center text-[12px] text-slate-500">
+    Chưa có tài khoản?
+    <a routerLink="/register" class="font-semibold text-blue-600 hover:underline">Đăng ký miễn phí</a>
+  </p>
+</app-auth-layout>
