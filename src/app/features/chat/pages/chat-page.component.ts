@@ -85,16 +85,16 @@ const TENANT_LEVEL_SUGGESTED_PROMPTS: SuggestedPrompt[] = [
     prompt: 'Tổng chi toàn công ty tháng này là bao nhiêu?',
   },
   {
-    title: 'Nhà cung cấp chi nhiều nhất',
-    prompt: 'Nhà cung cấp nào có tổng chi cao nhất tháng này?',
+    title: 'Phòng ban chi nhiều nhất',
+    prompt: 'Phòng ban nào có tổng chi cao nhất tháng này?',
   },
   {
     title: 'Xu hướng 3 tháng gần đây',
     prompt: 'Xu hướng chi tiêu 3 tháng gần đây là gì?',
   },
   {
-    title: 'Chứng từ theo vendor',
-    prompt: 'Cho tôi xem các chứng từ liên quan đến vendor ABC.',
+    title: 'Chứng từ theo phòng ban',
+    prompt: 'Cho tôi xem các chứng từ theo từng phòng ban.',
   },
 ];
 
@@ -104,8 +104,8 @@ const MAGICPATH_SUGGESTED_PROMPTS: SuggestedPrompt[] = [
     prompt: 'Phòng nào vượt ngân sách trong tháng này?',
   },
   {
-    title: 'Nhà cung cấp chưa xác thực',
-    prompt: 'Có nhà cung cấp nào chưa xác thực không?',
+    title: 'Phòng ban cần chú ý',
+    prompt: 'Phòng ban nào cần chú ý về chi tiêu hoặc ngân sách?',
   },
   {
     title: 'Tỉ lệ duyệt trung bình',

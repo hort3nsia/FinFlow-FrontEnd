@@ -194,7 +194,7 @@ export class NotificationsPanelComponent {
       if (payload.documentId) return `/app/documents/submitted/${payload.documentId}`;
       return '/app/documents';
     }
-    if (type.includes('vendor')) return '/app/vendors';
+    if (type.includes('vendor')) return '/app/dashboard';
     return null;
   }
 }

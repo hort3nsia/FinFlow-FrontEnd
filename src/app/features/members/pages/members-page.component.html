@@ -155,7 +155,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (row of visibleMemberRows(); track row.id) {
+                  @for (row of memberPagination.paginatedItems(); track row.id) {
                     <tr
                       class="member-row"
                       [class.selected]="row.id === selectedMemberId()"
@@ -194,6 +194,18 @@
                   }
                 </tbody>
               </table>
+              @if (memberPagination.totalPages() > 1) {
+                <div class="flex items-center justify-between border-t border-slate-100 px-4 py-3">
+                  <span class="text-[12px] text-slate-500">{{ memberPagination.label() }}</span>
+                  <div class="flex items-center gap-1">
+                    <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40" [disabled]="!memberPagination.hasPrevious()" (click)="memberPagination.goToPage(memberPagination.currentPage() - 1)">&lsaquo;</button>
+                    @for (p of [].constructor(memberPagination.totalPages()); track $index) {
+                      <button type="button" class="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg text-[12px] font-medium" [class]="memberPagination.currentPage() === $index + 1 ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'" (click)="memberPagination.goToPage($index + 1)">{{ $index + 1 }}</button>
+                    }
+                    <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40" [disabled]="!memberPagination.hasNext()" (click)="memberPagination.goToPage(memberPagination.currentPage() + 1)">&rsaquo;</button>
+                  </div>
+                </div>
+              }
             }
             @if (inactiveCount() > 0) {
               <div class="table-note">
@@ -449,12 +461,19 @@
 
         <label class="field">
           <span>Phòng ban</span>
-          <select [value]="inviteDepartmentId()" (change)="updateInviteDepartment($any($event.target).value)">
+          <select
+            [value]="inviteDepartmentId()"
+            [disabled]="isCurrentUserManager()"
+            (change)="updateInviteDepartment($any($event.target).value)"
+          >
             <option value="">Chọn phòng ban...</option>
             @for (d of departments(); track d.id) {
               <option [value]="d.id">{{ d.name }}</option>
             }
           </select>
+          @if (isCurrentUserManager()) {
+            <small style="display:block;margin-top:6px;color:#64748b;font-size:11px">Manager chỉ có thể mời thành viên vào phòng ban đang quản lý.</small>
+          }
         </label>
 
         <div class="expiry-note">

@@ -81,7 +81,7 @@
 
     @if (!canEdit()) {
       <section class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        Bạn đang xem ở chế độ chỉ đọc. Chỉ Tenant Admin hoặc SuperAdmin mới được chỉnh sửa cấu hình tổ chức.
+        Bạn đang xem ở chế độ chỉ đọc. Chỉ Tenant Admin mới được chỉnh sửa cấu hình tổ chức.
       </section>
     }
 
@@ -210,15 +210,39 @@
                   </select>
                 </label>
 
-                <label class="block">
-                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">URL logo</span>
-                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="url" [disabled]="!canEdit()" placeholder="https://cdn.example.com/logo.svg" [ngModel]="logoUrl()" (ngModelChange)="logoUrl.set($event)" name="logoUrl" />
-                </label>
+                <div class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Logo</span>
+                  <div class="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg text-xs font-bold text-white" [style.background]="primaryColor() || '#2563eb'">
+                      @if (logoUrl()) {
+                        <img class="h-full w-full object-contain" [src]="logoUrl()" alt="Logo" />
+                      } @else {
+                        {{ brandInitial() }}
+                      }
+                    </span>
+                    <label class="inline-flex cursor-pointer items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+                      @if (uploadingBrandingAsset() === 'logo') { Đang tải... } @else { Tải logo }
+                      <input class="sr-only" type="file" accept="image/png,image/jpeg,image/x-icon,image/webp" [disabled]="!canEdit() || uploadingBrandingAsset() === 'logo'" (change)="uploadBrandingAsset('logo', $event)" name="logoAsset" />
+                    </label>
+                  </div>
+                </div>
 
-                <label class="block">
-                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">URL favicon</span>
-                  <input class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50" type="url" [disabled]="!canEdit()" placeholder="https://cdn.example.com/favicon.ico" [ngModel]="faviconUrl()" (ngModelChange)="faviconUrl.set($event)" name="faviconUrl" />
-                </label>
+                <div class="block">
+                  <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Favicon</span>
+                  <div class="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-100 bg-slate-50 text-xs font-bold text-slate-500">
+                      @if (faviconUrl()) {
+                        <img class="h-full w-full object-contain" [src]="faviconUrl()" alt="Favicon" />
+                      } @else {
+                        ICO
+                      }
+                    </span>
+                    <label class="inline-flex cursor-pointer items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+                      @if (uploadingBrandingAsset() === 'favicon') { Đang tải... } @else { Tải favicon }
+                      <input class="sr-only" type="file" accept="image/png,image/jpeg,image/x-icon,image/webp" [disabled]="!canEdit() || uploadingBrandingAsset() === 'favicon'" (change)="uploadBrandingAsset('favicon', $event)" name="faviconAsset" />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div class="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
@@ -228,7 +252,7 @@
                 @if (tabSuccess()?.tab === 'branding') {
                   <span class="text-sm text-emerald-600">{{ tabSuccess()?.message }}</span>
                 }
-                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!canEdit() || savingTab() === 'branding'" (click)="saveBranding()">
+                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!canEdit() || savingTab() === 'branding' || !!uploadingBrandingAsset()" (click)="saveBranding()">
                   @if (savingTab() === 'branding') { Đang lưu... } @else { Lưu thương hiệu }
                 </button>
               </div>

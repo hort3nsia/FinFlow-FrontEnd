@@ -172,6 +172,33 @@ export class PaymentsPageComponent {
     return methodFiltered.filter((row) => row.queueStatus === statuses[activeTab]);
   });
 
+  // ─── Pagination ─────────────────────────────────────────────────
+  protected readonly currentPage = signal(1);
+  protected readonly pageSize = signal(20);
+  protected readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize())),
+  );
+  protected readonly paginatedRows = computed(() => {
+    const rows = this.filteredRows();
+    const page = this.currentPage();
+    const size = this.pageSize();
+    const start = (page - 1) * size;
+    return rows.slice(start, start + size);
+  });
+  protected readonly paginationLabel = computed(() => {
+    const total = this.filteredRows().length;
+    const page = this.currentPage();
+    const size = this.pageSize();
+    const start = Math.min((page - 1) * size + 1, total);
+    const end = Math.min(page * size, total);
+    return `${start}–${end} / ${total}`;
+  });
+
+  protected goToPage(page: number): void {
+    const clamped = Math.max(1, Math.min(page, this.totalPages()));
+    this.currentPage.set(clamped);
+  }
+
   protected readonly selectedRow = computed(
     () => this.queueItems().find((row) => row.id === this.selectedPaymentId()) ?? null,
   );
@@ -182,6 +209,7 @@ export class PaymentsPageComponent {
 
   protected setActiveTab(tabId: PaymentTabId): void {
     this.activeTab.set(tabId);
+    this.currentPage.set(1);
     this.syncSelection();
   }
 

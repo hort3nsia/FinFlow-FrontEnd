@@ -1,6 +1,8 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, map, Observable, throwError } from 'rxjs';
+import { catchError, defer, map, Observable, switchMap, throwError } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
+import { isAuthInvalidMessage } from '../../../core/auth/auth-error.utils';
 import { API_BASE_URL } from '../../../core/config/api-base-url.token';
 
 interface GraphQlError {
@@ -108,21 +110,19 @@ const extractGraphQlMessage = (errors?: GraphQlError[]): string | null =>
 @Injectable({ providedIn: 'root' })
 export class ProfileApiService {
   private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
   private readonly endpoint = inject(API_BASE_URL);
 
   getMyProfile(): Observable<ReimbursementProfileResponse | null> {
-    return this.http
-      .post<GraphQlResponse<{ myReimbursementProfile: ReimbursementProfileResponse | null }>>(
-        this.endpoint,
-        { query: MY_PROFILE_QUERY },
-      )
-      .pipe(
-        map((response) =>
-          this.extractData(response, 'MyReimbursementProfile did not return data.')
-            .myReimbursementProfile,
+    return this.withRefreshRetry(
+      () =>
+        this.http.post<GraphQlResponse<{ myReimbursementProfile: ReimbursementProfileResponse | null }>>(
+          this.endpoint,
+          { query: MY_PROFILE_QUERY },
         ),
-        catchError((error: unknown) => this.mapTransportError(error)),
-      );
+      'MyReimbursementProfile did not return data.',
+      (data) => data.myReimbursementProfile,
+    );
   }
 
   getBankCodes(): Observable<BankCode[]> {
@@ -137,49 +137,40 @@ export class ProfileApiService {
   updateProfile(
     input: UpdateMyReimbursementProfileInput,
   ): Observable<ReimbursementProfileResponse> {
-    return this.http
-      .post<GraphQlResponse<{ updateMyReimbursementProfile: ReimbursementProfileResponse }>>(
-        this.endpoint,
-        { query: UPDATE_PROFILE_MUTATION, variables: { input } },
-      )
-      .pipe(
-        map((response) =>
-          this.extractData(response, 'UpdateProfile did not return data.')
-            .updateMyReimbursementProfile,
+    return this.withRefreshRetry(
+      () =>
+        this.http.post<GraphQlResponse<{ updateMyReimbursementProfile: ReimbursementProfileResponse }>>(
+          this.endpoint,
+          { query: UPDATE_PROFILE_MUTATION, variables: { input } },
         ),
-        catchError((error: unknown) => this.mapTransportError(error)),
-      );
+      'UpdateProfile did not return data.',
+      (data) => data.updateMyReimbursementProfile,
+    );
   }
 
   requestBankOtp(): Observable<OtpDispatchResponse> {
-    return this.http
-      .post<GraphQlResponse<{ requestBankInfoUpdateOtp: OtpDispatchResponse }>>(this.endpoint, {
-        query: REQUEST_BANK_OTP_MUTATION,
-      })
-      .pipe(
-        map((response) =>
-          this.extractData(response, 'RequestBankInfoUpdateOtp did not return data.')
-            .requestBankInfoUpdateOtp,
-        ),
-        catchError((error: unknown) => this.mapTransportError(error)),
-      );
+    return this.withRefreshRetry(
+      () =>
+        this.http.post<GraphQlResponse<{ requestBankInfoUpdateOtp: OtpDispatchResponse }>>(this.endpoint, {
+          query: REQUEST_BANK_OTP_MUTATION,
+        }),
+      'RequestBankInfoUpdateOtp did not return data.',
+      (data) => data.requestBankInfoUpdateOtp,
+    );
   }
 
   confirmBankUpdate(
     input: ConfirmBankInfoUpdateInput,
   ): Observable<ReimbursementProfileResponse> {
-    return this.http
-      .post<GraphQlResponse<{ confirmBankInfoUpdate: ReimbursementProfileResponse }>>(this.endpoint, {
-        query: CONFIRM_BANK_UPDATE_MUTATION,
-        variables: { input },
-      })
-      .pipe(
-        map((response) =>
-          this.extractData(response, 'ConfirmBankInfoUpdate did not return data.')
-            .confirmBankInfoUpdate,
-        ),
-        catchError((error: unknown) => this.mapTransportError(error)),
-      );
+    return this.withRefreshRetry(
+      () =>
+        this.http.post<GraphQlResponse<{ confirmBankInfoUpdate: ReimbursementProfileResponse }>>(this.endpoint, {
+          query: CONFIRM_BANK_UPDATE_MUTATION,
+          variables: { input },
+        }),
+      'ConfirmBankInfoUpdate did not return data.',
+      (data) => data.confirmBankInfoUpdate,
+    );
   }
 
   private extractData<TData>(response: GraphQlResponse<TData>, missingMessage: string): TData {
@@ -204,5 +195,38 @@ export class ProfileApiService {
       return throwError(() => error);
     }
     return throwError(() => new Error('Unable to complete the request.'));
+  }
+
+  private isAuthInvalidError(error: unknown): boolean {
+    if (error instanceof HttpErrorResponse) {
+      return isAuthInvalidMessage(extractGraphQlMessage(error.error?.errors) ?? error.message);
+    }
+
+    if (error instanceof Error) {
+      return isAuthInvalidMessage(error.message);
+    }
+
+    return false;
+  }
+
+  private withRefreshRetry<TData, TResult>(
+    requestFactory: () => Observable<GraphQlResponse<TData>>,
+    missingMessage: string,
+    select: (data: TData) => TResult,
+    hasRetried = false,
+  ): Observable<TResult> {
+    return defer(requestFactory).pipe(
+      map((response) => select(this.extractData(response, missingMessage))),
+      catchError((error: unknown) => {
+        if (hasRetried || !this.isAuthInvalidError(error)) {
+          return this.mapTransportError(error);
+        }
+
+        return this.authService.refreshToken().pipe(
+          switchMap(() => this.withRefreshRetry(requestFactory, missingMessage, select, true)),
+          catchError((refreshError: unknown) => this.mapTransportError(refreshError)),
+        );
+      }),
+    );
   }
 }

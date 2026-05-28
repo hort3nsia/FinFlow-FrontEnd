@@ -277,8 +277,8 @@
         >
           <span class="sr-only">Hỏi trợ lý AI bất cứ điều gì</span>
           <textarea
-            rows="1"
-            class="max-h-28 w-full resize-none bg-transparent px-4 pb-2 pr-20 pt-3 text-sm leading-relaxed text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+            rows="2"
+            class="max-h-32 min-h-[2.75rem] w-full resize-none overflow-y-auto bg-transparent px-4 pb-6 pr-20 pt-3 text-sm leading-relaxed text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
             [placeholder]="isQuotaExceeded() ? 'Đã hết hạn mức chat tháng này...' : 'Hỏi trợ lý AI bất cứ điều gì...'"
             [ngModel]="draft()"
             (ngModelChange)="onDraftChange($event)"

@@ -8,6 +8,7 @@
   inject,
   signal,
 } from '@angular/core';
+import { createPagination } from '../../../shared/utils/pagination';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { catchError, forkJoin, of, switchMap } from 'rxjs';
@@ -172,28 +173,51 @@ export class MembersPageComponent {
     { id: 'activity', label: 'Hoạt động' },
     { id: 'audit-log', label: 'Nhật ký' },
   ]);
-  protected readonly inviteRoleOptions = computed<InviteRoleOption[]>(() => [
-    {
-      value: 'TENANT_ADMIN',
-      label: 'Tenant Admin',
-      description: 'Toàn quyền workspace, quản lý thành viên, cấu hình và phê duyệt.',
-    },
-    {
-      value: 'MANAGER',
-      label: 'Manager',
-      description: 'Quản lý luồng xử lý, rà soát yêu cầu và theo dõi phòng ban.',
-    },
-    {
-      value: 'ACCOUNTANT',
-      label: 'Accountant',
-      description: 'Xử lý nghiệp vụ tài chính, thanh toán và dữ liệu kế toán.',
-    },
-    {
-      value: 'STAFF',
-      label: 'Staff',
-      description: 'Tạo bản nháp, gửi khoản chi và theo dõi yêu cầu cá nhân.',
-    },
-  ]);
+  protected readonly currentUserRole = computed<string>(() => {
+    const raw = (this.workspaceState().workspace?.role ?? '').toString();
+    return raw.replace(/[\s_-]+/g, '').toLowerCase();
+  });
+  protected readonly isCurrentUserManager = computed(() => {
+    const role = this.currentUserRole();
+    return role.includes('manager') && !role.includes('tenantadmin') && !role.includes('owner');
+  });
+  protected readonly canInviteAnyRole = computed(() => {
+    const role = this.currentUserRole();
+    return role.includes('tenantadmin') || role.includes('owner') || role.includes('superadmin');
+  });
+  protected readonly currentUserDepartmentId = computed<string | null>(
+    () => this.workspaceState().workspace?.departmentId ?? null,
+  );
+  protected readonly inviteRoleOptions = computed<InviteRoleOption[]>(() => {
+    const allOptions: InviteRoleOption[] = [
+      {
+        value: 'TENANT_ADMIN',
+        label: 'Tenant Admin',
+        description: 'Toàn quyền workspace, quản lý thành viên, cấu hình và phê duyệt.',
+      },
+      {
+        value: 'MANAGER',
+        label: 'Manager',
+        description: 'Quản lý luồng xử lý, rà soát yêu cầu và theo dõi phòng ban.',
+      },
+      {
+        value: 'ACCOUNTANT',
+        label: 'Accountant',
+        description: 'Xử lý nghiệp vụ tài chính, thanh toán và dữ liệu kế toán.',
+      },
+      {
+        value: 'STAFF',
+        label: 'Staff',
+        description: 'Tạo bản nháp, gửi khoản chi và theo dõi yêu cầu cá nhân.',
+      },
+    ];
+
+    if (this.isCurrentUserManager()) {
+      return allOptions.filter((option) => option.value === 'STAFF');
+    }
+
+    return allOptions;
+  });
   protected readonly tabs = computed<MembersTab[]>(() => [
     { id: 'members', label: `Thành viên ${this.memberRows().length}` },
     { id: 'invitations', label: `Lời mời ${this.invitationRows().length}` },
@@ -256,6 +280,10 @@ export class MembersPageComponent {
       return matchesSearch && matchesRole;
     });
   });
+
+  // ─── Pagination ─────────────────────────────────────────────────
+  protected readonly memberPagination = createPagination(this.visibleMemberRows, 20);
+
   protected readonly emptyStateCopy = computed(() =>
     this.activeTab() === 'members'
       ? 'Không có thành viên nào khớp bộ lọc hiện tại.'
@@ -585,6 +613,16 @@ export class MembersPageComponent {
   protected openInviteModal(): void {
     this.closeMemberActionMenu();
     this.inviteSubmitError.set(null);
+
+    // Manager-specific defaults: lock role to STAFF and department to manager's own dept.
+    if (this.isCurrentUserManager()) {
+      this.inviteRole.set('STAFF');
+      const managerDept = this.currentUserDepartmentId();
+      if (managerDept) {
+        this.inviteDepartmentId.set(managerDept);
+      }
+    }
+
     this.isInviteModalOpen.set(true);
   }
 

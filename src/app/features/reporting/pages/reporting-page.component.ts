@@ -21,12 +21,12 @@ import {
 import { CurrentWorkspaceFacade } from '../../dashboard/data/current-workspace.facade';
 import {
   BudgetUtilizationResponse,
+  ExpenseSummaryGroup,
   ExpenseSummaryResponse,
   MonthlyTrendPointResponse,
   PendingPaymentItemResponse,
   ReportingApiService,
   TopEmployeeResponse,
-  TopVendorResponse,
 } from '../data/reporting-api.service';
 
 type RoleType = 'TenantAdmin' | 'Accountant' | 'Manager' | 'Staff' | 'SuperAdmin' | 'Unknown';
@@ -57,7 +57,7 @@ interface PendingReimbursementRow {
   id: string;
   employee: string;
   code: string;
-  merchant: string;
+  department: string;
   amount: number;
   currencyCode: string;
   approvedAt: string;
@@ -93,7 +93,6 @@ export class ReportingPageComponent {
 
   protected readonly summary = signal<ExpenseSummaryResponse | null>(null);
   protected readonly budgets = signal<BudgetUtilizationResponse[]>([]);
-  protected readonly topVendors = signal<TopVendorResponse[]>([]);
   protected readonly topEmployees = signal<TopEmployeeResponse[]>([]);
   protected readonly pendingPayments = signal<PendingPaymentItemResponse[]>([]);
   protected readonly monthlyTrend = signal<MonthlyTrendPointResponse[]>([]);
@@ -147,7 +146,7 @@ export class ReportingPageComponent {
     return (
       !!summary?.expenseCount ||
       this.budgets().length > 0 ||
-      this.topVendors().length > 0 ||
+      this.departmentSpendRows().length > 0 ||
       this.topEmployees().length > 0 ||
       this.pendingPayments().length > 0 ||
       this.monthlyTrend().some((point) => point.expenseTotal > 0)
@@ -185,7 +184,7 @@ export class ReportingPageComponent {
 
   protected readonly sourceBanner = computed(() => {
     if (this.hasReportingData()) {
-      return 'Dữ liệu thật từ reporting API: expense, budget, payment và vendor analytics.';
+      return 'Dữ liệu thật từ reporting API: expense, budget, payment và phòng ban.';
     }
     if (this.hasOperationalData()) {
       return 'Dữ liệu thật từ hàng đợi phê duyệt. Bảng expense/payment/budget chưa có dữ liệu confirmed nên báo cáo dùng pipeline chứng từ đang xử lý.';
@@ -360,24 +359,25 @@ export class ReportingPageComponent {
     [...this.budgets()].sort((left, right) => right.utilizationPercent - left.utilizationPercent),
   );
 
-  protected readonly merchantRows = computed(() => {
-    const reportingRows = this.topVendors().map((vendor, index) => ({
-      id: vendor.vendorId,
+  protected readonly departmentSpendRows = computed(() => {
+    const reportingRows = [...(this.summary()?.byDepartment ?? [])]
+      .sort((left, right) => right.amountInBaseCurrency - left.amountInBaseCurrency)
+      .map((department: ExpenseSummaryGroup, index) => ({
+      id: department.keyId ?? department.keyName,
       rank: index + 1,
-      name: vendor.vendorName,
-      total: vendor.totalAmountInBaseCurrency,
-      invoices: vendor.documentCount,
-      verified: vendor.isVerified,
+      name: department.keyName || 'Chưa có phòng ban',
+      total: department.amountInBaseCurrency,
+      documents: department.expenseCount,
       source: 'reporting',
     }));
     if (reportingRows.length) return reportingRows;
 
-    const grouped = new Map<string, { total: number; invoices: number }>();
+    const grouped = new Map<string, { total: number; documents: number }>();
     for (const item of this.pendingApprovalItems()) {
-      const key = item.vendorName?.trim() || 'Chưa có merchant';
-      const current = grouped.get(key) ?? { total: 0, invoices: 0 };
+      const key = item.department?.trim() || 'Chưa có phòng ban';
+      const current = grouped.get(key) ?? { total: 0, documents: 0 };
       current.total += item.amount;
-      current.invoices += 1;
+      current.documents += 1;
       grouped.set(key, current);
     }
 
@@ -387,8 +387,7 @@ export class ReportingPageComponent {
         rank: index + 1,
         name,
         total: value.total,
-        invoices: value.invoices,
-        verified: false,
+        documents: value.documents,
         source: 'approval',
       }))
       .sort((left, right) => right.total - left.total);
@@ -437,7 +436,7 @@ export class ReportingPageComponent {
       id: item.paymentId,
       employee: item.employeeName,
       code: item.reference || item.documentId,
-      merchant: item.departmentName || '—',
+      department: item.departmentName || '—',
       amount: item.amountInBaseCurrency || item.amount,
       currencyCode: item.baseCurrencyCode || item.currencyCode,
       approvedAt: item.recordedAt,
@@ -450,7 +449,7 @@ export class ReportingPageComponent {
       id: item.documentId,
       employee: item.requester || item.requesterEmail || 'Chưa có người gửi',
       code: item.title || item.documentId,
-      merchant: item.vendorName || '—',
+      department: item.department || '—',
       amount: item.amount,
       currencyCode: item.currency,
       approvedAt: item.submittedAt,
@@ -559,12 +558,6 @@ export class ReportingPageComponent {
           return of([] as BudgetUtilizationResponse[]);
         }),
       ),
-      vendors: this.reportingApi.topVendors(from, to, 8).pipe(
-        catchError(() => {
-          this.addLoadWarning('Không tải được top nhà cung cấp.');
-          return of([] as TopVendorResponse[]);
-        }),
-      ),
       employees: this.reportingApi.topEmployees(from, to, 8, departmentId).pipe(
         catchError(() => {
           this.addLoadWarning('Không tải được bảng xếp hạng nhân viên.');
@@ -599,7 +592,6 @@ export class ReportingPageComponent {
         next: (data) => {
           this.summary.set(data.summary);
           this.budgets.set(data.budgets);
-          this.topVendors.set(data.vendors);
           this.topEmployees.set(data.employees);
           this.approvalQueue.set(data.approvals);
           this.pendingPayments.set(data.pending);

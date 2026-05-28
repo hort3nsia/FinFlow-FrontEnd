@@ -22,6 +22,7 @@ import {
   BudgetWorkspaceResponse,
   BudgetsApiService,
 } from '../data/budgets-api.service';
+import { createPagination } from '../../../shared/utils/pagination';
 
 type DetailTab = 'summary' | 'activity' | 'trend' | 'audit';
 
@@ -108,6 +109,9 @@ export class BudgetsPageComponent {
       return matchesSearch && matchesEnforcement && matchesStatus;
     });
   });
+
+  // ─── Pagination ─────────────────────────────────────────────────
+  protected readonly budgetPagination = createPagination(this.filteredBudgets, 20);
 
   protected readonly selectedBudget = computed(() => {
     const id = this.selectedBudgetId();

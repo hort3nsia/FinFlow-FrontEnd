@@ -169,7 +169,7 @@
                   </td>
                 </tr>
               } @else {
-                @for (row of filteredRows(); track row.id) {
+                @for (row of paginatedRows(); track row.id) {
                   <tr
                     class="cursor-pointer transition-colors hover:bg-blue-50/40"
                     [ngClass]="row.id === selectedRow()?.id ? 'bg-blue-50' : ''"
@@ -191,10 +191,19 @@
                       <p class="mt-0.5 text-[11px] text-slate-400">{{ row.expenseDateLabel }}</p>
                     </td>
                     <td class="px-4 py-3.5 text-center">
-                      @if (row.paymentMethod) {
-                        <span title="{{ paymentMethodLabel(row.paymentMethod) }}" class="text-emerald-500">✓</span>
-                      } @else {
-                        <span title="Chưa chọn phương thức" class="text-amber-500">!</span>
+                      @switch (row.paymentMethod) {
+                        @case ('BankTransfer') {
+                          <span title="Chuyển khoản ngân hàng" class="text-emerald-500">✓</span>
+                        }
+                        @case ('Cash') {
+                          <span title="Tiền mặt" class="text-amber-600">₫</span>
+                        }
+                        @case ('Payroll') {
+                          <span title="Qua bảng lương" class="text-blue-500">⊕</span>
+                        }
+                        @default {
+                          <span title="Chưa chọn phương thức" class="text-slate-400">—</span>
+                        }
                       }
                     </td>
                     <td class="px-4 py-3.5">
@@ -216,6 +225,37 @@
               }
             </tbody>
           </table>
+
+          <!-- Pagination controls -->
+          @if (totalPages() > 1) {
+            <div class="flex items-center justify-between border-t border-slate-100 px-4 py-3">
+              <span class="text-[12px] text-slate-500">{{ paginationLabel() }}</span>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                  [disabled]="currentPage() <= 1"
+                  (click)="goToPage(currentPage() - 1)"
+                  aria-label="Trang trước"
+                >&lsaquo;</button>
+                @for (p of [].constructor(totalPages()); track $index) {
+                  <button
+                    type="button"
+                    class="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg text-[12px] font-medium transition"
+                    [class]="currentPage() === $index + 1 ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'"
+                    (click)="goToPage($index + 1)"
+                  >{{ $index + 1 }}</button>
+                }
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                  [disabled]="currentPage() >= totalPages()"
+                  (click)="goToPage(currentPage() + 1)"
+                  aria-label="Trang sau"
+                >&rsaquo;</button>
+              </div>
+            </div>
+          }
         }
       </div>
     </section>
@@ -264,16 +304,48 @@
           }
 
           <section>
-            <p class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Thông tin ngân hàng</p>
-            <div class="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3.5 py-3">
-              <span class="flex h-8 w-8 items-center justify-center rounded-md border border-emerald-100 bg-emerald-50 text-emerald-600">₫</span>
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-semibold text-slate-800">{{ paymentMethodLabel(selectedDetail()?.paymentMethod || row.paymentMethod) }}</p>
-                <p class="mt-0.5 text-xs text-slate-500">
-                  {{ selectedDetail()?.methodSource || 'Sẽ được xác nhận khi lên lịch chi trả' }}
-                </p>
-              </div>
-            </div>
+            <p class="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Thông tin thanh toán</p>
+            @switch (selectedDetail()?.paymentMethod || row.paymentMethod) {
+              @case ('BankTransfer') {
+                <div class="flex items-center gap-3 rounded-lg border border-emerald-100 bg-emerald-50 px-3.5 py-3">
+                  <span class="flex h-8 w-8 items-center justify-center rounded-md border border-emerald-200 bg-white text-emerald-600">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-emerald-800">Chuyển khoản ngân hàng</p>
+                    <p class="mt-0.5 text-xs text-emerald-600">{{ selectedDetail()?.methodSource || 'Thông tin ngân hàng nhân viên' }}</p>
+                  </div>
+                  <span class="text-emerald-500">✓</span>
+                </div>
+              }
+              @case ('Cash') {
+                <div class="flex items-center gap-3 rounded-lg border border-amber-100 bg-amber-50 px-3.5 py-3">
+                  <span class="flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 bg-white text-amber-600">₫</span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-amber-800">Tiền mặt</p>
+                    <p class="mt-0.5 text-xs text-amber-600">{{ selectedDetail()?.methodSource || 'Chi trả trực tiếp cho nhân viên' }}</p>
+                  </div>
+                </div>
+              }
+              @case ('Payroll') {
+                <div class="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-3.5 py-3">
+                  <span class="flex h-8 w-8 items-center justify-center rounded-md border border-blue-200 bg-white text-blue-600">⊕</span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-blue-800">Qua bảng lương</p>
+                    <p class="mt-0.5 text-xs text-blue-600">{{ selectedDetail()?.methodSource || 'Gộp vào kỳ lương tiếp theo' }}</p>
+                  </div>
+                </div>
+              }
+              @default {
+                <div class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3">
+                  <span class="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400">?</span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-slate-600">Chưa thiết lập</p>
+                    <p class="mt-0.5 text-xs text-slate-500">Sẽ được xác nhận khi lên lịch chi trả</p>
+                  </div>
+                </div>
+              }
+            }
           </section>
 
           @if (selectedDetail(); as detail) {
