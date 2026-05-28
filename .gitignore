@@ -56,3 +56,13 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 .worktrees/
+
+# Internal-only (not pushed)
+.agents/
+e2e/
+.internal/
+playwright.config.ts
+playwright-report/
+test-results/
+skills-lock.json
+.tmp-*

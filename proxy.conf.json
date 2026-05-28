@@ -4,5 +4,16 @@
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
+  },
+  "/api": {
+    "target": "http://localhost:5219",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/uploads": {
+    "target": "http://localhost:5219",
+    "secure": false,
+    "changeOrigin": true
   }
 }
