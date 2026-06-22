@@ -1,3 +1,16 @@
 :host {
   display: block;
 }
+
+/* Print-only report header — hidden on screen, shown when exporting to PDF. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Filter toolbar (date preset, department filter, export/refresh buttons) is
+     interactive chrome that should not appear in the exported PDF. */
+  .reporting-toolbar {
+    display: none !important;
+  }
+}

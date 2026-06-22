@@ -144,8 +144,11 @@ export const routes: Routes = [
       },
       {
         path: 'vendors',
-        pathMatch: 'full',
-        redirectTo: 'dashboard',
+        canActivate: [roleGuard(['TenantAdmin', 'Manager', 'Accountant'])],
+        loadComponent: () =>
+          import('./features/vendors/pages/vendors-page.component').then(
+            (module) => module.VendorsPageComponent,
+          ),
       },
       {
         path: 'subscription',

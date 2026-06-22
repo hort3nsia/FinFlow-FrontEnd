@@ -90,6 +90,7 @@ export class ReportingPageComponent {
   protected readonly isLoading = signal(true);
   protected readonly loadError = signal<string | null>(null);
   protected readonly loadWarnings = signal<string[]>([]);
+  protected readonly exportedAt = signal<string>('');
 
   protected readonly summary = signal<ExpenseSummaryResponse | null>(null);
   protected readonly budgets = signal<BudgetUtilizationResponse[]>([]);
@@ -659,7 +660,24 @@ export class ReportingPageComponent {
 
   protected exportPdf(): void {
     if (typeof window === 'undefined') return;
-    window.print();
+
+    // Stamp the export header and set a meaningful document title so the
+    // browser's "Save as PDF" defaults to a recognisable filename.
+    const now = new Date();
+    this.exportedAt.set(
+      now.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }),
+    );
+
+    const tenant = this.workspaceState().workspace?.tenantName?.trim() || 'FinFlow';
+    const previousTitle = document.title;
+    document.title = `Bao-cao_${tenant}_${this.fromDate()}_${this.toDate()}`
+      .replace(/\s+/g, '-');
+
+    try {
+      window.print();
+    } finally {
+      document.title = previousTitle;
+    }
   }
 
   protected onFromDateChange(value: string): void {

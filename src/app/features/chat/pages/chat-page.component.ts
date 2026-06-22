@@ -41,6 +41,16 @@ interface SuggestedPrompt {
   prompt: string;
 }
 
+type ContentBlockType = 'heading' | 'keyvalue' | 'bullet' | 'paragraph';
+
+interface ContentBlock {
+  type: ContentBlockType;
+  text?: string;
+  label?: string;
+  /** Value segments. A value like "A · B · C" is split into ["A", "B", "C"]. */
+  valueSegments?: string[];
+}
+
 const STAFF_SUGGESTED_PROMPTS: SuggestedPrompt[] = [
   {
     title: 'Tổng chi tháng này',
@@ -445,6 +455,78 @@ export class ChatPageComponent {
 
   protected citationRef(citation: ChatCitation): string {
     return `${citation.chunkType || 'Tài liệu'} · ${citation.documentId}`;
+  }
+
+  /**
+   * Parses a flat assistant message into structured blocks so the UI can render
+   * headings, "label: value" rows, and bullet lists clearly instead of one dense
+   * paragraph. Falls back to a single paragraph block when there's no structure.
+   */
+  protected parseContentBlocks(content: string): ContentBlock[] {
+    if (!content) {
+      return [];
+    }
+
+    const rawLines = content
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (rawLines.length === 0) {
+      return [{ type: 'paragraph', text: content.trim() }];
+    }
+
+    const blocks: ContentBlock[] = [];
+
+    for (const line of rawLines) {
+      // Bullet line: "- ..." or "• ..." or "* ..."
+      const bulletMatch = line.match(/^([-•*])\s+(.*)$/);
+      if (bulletMatch) {
+        blocks.push({ type: 'bullet', text: this.stripLeadingNumber(bulletMatch[2]) });
+        continue;
+      }
+
+      // Numbered list line: "1. ..." or "1) ..."
+      const numberedMatch = line.match(/^\d+[.)]\s+(.*)$/);
+      if (numberedMatch) {
+        blocks.push({ type: 'bullet', text: numberedMatch[1] });
+        continue;
+      }
+
+      // Heading line: ends with ":" and has no value after it.
+      if (line.endsWith(':') && line.length <= 80) {
+        blocks.push({ type: 'heading', text: line.replace(/:\s*$/, '') });
+        continue;
+      }
+
+      // Key-value line: "Label: value" (label part is short, value is non-empty).
+      const colonIndex = line.indexOf(':');
+      if (colonIndex > 0 && colonIndex <= 48 && colonIndex < line.length - 1) {
+        const label = line.slice(0, colonIndex).trim();
+        const value = line.slice(colonIndex + 1).trim();
+        // Only treat as key-value when the label looks like a label (no sentence punctuation).
+        if (value.length > 0 && !/[.!?]$/.test(label)) {
+          blocks.push({
+            type: 'keyvalue',
+            label,
+            valueSegments: value
+              .split('·')
+              .map((segment) => segment.trim())
+              .filter((segment) => segment.length > 0),
+          });
+          continue;
+        }
+      }
+
+      blocks.push({ type: 'paragraph', text: line });
+    }
+
+    return blocks;
+  }
+
+  private stripLeadingNumber(text: string): string {
+    return text.replace(/^\d+[.)]\s*/, '').trim();
   }
 
   protected openCitation(citation: ChatCitation): void {

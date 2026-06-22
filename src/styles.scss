@@ -1786,3 +1786,82 @@ code {
 }
 
 
+
+/* ============================================================================
+   PRINT / PDF EXPORT
+   Used by the Reports page "Xuất PDF" action (window.print()).
+   Hides the app shell chrome and unclips scroll containers so the full report
+   flows across A4 pages instead of being clipped to the on-screen viewport.
+   ============================================================================ */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    /* Ensure chart bars, badges and colored text render in the PDF. */
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide app chrome and any element explicitly opted out of printing. */
+  [data-testid="app-shell-sidebar"],
+  [data-testid="shell-sidebar-backdrop"],
+  [data-testid="app-shell-main-column"] > header,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Unclip the shell so content is not trapped in fixed-height scroll areas. */
+  [data-testid="app-shell-frame"],
+  [data-testid="app-shell-main-column"],
+  [data-testid="app-shell-main-column"] > main {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  [data-testid="app-shell-main-column"] > main {
+    padding: 0 !important;
+  }
+
+  /* Show the print-only report header (hidden on screen). */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Avoid awkward breaks inside cards, tables rows and chart blocks. */
+  section,
+  article,
+  table {
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
+  /* Drop shadows/sticky positioning that look wrong on paper. */
+  .shadow-sm,
+  .shadow,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  .sticky {
+    position: static !important;
+  }
+}
