@@ -58,6 +58,10 @@ interface ResetPasswordByTokenMutationResponse {
   resetPasswordByToken: boolean;
 }
 
+interface CheckPasswordResetOtpMutationResponse {
+  checkPasswordResetOtp: boolean;
+}
+
 interface ResetPasswordByOtpMutationResponse {
   resetPasswordByOtp: boolean;
 }
@@ -163,6 +167,12 @@ const VERIFY_PASSWORD_RESET_TOKEN_MUTATION = `
 const RESET_PASSWORD_BY_TOKEN_MUTATION = `
   mutation ResetPasswordByToken($token: String!, $newPassword: String!) {
     resetPasswordByToken(token: $token, newPassword: $newPassword)
+  }
+`;
+
+const CHECK_PASSWORD_RESET_OTP_MUTATION = `
+  mutation CheckPasswordResetOtp($input: CheckPasswordResetOtpInput!) {
+    checkPasswordResetOtp(input: $input)
   }
 `;
 
@@ -458,6 +468,25 @@ export class AuthApiService {
             .resetPasswordByToken;
           if (typeof result !== 'boolean') {
             throw new Error('ResetPasswordByToken response did not include a result.');
+          }
+          return result;
+        }),
+        catchError((error: unknown) => this.mapTransportError(error)),
+      );
+  }
+
+  checkPasswordResetOtp(email: string, otp: string): Observable<boolean> {
+    return this.http
+      .post<GraphQlResponse<CheckPasswordResetOtpMutationResponse>>(this.endpoint, {
+        query: CHECK_PASSWORD_RESET_OTP_MUTATION,
+        variables: { input: { email, otp } },
+      })
+      .pipe(
+        map((response) => {
+          const result = this.extractData(response, 'CheckPasswordResetOtp response did not include a result.')
+            .checkPasswordResetOtp;
+          if (typeof result !== 'boolean') {
+            throw new Error('CheckPasswordResetOtp response did not include a result.');
           }
           return result;
         }),

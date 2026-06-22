@@ -1,4 +1,4 @@
-﻿import { finalize } from 'rxjs';
+import { finalize } from 'rxjs';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
@@ -169,24 +169,22 @@ export class ResetPasswordPageComponent implements OnInit {
       return;
     }
 
-    if (this.otpPasswordForm.invalid) {
-      this.otpPasswordForm.markAllAsTouched();
-      return;
-    }
-
     this.errorMessage.set(null);
     this.infoMessage.set(null);
     this.isSubmitting.set(true);
 
     const email = this.otpResetForm.controls.email.getRawValue();
     const otp = this.otpResetForm.controls.otp.getRawValue();
-    const newPassword = this.otpPasswordForm.controls.newPassword.getRawValue();
 
     this.authService
-      .resetPasswordByOtp({ email, otp, newPassword })
+      .checkPasswordResetOtp(email, otp)
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: () => this.markSuccess(),
+        next: () => {
+          this.verifiedOtp.set(otp);
+          this.verifiedOtpEmail.set(email);
+          this.status.set('otp-password');
+        },
         error: (error: Error) => {
           this.errorMessage.set(error.message);
         },
