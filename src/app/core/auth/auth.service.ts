@@ -179,6 +179,14 @@ export class AuthService {
     );
   }
 
+  checkPasswordResetOtp(email: string, otp: string): Observable<boolean> {
+    this._isLoading.set(true);
+    return this.authApiService.checkPasswordResetOtp(email, otp).pipe(
+      finalize(() => this._isLoading.set(false)),
+      take(1),
+    );
+  }
+
   resetPasswordByOtp(input: ResetPasswordByOtpInput): Observable<boolean> {
     this._isLoading.set(true);
     return this.authApiService.resetPasswordByOtp(input).pipe(
