@@ -238,6 +238,20 @@ export class PaymentsPageComponent {
     }
 
     this.selectedPaymentId.set(id);
+
+    // Sync the method picker to whatever the row currently has, so a "Thử lại"
+    // (retry) on a Cash row doesn't accidentally re-record as BankTransfer
+    // (which then trips the "no bank profile" backend validation).
+    const selectedRow = this.queueItems().find((row) => row.id === id);
+    const rowMethod = selectedRow?.paymentMethod;
+    if (rowMethod && rowMethod !== this.paymentMethod()) {
+      this.paymentMethod.set(rowMethod);
+    }
+
+    // Reset transient form state when switching rows.
+    this.transactionReference.set('');
+    this.rejectReason.set('');
+
     this.loadSelectedDetail();
   }
 
@@ -358,7 +372,7 @@ export class PaymentsPageComponent {
     if (this.paymentActionKey()) return;
 
     const rejectType: RejectType = 'OTHER';
-    const reason = this.rejectReason().trim() || 'Chuyển lại để kiểm tra thông tin chi trả.';
+    const reason = this.rejectReason().trim() || 'Thanh toán thất bại — chưa rõ lý do.';
     this.paymentActionKey.set(`${row.id}:reject`);
     this.detailError.set(null);
 

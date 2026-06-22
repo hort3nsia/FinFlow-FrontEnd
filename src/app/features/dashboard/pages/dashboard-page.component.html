@@ -207,8 +207,8 @@
           } @else {
             <div class="flex h-48 items-end gap-3">
               @for (bar of trendBars(); track bar.label) {
-                <div class="group flex flex-1 flex-col items-center gap-2">
-                  <div class="relative flex h-full w-full items-end">
+                <div class="group flex h-full flex-1 flex-col items-center gap-2">
+                  <div class="relative flex min-h-0 w-full flex-1 items-end">
                     <div
                       class="w-full rounded-t-md bg-gradient-to-t from-indigo-500 to-indigo-400 transition-all group-hover:from-indigo-600 group-hover:to-indigo-500"
                       [style.height.%]="bar.heightPercent"

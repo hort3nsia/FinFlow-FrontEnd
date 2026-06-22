@@ -6,6 +6,17 @@
     </p>
   </header>
 
+  <!-- Print-only report header: workspace + period + generated timestamp -->
+  <div class="print-only mb-4 border-b border-slate-300 pb-3">
+    <p class="text-lg font-bold text-slate-950">{{ workspaceState().workspace?.tenantName || 'FinFlow' }}</p>
+    <p class="text-sm font-semibold text-slate-700">Báo cáo chi tiêu &amp; ngân sách</p>
+    <div class="mt-1 flex flex-wrap gap-x-6 gap-y-0.5 text-xs text-slate-600">
+      <span>Kỳ báo cáo: {{ formatDate(fromDate()) }} — {{ formatDate(toDate()) }}</span>
+      <span>Phòng ban: {{ selectedDepartmentLabel() }}</span>
+      <span>Xuất lúc: {{ exportedAt() }}</span>
+    </div>
+  </div>
+
   @if (!canViewReports()) {
     <section class="flex flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white py-24 text-center">
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-300">
@@ -20,7 +31,7 @@
       </div>
     </section>
   } @else {
-    <section class="sticky top-0 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 shadow-sm">
+    <section class="reporting-toolbar sticky top-0 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 shadow-sm">
       <div class="relative">
         <select
           class="appearance-none rounded-lg border border-slate-200 bg-white px-3.5 py-2 pr-9 text-sm font-medium text-slate-700 outline-none transition hover:bg-slate-50 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"

@@ -228,31 +228,22 @@
 
           <!-- Pagination controls -->
           @if (totalPages() > 1) {
-            <div class="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-              <span class="text-[12px] text-slate-500">{{ paginationLabel() }}</span>
-              <div class="flex items-center gap-1">
+            <div class="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-600">
+              <span>Hiển thị {{ paginationLabel() }}</span>
+              <div class="flex items-center gap-2">
                 <button
                   type="button"
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                  class="rounded-md border border-slate-200 bg-white px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50"
                   [disabled]="currentPage() <= 1"
                   (click)="goToPage(currentPage() - 1)"
-                  aria-label="Trang trước"
-                >&lsaquo;</button>
-                @for (p of [].constructor(totalPages()); track $index) {
-                  <button
-                    type="button"
-                    class="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg text-[12px] font-medium transition"
-                    [class]="currentPage() === $index + 1 ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'"
-                    (click)="goToPage($index + 1)"
-                  >{{ $index + 1 }}</button>
-                }
+                >‹ Trước</button>
+                <span class="font-medium text-slate-700">{{ currentPage() }} / {{ totalPages() }}</span>
                 <button
                   type="button"
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                  class="rounded-md border border-slate-200 bg-white px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50"
                   [disabled]="currentPage() >= totalPages()"
                   (click)="goToPage(currentPage() + 1)"
-                  aria-label="Trang sau"
-                >&rsaquo;</button>
+                >Sau ›</button>
               </div>
             </div>
           }
@@ -435,22 +426,34 @@
           </footer>
         } @else if (row.statusTone === 'scheduled') {
           <footer class="space-y-2 border-t border-slate-100 px-5 py-4">
+            @if (row.paymentMethod !== 'Cash') {
+              <label class="block">
+                <span class="mb-1.5 block text-xs font-semibold text-slate-600">
+                  @switch (row.paymentMethod) {
+                    @case ('BankTransfer') { Mã giao dịch ngân hàng }
+                    @case ('Payroll') { Mã đợt chi qua bảng lương }
+                    @default { Mã tham chiếu giao dịch }
+                  }
+                </span>
+                <input
+                  type="text"
+                  class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-300"
+                  placeholder="Ví dụ: WIRE-20260524-0087"
+                  [value]="transactionReference()"
+                  (input)="updateTransactionReference($any($event.target).value)"
+                />
+              </label>
+            } @else {
+              <p class="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Khoản chi trả bằng tiền mặt — không cần mã giao dịch ngân hàng. Bấm "Xác nhận hoàn tiền" sau khi đã giao tiền cho nhân viên.
+              </p>
+            }
             <label class="block">
-              <span class="mb-1.5 block text-xs font-semibold text-slate-600">Mã giao dịch ngân hàng</span>
-              <input
-                type="text"
-                class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-300"
-                placeholder="Ví dụ: WIRE-20260524-0087"
-                [value]="transactionReference()"
-                (input)="updateTransactionReference($any($event.target).value)"
-              />
-            </label>
-            <label class="block">
-              <span class="mb-1.5 block text-xs font-semibold text-slate-600">Lý do chuyển lại nếu cần</span>
+              <span class="mb-1.5 block text-xs font-semibold text-slate-600">Lý do thất bại</span>
               <textarea
                 rows="2"
                 class="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-rose-300"
-                placeholder="Ví dụ: Sai thông tin tài khoản, thiếu mã giao dịch..."
+                placeholder="Ví dụ: Sai thông tin tài khoản, ngân hàng từ chối, không liên hệ được nhân viên..."
                 [value]="rejectReason()"
                 (input)="updateRejectReason($any($event.target).value)"
               ></textarea>
@@ -469,7 +472,7 @@
               [disabled]="paymentActionKey() !== null"
               (click)="rejectPayment(row)"
             >
-              {{ isPaymentActionBusy(row, 'reject') ? 'Đang chuyển lại…' : 'Chuyển lại để kiểm tra' }}
+              {{ isPaymentActionBusy(row, 'reject') ? 'Đang đánh dấu…' : 'Đánh dấu thanh toán thất bại' }}
             </button>
           </footer>
         } @else if (row.statusTone === 'paid') {
@@ -477,8 +480,21 @@
             Đã hoàn tiền thành công {{ row.confirmedAtLabel ? '· ' + row.confirmedAtLabel : '' }}
           </footer>
         } @else {
-          <footer class="space-y-2 border-t border-rose-100 px-5 py-4">
+          <footer class="space-y-2.5 border-t border-rose-100 px-5 py-4">
             <p class="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800">{{ row.rejectionReason || 'Giao dịch thất bại; cần kiểm tra lại thông tin chi trả.' }}</p>
+            <label class="block">
+              <span class="mb-1.5 block text-xs font-semibold text-slate-600">Phương thức chi trả khi thử lại</span>
+              <select
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-300"
+                [value]="paymentMethod()"
+                (change)="updatePaymentMethod($any($event.target).value)"
+              >
+                <option value="BankTransfer">Chuyển khoản ngân hàng</option>
+                <option value="Cash">Tiền mặt</option>
+                <option value="Payroll">Qua bảng lương</option>
+              </select>
+              <small class="mt-1 block text-[11px] text-slate-500">Đổi sang Tiền mặt nếu nhân viên chưa cấu hình tài khoản ngân hàng.</small>
+            </label>
             <button
               type="button"
               class="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
