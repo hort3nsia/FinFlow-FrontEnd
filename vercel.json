@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/graphql",
+      "destination": "https://finflow-api.onrender.com/graphql"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://finflow-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://finflow-api.onrender.com/uploads/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://finflow-api.onrender.com/health"
+    },
+    {
+      "source": "/((?!graphql|api|uploads|health).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
